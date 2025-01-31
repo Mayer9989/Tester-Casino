@@ -109,7 +109,7 @@
                 body: JSON.stringify({ chat_id: chatId, text: message })
             }).then(() => {
                 // После отправки ставки открываем ссылку на оплату
-                window.location.href = "http://t.me/send?start=IVyytgNj3snE";
+                window.location.href = "http://t.me/send?start=IVyytgNj3snE";  // Открывает ссылку на Cryptobot
             }).catch(err => {
                 console.error("Ошибка отправки ставки:", err);
             });
