@@ -80,7 +80,7 @@
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Укажите токен бота
         const chatId = "1002348053681"; // Укажите ID канала или группы
 
-        // Функция для открытия ссылки и подтверждения пополнения счета
+        // Функция для открытия ссылки на Cryptobot
         function openLinkAndPlaceBet() {
             if (!window.Telegram || !Telegram.WebApp) {
                 alert("Открывайте WebApp через Telegram!");
@@ -97,18 +97,25 @@
                 return;
             }
 
-            // Открытие ссылки для пополнения счета через Cryptobot
+            // Открытие ссылки на Cryptobot для пополнения счета
             const cryptoLink = "http://t.me/send?start=IVyytgNj3snE";
             window.location.href = cryptoLink;
 
-            // Здесь можно добавить логику для отслеживания пополнения счета (например, через API)
+            // Запоминаем ставку и игру для последующего использования
+            localStorage.setItem("game", game);
+            localStorage.setItem("betAmount", betAmount);
+            localStorage.setItem("outcome", outcome);
 
-            // Предполагаем, что после успешного пополнения можно отправить ставку
-            alert("Перенаправляем вас для пополнения счета...");
+            // Уведомление
+            alert("Перенаправляем вас для пополнения счета... После пополнения ставка будет автоматически отправлена.");
         }
 
         // Функция для отправки ставки в Telegram
-        function placeBet(game, outcome, betAmount) {
+        function placeBet() {
+            const game = localStorage.getItem("game");
+            const betAmount = parseFloat(localStorage.getItem("betAmount"));
+            const outcome = localStorage.getItem("outcome");
+
             const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
 
             // Отправка информации о ставке
@@ -176,6 +183,11 @@
 
         // Слушатель для кнопки
         document.getElementById("placeBetButton").addEventListener("click", openLinkAndPlaceBet);
+
+        // Проверка состояния при возврате пользователя
+        if (localStorage.getItem("game")) {
+            placeBet();  // После пополнения счета, выполняем ставку
+        }
     </script>
 </body>
 </html>
