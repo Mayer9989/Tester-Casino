@@ -112,6 +112,12 @@
             }).then(response => {
                 if (response.ok) {
                     console.log("Ставка успешно отправлена в канал.");
+
+                    // Открываем ссылку на оплату через CryptoBot
+                    let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
+                    Telegram.WebApp.openTelegramLink(paymentUrl);
+
+                    // После оплаты запускаем игру
                     startGame(game, outcome, betAmount, chatId, token, username);
                 } else {
                     console.error("Ошибка при отправке ставки в канал:", response.statusText);
