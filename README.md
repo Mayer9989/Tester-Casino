@@ -1,14 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tester Casino WebApp</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Tester Casino - WebApp</title>
     <style>
         body {
-            background-image: url('https://i.imgur.com/qNwxyhH.jpg'); /* Ссылка на фон */
+            background-image: url('https://i.imgur.com/qNwxyhH.jpg');
             background-size: cover;
             background-position: center;
             font-family: Arial, sans-serif;
@@ -16,7 +14,7 @@
             text-align: center;
         }
         .container {
-            background: rgba(0, 0, 0, 0.7); /* Затемненный фон */
+            background: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 10px;
             display: inline-block;
