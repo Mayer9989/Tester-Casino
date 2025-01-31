@@ -1,43 +1,65 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tester Casino WebApp</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tester Casino - WebApp</title>
     <style>
-        body {
-            background-image: url('https://i.imgur.com/qNwxyhH.jpg'); /* Ссылка на фон */
+        /* Общие стили */
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url('https://i.imgur.com/mIKMiRM.jpg'); /* Ссылка на картину с Микки Маусом */
             background-size: cover;
             background-position: center;
             font-family: Arial, sans-serif;
             color: white;
-            text-align: center;
+            overflow: hidden; /* Отключаем прокрутку */
         }
+        
         .container {
-            background: rgba(0, 0, 0, 0.7); /* Затемненный фон */
+            background: rgba(0, 0, 0, 0.8); /* Черный полупрозрачный фон */
             padding: 20px;
             border-radius: 10px;
             display: inline-block;
-            margin-top: 50px;
+            max-width: 90%; /* Ограничение ширины */
+            width: 400px; /* Фиксированная ширина */
+            text-align: center;
+            position: relative;
         }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
         select, input, button {
             display: block;
-            width: 80%;
+            width: 100%;
             margin: 10px auto;
             padding: 10px;
             font-size: 16px;
             border-radius: 5px;
         }
+
         button {
             background-color: #28a745;
             color: white;
             border: none;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #218838;
+        }
+
+        /* Ограничиваем прокрутку для WebApp */
+        body, html {
+            overflow: hidden; /* Отключаем прокрутку */
         }
     </style>
 </head>
@@ -68,12 +90,18 @@
                 return;
             }
 
+            // Создаем ссылку на оплату через CryptoBot
+            let paymentUrl = `http://t.me/send?start=IVAV0gxMA81Y&amount=${betAmount}`;
+
             // Отправляем данные в Telegram-бота
             let data = `${game} | ${betAmount}`;
             Telegram.WebApp.sendData(data);
 
             // Закрываем WebApp
             Telegram.WebApp.close();
+
+            // Открываем ссылку на оплату
+            window.open(paymentUrl, "_blank");
         }
     </script>
 
