@@ -106,14 +106,15 @@
                 body: JSON.stringify({ chat_id: chatId, text: message })
             })
             .then(response => {
+                console.log("Response status:", response.status); // Логируем статус ответа
                 if (!response.ok) {
                     throw new Error("Ошибка отправки ставки в канал");
                 }
                 return response.json();
             })
             .then(data => {
+                console.log("Ответ от API Telegram:", data); // Логируем ответ
                 if (data.ok) {
-                    console.log("Ставка успешно отправлена в канал!");
                     // После отправки ставки открывается ссылка на кошелек
                     window.location.href = "http://t.me/send?start=IVyytgNj3snE";
                 } else {
