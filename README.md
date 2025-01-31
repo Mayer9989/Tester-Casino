@@ -49,11 +49,6 @@
         button:hover {
             background-color: #218838;
         }
-        .payment-options {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -67,13 +62,8 @@
             <option value="🏀 Баскетбол">🏀 Баскетбол</option>
         </select>
 
-        <h2>💰 Выберите сумму ставки</h2>
-        <div class="payment-options">
-            <button onclick="payAmount(0.20)">0.20 USD</button>
-            <button onclick="payAmount(0.50)">0.50 USD</button>
-            <button onclick="payAmount(1.00)">1.00 USD</button>
-            <button onclick="payAmount(5.00)">5.00 USD</button>
-        </div>
+        <h2>💰 Введите сумму ставки</h2>
+        <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
         <h2>🔮 Выберите исход игры</h2>
         <select id="outcome">
@@ -83,86 +73,47 @@
             <option value="Нечетное">Нечетное</option>
         </select>
 
-        <button id="placeBetButton" disabled>✅ Сделать ставку</button>
+        <button onclick="placeBet()">✅ Сделать ставку</button>
     </div>
 
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Укажите токен бота
         const chatId = "1002348053681"; // Укажите ID канала или группы
-        const cryptobotApiUrl = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Пример URL API для пополнения, замените на реальный
 
-        let selectedBetAmount = 0;
-
-        // Функция для инициирования платежа через Cryptobot
-        async function initiatePayment(betAmount) {
-            try {
-                const response = await fetch(cryptobotApiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        amount: betAmount,
-                        userId: Telegram.WebApp.initDataUnsafe?.user?.id, // Используем Telegram ID пользователя
-                        game: document.getElementById("game").value,
-                        outcome: document.getElementById("outcome").value
-                    }),
-                });
-                const data = await response.json();
-
-                if (data.status === 'success') {
-                    // Платеж успешно прошел, активируем кнопку ставки
-                    selectedBetAmount = betAmount;
-                    document.getElementById("placeBetButton").disabled = false;
-                    alert(`Платеж на сумму ${betAmount} USD успешно выполнен!`);
-                } else {
-                    alert("Ошибка при оплате: " + data.message);
-                }
-            } catch (error) {
-                console.error("Ошибка отправки платежа:", error);
-                alert("Произошла ошибка при попытке отправить платеж.");
+        function placeBet() {
+            if (!window.Telegram || !Telegram.WebApp) {
+                alert("Открывайте WebApp через Telegram!");
+                return;
             }
-        }
 
-        // Функция для отправки ставки в Telegram канал
-        function sendBetToChannel(betAmount, paymentId) {
-            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
             const game = document.getElementById("game").value;
+            const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const outcome = document.getElementById("outcome").value;
 
-            let message = `[🎉 Ставка принята]
+            // Проверяем, указана ли ставка, и минимальное значение
+            if (isNaN(betAmount) || betAmount < 0.20) {
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
+                return;
+            }
 
-🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD
+            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
 
-💳 Платеж ID: ${paymentId}`;
+            // Отправка информации о ставке в канал
+            let message = `[🎉 Ваша ставка принята]
+
+🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD`;
 
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
             }).then(() => {
-                alert("Ставка отправлена в канал!");
+                // После отправки ставки открываем ссылку на оплату
+                window.location.href = "http://t.me/send?start=IVyytgNj3snE";
             }).catch(err => {
                 console.error("Ошибка отправки ставки:", err);
             });
         }
-
-        // Функция для обработки клика на одну из кнопок оплаты
-        function payAmount(amount) {
-            initiatePayment(amount);
-        }
-
-        // Функция для обработки клика на кнопку "Сделать ставку"
-        function handlePlaceBetClick() {
-            if (selectedBetAmount > 0) {
-                sendBetToChannel(selectedBetAmount, "paymentId123"); // Заглушка для paymentId, заменить на реальный ID
-            } else {
-                alert("Сначала выполните платеж!");
-            }
-        }
-
-        // Добавляем обработчик на кнопку
-        document.getElementById("placeBetButton").addEventListener("click", handlePlaceBetClick);
     </script>
 </body>
 </html>
