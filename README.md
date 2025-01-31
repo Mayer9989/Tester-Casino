@@ -61,7 +61,11 @@
     <div class="container">
         <h2>🎰 Выберите игру</h2>
         <select id="game">
+            <option value="🎳 Боулинг">🎳 Боулинг</option>
+            <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
             <option value="🎲 Больше/Меньше">🎲 Больше/Меньше</option>
+            <option value="⚽ Футбол">⚽ Футбол</option>
+            <option value="🏀 Баскетбол">🏀 Баскетбол</option>
         </select>
 
         <h2>💰 Введите сумму ставки</h2>
@@ -71,6 +75,8 @@
         <select id="outcome">
             <option value="Больше">Больше</option>
             <option value="Меньше">Меньше</option>
+            <option value="Четное">Четное</option>
+            <option value="Нечетное">Нечетное</option>
         </select>
 
         <button onclick="placeBet()">✅ Сделать ставку</button>
@@ -78,7 +84,6 @@
 
     <script>
         function placeBet() {
-            // Проверка на наличие Telegram WebApp
             if (!window.Telegram || !Telegram.WebApp) {
                 alert("Открывайте WebApp через Telegram!");
                 return;
@@ -104,7 +109,6 @@
             let chatId = "-1002348053681"; // ID канала или группы
 
             // Отправляем сообщение о ставке
-            console.log("Отправка ставки в канал...");
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -112,6 +116,7 @@
             }).then(response => {
                 if (response.ok) {
                     console.log("Ставка успешно отправлена в канал.");
+
                     // Открываем ссылку на оплату через CryptoBot
                     let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
                     Telegram.WebApp.openTelegramLink(paymentUrl);
@@ -144,10 +149,24 @@
 
                     // Проверка результата
                     let resultMessage = "";
-                    if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
-                        resultMessage = "🎉 Вы выиграли!";
-                    } else {
-                        resultMessage = "❌ Вы проиграли!";
+                    if (game === "🎲 Больше/Меньше") {
+                        if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
+                            resultMessage = "🎉 Вы выиграли!";
+                        } else {
+                            resultMessage = "❌ Вы проиграли!";
+                        }
+                    } else if (game === "🎲 Четное/Нечетное") {
+                        if ((outcome === "Четное" && firstDie % 2 === 0) || (outcome === "Нечетное" && firstDie % 2 !== 0)) {
+                            resultMessage = "🎉 Вы выиграли!";
+                        } else {
+                            resultMessage = "❌ Вы проиграли!";
+                        }
+                    } else if (game === "🎳 Боулинг") {
+                        let pins = Math.random() < 0.5 ? "Поражение" : "Выигрыш";
+                        resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: Боулинг — ${pins}\n💸 Сумма ставки: ${betAmount} USD`;
+                    } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол") {
+                        let winGoal = Math.random() < 0.5;
+                        resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${winGoal ? 'Выигрыш' : 'Поражение'}\n💸 Сумма ставки: ${betAmount} USD`;
                     }
 
                     // Отправляем результат в канал
