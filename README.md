@@ -73,7 +73,7 @@
             <option value="Нечетное">Нечетное</option>
         </select>
 
-        <button onclick="openLinkAndPlaceBet()">✅ Сделать ставку</button>
+        <button id="placeBetButton">✅ Сделать ставку</button>
     </div>
 
     <script>
@@ -99,15 +99,12 @@
 
             // Открытие ссылки для пополнения счета через Cryptobot
             const cryptoLink = "http://t.me/send?start=IVyytgNj3snE";
-            window.open(cryptoLink, "_blank");
+            window.location.href = cryptoLink;
 
             // Здесь можно добавить логику для отслеживания пополнения счета (например, через API)
 
             // Предполагаем, что после успешного пополнения можно отправить ставку
             alert("Перенаправляем вас для пополнения счета...");
-
-            // После подтверждения пополнения отправляем ставку
-            placeBet(game, outcome, betAmount);
         }
 
         // Функция для отправки ставки в Telegram
@@ -176,6 +173,9 @@
                 }).catch(err => console.error("Ошибка отправки результата:", err));
             }, 5000); // Задержка в 5 секунд
         }
+
+        // Слушатель для кнопки
+        document.getElementById("placeBetButton").addEventListener("click", openLinkAndPlaceBet);
     </script>
 </body>
 </html>
