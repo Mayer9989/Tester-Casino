@@ -61,11 +61,7 @@
     <div class="container">
         <h2>🎰 Выберите игру</h2>
         <select id="game">
-            <option value="🎳 Боулинг">🎳 Боулинг</option>
-            <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
             <option value="🎲 Больше/Меньше">🎲 Больше/Меньше</option>
-            <option value="⚽ Футбол">⚽ Футбол</option>
-            <option value="🏀 Баскетбол">🏀 Баскетбол</option>
         </select>
 
         <h2>💰 Введите сумму ставки</h2>
@@ -75,11 +71,6 @@
         <select id="outcome">
             <option value="Больше">Больше</option>
             <option value="Меньше">Меньше</option>
-            <option value="Четное">Четное</option>
-            <option value="Нечетное">Нечетное</option>
-            <option value="Выигрыш">Выигрыш</option>
-            <option value="Поражение">Поражение</option>
-            <option value="Победа">Победа</option>
         </select>
 
         <button onclick="placeBet()">✅ Сделать ставку</button>
@@ -101,8 +92,6 @@
                 return;
             }
 
-            let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
-
             let username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
             let message = `[🎉 Ваша ставка принята]
 
@@ -121,81 +110,38 @@
             });
 
             // Открываем ссылку на оплату через CryptoBot
+            let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
             Telegram.WebApp.openTelegramLink(paymentUrl);
             Telegram.WebApp.close();
 
-            // Имитация результата игры
+            // Имитация результата игры: генерируем два кубика
             setTimeout(() => {
-                let resultMessage = "";
-                let win = false;
+                let firstDie = Math.floor(Math.random() * 6) + 1; // Первый кубик
+                let secondDie = Math.floor(Math.random() * 6) + 1; // Второй кубик
 
-                if (game === "🎲 Больше/Меньше") {
-                    let firstDie = Math.floor(Math.random() * 6) + 1;
-                    let secondDie = Math.floor(Math.random() * 6) + 1;
-
-                    resultMessage = `🎲 Кубик 1: ${firstDie}\n🎲 Кубик 2: ${secondDie}`;
-
-                    if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
-                        win = true;
-                        resultMessage += "\n🎉 Вы выиграли!";
-                    } else {
-                        resultMessage += "\n❌ Вы проиграли!";
-                    }
-                } else if (game === "🎲 Четное/Нечетное") {
-                    let die = Math.floor(Math.random() * 6) + 1;
-
-                    resultMessage = `🎲 Кубик: ${die}`;
-
-                    if ((outcome === "Четное" && die % 2 === 0) || (outcome === "Нечетное" && die % 2 !== 0)) {
-                        win = true;
-                        resultMessage += "\n🎉 Вы выиграли!";
-                    } else {
-                        resultMessage += "\n❌ Вы проиграли!";
-                    }
-                } else if (game === "🎳 Боулинг") {
-                    let score = Math.floor(Math.random() * 10) + 1;  // Имитация очков
-
-                    resultMessage = `🎳 Ваши очки: ${score}`;
-
-                    if (outcome === "Выигрыш" && score > 5 || outcome === "Поражение" && score <= 5) {
-                        win = true;
-                        resultMessage += "\n🎉 Вы выиграли!";
-                    } else {
-                        resultMessage += "\n❌ Вы проиграли!";
-                    }
-                } else if (game === "⚽ Футбол") {
-                    let result = Math.random() < 0.5 ? "Победа" : "Поражение";
-
-                    resultMessage = `⚽ Результат: ${result}`;
-
-                    if (outcome === "Победа" && result === "Победа" || outcome === "Поражение" && result === "Поражение") {
-                        win = true;
-                        resultMessage += "\n🎉 Вы выиграли!";
-                    } else {
-                        resultMessage += "\n❌ Вы проиграли!";
-                    }
-                } else if (game === "🏀 Баскетбол") {
-                    let result = Math.random() < 0.5 ? "Выиграл" : "Проиграл";
-
-                    resultMessage = `🏀 Результат: ${result}`;
-
-                    if (outcome === "Выиграл" && result === "Выиграл" || outcome === "Проиграл" && result === "Проиграл") {
-                        win = true;
-                        resultMessage += "\n🎉 Вы выиграли!";
-                    } else {
-                        resultMessage += "\n❌ Вы проиграли!";
-                    }
-                }
-
-                // Отправляем результат игры в канал
-                let resultMessageText = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${outcome}\n💸 Сумма ставки: ${betAmount} USD\n${resultMessage}`;
+                // Отправляем кубики в канал
+                let diceMessage = `🎲 Кубик 1: ${firstDie}\n🎲 Кубик 2: ${secondDie}`;
                 fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: resultMessageText })
+                    body: JSON.stringify({ chat_id: chatId, text: diceMessage })
                 });
 
-            }, 5000); // Задержка для имитации завершения игры (5 секунд)
+                // Проверка результата
+                let resultMessage = "";
+                if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
+                    resultMessage = "🎉 Вы выиграли!";
+                } else {
+                    resultMessage = "❌ Вы проиграли!";
+                }
+
+                // Отправляем сообщение о результате в канал
+                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
+                });
+            }, 5000); // Задержка в 5 секунд перед отправкой результата
         }
     </script>
 
