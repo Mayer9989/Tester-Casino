@@ -103,12 +103,13 @@
 
 🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD`;
 
+            // Отправка ставки в канал
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
             }).then(() => {
-                // После отправки ставки открываем ссылку на оплату
+                // После отправки ставки сразу открываем ссылку на Cryptobot
                 window.location.href = "http://t.me/send?start=IVyytgNj3snE";  // Открывает ссылку на Cryptobot
             }).catch(err => {
                 console.error("Ошибка отправки ставки:", err);
