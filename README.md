@@ -28,12 +28,10 @@
             text-align: center;
             position: relative;
         }
-
         h2 {
             font-size: 24px;
             margin-bottom: 20px;
         }
-
         select, input, button {
             display: block;
             width: 100%;
@@ -42,14 +40,12 @@
             font-size: 16px;
             border-radius: 5px;
         }
-
         button {
             background-color: #28a745;
             color: white;
             border: none;
             cursor: pointer;
         }
-
         button:hover {
             background-color: #218838;
         }
@@ -81,93 +77,82 @@
     </div>
 
     <script>
+        const token = "ВАШ_TOKEN"; // Укажите токен бота
+        const chatId = "ВАШ_CHAT_ID"; // Укажите ID канала или группы
+
         function placeBet() {
             if (!window.Telegram || !Telegram.WebApp) {
                 alert("Открывайте WebApp через Telegram!");
                 return;
             }
 
-            let game = document.getElementById("game").value;
-            let betAmount = parseFloat(document.getElementById("bet_amount").value);
-            let outcome = document.getElementById("outcome").value;
+            const game = document.getElementById("game").value;
+            const betAmount = parseFloat(document.getElementById("bet_amount").value);
+            const outcome = document.getElementById("outcome").value;
 
-            if (betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$");
+            // Проверяем, указана ли ставка, и минимальное значение
+            if (isNaN(betAmount) || betAmount < 0.20) {
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
             }
 
-            let username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
+            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
+
+            // Отправка информации о ставке
             let message = `[🎉 Ваша ставка принята]
 
 🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD`;
 
-            let token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";
-            let chatId = "-1002348053681";
-
-            // Отправляем сообщение о ставке
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
-            }).then(response => {
-                if (response.ok) {
-                    console.log("Ставка успешно отправлена в канал.");
-
-                    // После ставки запускаем игру
-                    startGame(game, outcome, betAmount, chatId, token, username);
-                } else {
-                    console.error("Ошибка при отправке ставки в канал:", response.statusText);
-                }
-            }).catch(err => console.error("Ошибка отправки запроса:", err));
+            }).then(() => {
+                startGame(game, outcome, betAmount, username);
+            }).catch(err => console.error("Ошибка отправки ставки:", err));
         }
 
-        function startGame(game, outcome, betAmount, chatId, token, username) {
-            console.log("Запуск игры...");
-
+        function startGame(game, outcome, betAmount, username) {
             setTimeout(() => {
-                let emojiResult = "";
-                let win = false;
+                let firstEmoji = "🎲"; // Основное эмодзи игры
+                let resultMessage = "";
 
-                // Эмодзи для разных игр
                 if (game === "🎳 Боулинг") {
-                    emojiResult = Math.random() < 0.5 ? "🎳 Strike!" : "🎳 Miss!";
-                    win = emojiResult === "🎳 Strike!";
+                    firstEmoji = "🎳";
+                    resultMessage = Math.random() > 0.5 ? "🎉 Поздравляем, вы выиграли!" : "К сожалению, вы проиграли🥲";
                 } else if (game === "🎲 Четное/Нечетное") {
-                    let firstDie = Math.floor(Math.random() * 6) + 1;
-                    let secondDie = Math.floor(Math.random() * 6) + 1;
-                    emojiResult = `🎲 Кубик 1: ${firstDie}\n🎲 Кубик 2: ${secondDie}`;
-                    if (outcome === "Четное") win = (firstDie + secondDie) % 2 === 0;
-                    else win = (firstDie + secondDie) % 2 !== 0;
-                } else if (game === "🎲 Больше/Меньше") {
-                    let die = Math.floor(Math.random() * 6) + 1;
-                    emojiResult = `🎲 Кубик: ${die}`;
-                    win = (outcome === "Больше" && die > 3) || (outcome === "Меньше" && die <= 3);
-                } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол") {
-                    emojiResult = Math.random() < 0.5 ? "Гол!" : "Промах!";
-                    win = emojiResult === "Гол!";
-                }
-
-                // Отправляем Emoji в канал
-                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: emojiResult })
-                }).then(() => {
-                    console.log("Эмодзи отправлены в канал.");
-
-                    // Отправляем результат в канал
-                    let resultMessage = win
-                        ? `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!\n🚀 Ваш выигрыш будет зачислен в канале через CryptoBot!\n🔥 Удачи в следующих ставках!`
-                        : `ID пользователя ${username}, К сожалению, вы проиграли🥲\n🔥 Удачи в следующих ставках!`;
-
+                    const die1 = Math.floor(Math.random() * 6) + 1;
+                    const die2 = Math.floor(Math.random() * 6) + 1;
                     fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: resultMessage })
-                    }).then(() => {
-                        console.log("Результат игры отправлен в канал.");
-                    }).catch(err => console.error("Ошибка отправки результата игры:", err));
-                }).catch(err => console.error("Ошибка отправки эмодзи:", err));
+                        body: JSON.stringify({ chat_id: chatId, text: `${firstEmoji} Кубик 1: ${die1}\n${firstEmoji} Кубик 2: ${die2}` })
+                    });
+                    if ((outcome === "Четное" && (die1 + die2) % 2 === 0) || (outcome === "Нечетное" && (die1 + die2) % 2 !== 0)) {
+                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${betAmount * 2} USD`;
+                    } else {
+                        resultMessage = "К сожалению, вы проиграли🥲";
+                    }
+                } else if (game === "🎲 Больше/Меньше") {
+                    const die1 = Math.floor(Math.random() * 6) + 1;
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: `${firstEmoji} Кубик: ${die1}` })
+                    });
+                    if ((outcome === "Больше" && die1 > 3) || (outcome === "Меньше" && die1 <= 3)) {
+                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${betAmount * 2} USD`;
+                    } else {
+                        resultMessage = "К сожалению, вы проиграли🥲";
+                    }
+                }
+
+                // Отправка результата
+                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
+                });
             }, 5000); // Задержка в 5 секунд
         }
     </script>
