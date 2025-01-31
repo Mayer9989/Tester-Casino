@@ -24,8 +24,8 @@
             padding: 20px;
             border-radius: 10px;
             display: inline-block;
-            max-width: 90%; /* Ограничение ширины */
-            width: 400px; /* Фиксированная ширина */
+            max-width: 90%;
+            width: 400px;
             text-align: center;
             position: relative;
         }
@@ -54,11 +54,6 @@
         button:hover {
             background-color: #218838;
         }
-
-        /* Ограничиваем прокрутку для WebApp */
-        body, html {
-            overflow: hidden; /* Отключаем прокрутку */
-        }
     </style>
 </head>
 <body>
@@ -82,83 +77,64 @@
     <script>
         function placeBet() {
             let game = document.getElementById("game").value;
-            let betAmount = document.getElementById("bet_amount").value;
+            let betAmount = parseFloat(document.getElementById("bet_amount").value);
 
             if (betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$");
                 return;
             }
 
-            // Обновленная ссылка на оплату через CryptoBot
-            let paymentUrl = `http://t.me/send?start=IVyytgNj3snE&amount=${betAmount}`;
+            let username = "Аноним"; // Замените на получение имени пользователя из Telegram WebApp API
+            let token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Замените на свой токен бота
+            let chatId = "-1002348053681"; // Замените на ID вашего канала (с минусом!)
+            let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
 
-            // Отправляем данные в Telegram-бота
-            let data = `${game} | ${betAmount}`;
-            Telegram.WebApp.sendData(data);
-
-            // Отправляем ставку в канал через Telegram Bot API
-            let token = '7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U';  // Замените на ваш Token
-            let chatId = '1002348053681';  // Замените на ваш Chat ID или @username канала
-            let username = Telegram.WebApp.initDataUnsafe.user.username || 'Аноним';
             let message = `🔑 Игрок: ${username}\n🚀 Режим: ${game}\n💸 Сумма ставки: ${betAmount} USD`;
 
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`);
+            // Отправка сообщения в канал
+            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: message })
+            });
 
-            // Закрываем WebApp
-            Telegram.WebApp.close();
+            // Открытие ссылки на оплату
+            window.location.href = paymentUrl;
 
-            // Ожидаем небольшую задержку перед открытием ссылки
-            setTimeout(() => {
-                // Открываем ссылку на оплату в новом окне
-                window.open(paymentUrl, "_blank");
-            }, 500);  // 500 миллисекунд
-
-            // Имитация результата игры и отправка результата в канал
+            // Имитация результата игры через 5 секунд
             setTimeout(() => {
                 let resultMessage = "";
+                let win = Math.random() < 0.5; // 50% шанс на победу
                 let emoji = "";
-                let win = false;
 
-                // Логика для разных игр
-                if (game === "🎳 Боулинг") {
-                    emoji = "🎳";
-                    // Имитируем сбитие кеглей (например, рандомный результат)
-                    let pins = Math.random() < 0.5 ? "Поражение" : "Выигрыш";
-                    resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: Боулинг — ${pins}\n💸 Сумма ставки: ${betAmount} USD`;
-                    win = pins === "Выигрыш";
-                } else if (game === "🎲 Четное/Нечетное" || game === "🎲 Больше/Меньше") {
-                    emoji = "🎲";
-                    // Имитируем результат
-                    let playerGuess = Math.random() < 0.5 ? "Больше" : "Меньше";
-                    let result = Math.random() < 0.5 ? "Меньше" : "Больше";
-                    let win = playerGuess === result;
-                    resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${win ? 'Выигрыш' : 'Поражение'}\n💸 Сумма ставки: ${betAmount} USD`;
-                } else if (game === "⚽ Футбол") {
-                    emoji = "⚽";
-                    // Имитируем результат игры
-                    let winGoal = Math.random() < 0.5;
-                    resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: Футбол — ${winGoal ? 'Выигрыш' : 'Поражение'}\n💸 Сумма ставки: ${betAmount} USD`;
-                    win = winGoal;
-                } else if (game === "🏀 Баскетбол") {
-                    emoji = "🏀";
-                    // Имитируем попадание в кольцо
-                    let winShot = Math.random() < 0.5;
-                    resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: Баскетбол — ${winShot ? 'Выигрыш' : 'Поражение'}\n💸 Сумма ставки: ${betAmount} USD`;
-                    win = winShot;
-                }
+                if (game === "🎳 Боулинг") emoji = "🎳";
+                if (game === "🎲 Четное/Нечетное" || game === "🎲 Больше/Меньше") emoji = "🎲";
+                if (game === "⚽ Футбол") emoji = "⚽";
+                if (game === "🏀 Баскетбол") emoji = "🏀";
 
-                // Отправляем результат игры в канал
-                fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(resultMessage)}`);
+                resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${win ? "Выигрыш" : "Поражение"}\n💸 Сумма ставки: ${betAmount} USD`;
 
-                // Если выигрыш
+                // Отправка результата в канал
+                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
+                });
+
+                // Если выиграл, отправляем сообщение о выигрыше
                 if (win) {
-                    let prize = (betAmount * 1.5).toFixed(2); // Коефициент 1.5x
-                    let prizeInRub = (prize * 75).toFixed(2); // Примерный курс рубля
+                    let prize = (betAmount * 1.5).toFixed(2);
+                    let prizeInRub = (prize * 75).toFixed(2);
 
-                    let winMessage = `🎉 Поздравляем, вы выиграли ${prize} USD (${prizeInRub} RUB)!\n🚀 Ваш выигрыш будет в чеке, вам его скинут в лс!🔥 Удачи в следующих ставках!`;
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(winMessage)}`);
+                    let winMessage = `🎉 Поздравляем, вы выиграли ${prize} USD (${prizeInRub} RUB)!\n🚀 Ваш выигрыш будет в чеке, вам его скинут в лс!\n🔥 Удачи в следующих ставках!`;
+
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: winMessage })
+                    });
                 }
-            }, 5000); // Задержка для имитации завершения игры (5 секунд)
+            }, 5000);
         }
     </script>
 
