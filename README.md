@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tester Casino - WebApp</title>
     <style>
-        /* Общие стили */
         body, html {
             height: 100%;
             margin: 0;
@@ -13,21 +12,19 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: black; /* Полностью черный фон */
+            background-color: black;
             font-family: Arial, sans-serif;
             color: white;
-            overflow: hidden; /* Отключаем прокрутку */
+            overflow: hidden;
         }
         
         .container {
-            background: rgba(0, 0, 0, 0.8); /* Черный полупрозрачный фон */
+            background: rgba(0, 0, 0, 0.8);
             padding: 20px;
             border-radius: 10px;
-            display: inline-block;
             max-width: 90%;
             width: 400px;
             text-align: center;
-            position: relative;
         }
 
         h2 {
@@ -76,6 +73,11 @@
 
     <script>
         function placeBet() {
+            if (typeof Telegram === "undefined" || !Telegram.WebApp) {
+                alert("Открывайте WebApp через Telegram!");
+                return;
+            }
+
             let game = document.getElementById("game").value;
             let betAmount = parseFloat(document.getElementById("bet_amount").value);
 
@@ -84,55 +86,32 @@
                 return;
             }
 
-            let username = "Аноним"; // Замените на получение имени пользователя из Telegram WebApp API
-            let token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Замените на свой токен бота
-            let chatId = "-1002348053681"; // Замените на ID вашего канала (с минусом!)
-            let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
+            let paymentUrl = `http://t.me/send?start=IVyytgNj3snE&amount=${betAmount}`;
+            let username = Telegram.WebApp.initDataUnsafe?.user?.username || 'Аноним';
+            let token = '7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U';
+            let chatId = '1002348053681';
 
             let message = `🔑 Игрок: ${username}\n🚀 Режим: ${game}\n💸 Сумма ставки: ${betAmount} USD`;
 
-            // Отправка сообщения в канал
-            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: message })
-            });
+            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`)
+                .then(() => {
+                    Telegram.WebApp.close();
+                    location.href = paymentUrl;
+                })
+                .catch(err => console.error("Ошибка при отправке в канал:", err));
 
-            // Открытие ссылки на оплату
-            window.location.href = paymentUrl;
-
-            // Имитация результата игры через 5 секунд
             setTimeout(() => {
-                let resultMessage = "";
-                let win = Math.random() < 0.5; // 50% шанс на победу
-                let emoji = "";
+                let win = Math.random() < 0.5;
+                let resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${win ? 'Выигрыш' : 'Поражение'}\n💸 Сумма ставки: ${betAmount} USD`;
 
-                if (game === "🎳 Боулинг") emoji = "🎳";
-                if (game === "🎲 Четное/Нечетное" || game === "🎲 Больше/Меньше") emoji = "🎲";
-                if (game === "⚽ Футбол") emoji = "⚽";
-                if (game === "🏀 Баскетбол") emoji = "🏀";
+                fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(resultMessage)}`);
 
-                resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${win ? "Выигрыш" : "Поражение"}\n💸 Сумма ставки: ${betAmount} USD`;
-
-                // Отправка результата в канал
-                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
-                });
-
-                // Если выиграл, отправляем сообщение о выигрыше
                 if (win) {
                     let prize = (betAmount * 1.5).toFixed(2);
                     let prizeInRub = (prize * 75).toFixed(2);
+                    let winMessage = `🎉 Поздравляем, вы выиграли ${prize} USD (${prizeInRub} RUB)!\n🚀 Ваш выигрыш будет в чеке, вам его скинут в лс!🔥 Удачи в следующих ставках!`;
 
-                    let winMessage = `🎉 Поздравляем, вы выиграли ${prize} USD (${prizeInRub} RUB)!\n🚀 Ваш выигрыш будет в чеке, вам его скинут в лс!\n🔥 Удачи в следующих ставках!`;
-
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: winMessage })
-                    });
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(winMessage)}`);
                 }
             }, 5000);
         }
