@@ -113,11 +113,7 @@
                 if (response.ok) {
                     console.log("Ставка успешно отправлена в канал.");
 
-                    // Открываем ссылку на оплату через CryptoBot
-                    let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
-                    Telegram.WebApp.openTelegramLink(paymentUrl);
-
-                    // После оплаты запускаем игру
+                    // После ставки запускаем игру
                     startGame(game, outcome, betAmount, chatId, token, username);
                 } else {
                     console.error("Ошибка при отправке ставки в канал:", response.statusText);
@@ -129,24 +125,49 @@
             console.log("Запуск игры...");
 
             setTimeout(() => {
-                let emojis = {
-                    "🎳 Боулинг": Math.random() < 0.5 ? "🎳 Strike!" : "🎳 Miss!",
-                    "🎲 Четное/Нечетное": Math.random() < 0.5 ? "Четное 🎲" : "Нечетное 🎲",
-                    "🎲 Больше/Меньше": Math.random() < 0.5 ? "🎲 Больше" : "🎲 Меньше",
-                    "⚽ Футбол": Math.random() < 0.5 ? "⚽ Гол!" : "⚽ Промах!",
-                    "🏀 Баскетбол": Math.random() < 0.5 ? "🏀 Три очка!" : "🏀 Промах!"
-                };
+                let emojiResult = "";
+                let win = false;
 
-                let resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${emojis[game]}\n💸 Сумма ставки: ${betAmount} USD`;
+                // Эмодзи для разных игр
+                if (game === "🎳 Боулинг") {
+                    emojiResult = Math.random() < 0.5 ? "🎳 Strike!" : "🎳 Miss!";
+                    win = emojiResult === "🎳 Strike!";
+                } else if (game === "🎲 Четное/Нечетное") {
+                    let firstDie = Math.floor(Math.random() * 6) + 1;
+                    let secondDie = Math.floor(Math.random() * 6) + 1;
+                    emojiResult = `🎲 Кубик 1: ${firstDie}\n🎲 Кубик 2: ${secondDie}`;
+                    if (outcome === "Четное") win = (firstDie + secondDie) % 2 === 0;
+                    else win = (firstDie + secondDie) % 2 !== 0;
+                } else if (game === "🎲 Больше/Меньше") {
+                    let die = Math.floor(Math.random() * 6) + 1;
+                    emojiResult = `🎲 Кубик: ${die}`;
+                    win = (outcome === "Больше" && die > 3) || (outcome === "Меньше" && die <= 3);
+                } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол") {
+                    emojiResult = Math.random() < 0.5 ? "Гол!" : "Промах!";
+                    win = emojiResult === "Гол!";
+                }
 
-                // Отправляем результат в канал
+                // Отправляем Emoji в канал
                 fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
+                    body: JSON.stringify({ chat_id: chatId, text: emojiResult })
                 }).then(() => {
-                    console.log("Результат игры отправлен в канал.");
-                }).catch(err => console.error("Ошибка отправки результата игры:", err));
+                    console.log("Эмодзи отправлены в канал.");
+
+                    // Отправляем результат в канал
+                    let resultMessage = win
+                        ? `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!\n🚀 Ваш выигрыш будет зачислен в канале через CryptoBot!\n🔥 Удачи в следующих ставках!`
+                        : `ID пользователя ${username}, К сожалению, вы проиграли🥲\n🔥 Удачи в следующих ставках!`;
+
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: resultMessage })
+                    }).then(() => {
+                        console.log("Результат игры отправлен в канал.");
+                    }).catch(err => console.error("Ошибка отправки результата игры:", err));
+                }).catch(err => console.error("Ошибка отправки эмодзи:", err));
             }, 5000); // Задержка в 5 секунд
         }
     </script>
