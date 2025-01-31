@@ -73,14 +73,15 @@
             <option value="Нечетное">Нечетное</option>
         </select>
 
-        <button onclick="placeBet()">✅ Сделать ставку</button>
+        <button onclick="openLinkAndPlaceBet()">✅ Сделать ставку</button>
     </div>
 
     <script>
-        const token = "ВАШ_TOKEN"; // Укажите токен бота
-        const chatId = "ВАШ_CHAT_ID"; // Укажите ID канала или группы
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Укажите токен бота
+        const chatId = "1002348053681"; // Укажите ID канала или группы
 
-        function placeBet() {
+        // Функция для открытия ссылки и подтверждения пополнения счета
+        function openLinkAndPlaceBet() {
             if (!window.Telegram || !Telegram.WebApp) {
                 alert("Открывайте WebApp через Telegram!");
                 return;
@@ -96,6 +97,21 @@
                 return;
             }
 
+            // Открытие ссылки для пополнения счета через Cryptobot
+            const cryptoLink = "http://t.me/send?start=IVyytgNj3snE";
+            window.open(cryptoLink, "_blank");
+
+            // Здесь можно добавить логику для отслеживания пополнения счета (например, через API)
+
+            // Предполагаем, что после успешного пополнения можно отправить ставку
+            alert("Перенаправляем вас для пополнения счета...");
+
+            // После подтверждения пополнения отправляем ставку
+            placeBet(game, outcome, betAmount);
+        }
+
+        // Функция для отправки ставки в Telegram
+        function placeBet(game, outcome, betAmount) {
             const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
 
             // Отправка информации о ставке
@@ -108,18 +124,23 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
             }).then(() => {
-                startGame(game, outcome, betAmount, username);
-            }).catch(err => console.error("Ошибка отправки ставки:", err));
+                console.log("Ставка отправлена, начинаем игру...");
+                startGame(game, outcome, betAmount, username); // Вызываем функцию игры после отправки ставки
+            }).catch(err => {
+                console.error("Ошибка отправки ставки:", err);
+            });
         }
 
+        // Функция начала игры
         function startGame(game, outcome, betAmount, username) {
             setTimeout(() => {
                 let firstEmoji = "🎲"; // Основное эмодзи игры
                 let resultMessage = "";
+                let winAmount = betAmount * 1.5; // Коэффициент выигрыша 1.5x
 
                 if (game === "🎳 Боулинг") {
                     firstEmoji = "🎳";
-                    resultMessage = Math.random() > 0.5 ? "🎉 Поздравляем, вы выиграли!" : "К сожалению, вы проиграли🥲";
+                    resultMessage = Math.random() > 0.5 ? `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${winAmount.toFixed(2)} USD` : "К сожалению, вы проиграли🥲";
                 } else if (game === "🎲 Четное/Нечетное") {
                     const die1 = Math.floor(Math.random() * 6) + 1;
                     const die2 = Math.floor(Math.random() * 6) + 1;
@@ -129,7 +150,7 @@
                         body: JSON.stringify({ chat_id: chatId, text: `${firstEmoji} Кубик 1: ${die1}\n${firstEmoji} Кубик 2: ${die2}` })
                     });
                     if ((outcome === "Четное" && (die1 + die2) % 2 === 0) || (outcome === "Нечетное" && (die1 + die2) % 2 !== 0)) {
-                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${betAmount * 2} USD`;
+                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${winAmount.toFixed(2)} USD`;
                     } else {
                         resultMessage = "К сожалению, вы проиграли🥲";
                     }
@@ -141,7 +162,7 @@
                         body: JSON.stringify({ chat_id: chatId, text: `${firstEmoji} Кубик: ${die1}` })
                     });
                     if ((outcome === "Больше" && die1 > 3) || (outcome === "Меньше" && die1 <= 3)) {
-                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${betAmount * 2} USD`;
+                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${winAmount.toFixed(2)} USD`;
                     } else {
                         resultMessage = "К сожалению, вы проиграли🥲";
                     }
@@ -152,7 +173,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ chat_id: chatId, text: resultMessage })
-                });
+                }).catch(err => console.error("Ошибка отправки результата:", err));
             }, 5000); // Задержка в 5 секунд
         }
     </script>
