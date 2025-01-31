@@ -123,14 +123,14 @@
                     Telegram.WebApp.close();
 
                     // Запускаем игру после принятия ставки
-                    startGame(game, outcome, betAmount, chatId, token);
+                    startGame(game, outcome, betAmount, chatId, token, username);
                 } else {
                     console.error("Ошибка при отправке ставки в канал:", response.statusText);
                 }
             }).catch(err => console.error("Ошибка отправки запроса:", err));
         }
 
-        function startGame(game, outcome, betAmount, chatId, token) {
+        function startGame(game, outcome, betAmount, chatId, token, username) {
             console.log("Запуск игры...");
 
             // Имитация результата игры: генерируем два кубика
