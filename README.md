@@ -104,9 +104,7 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
             })
-            .then(response => {
-                return response.json(); // Получаем JSON ответ от API
-            })
+            .then(response => response.json()) // Получаем JSON ответ от API
             .then(data => {
                 // Проверяем успешность отправки
                 if (data.ok) {
