@@ -52,6 +52,7 @@
             background-color: #218838;
         }
     </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script> <!-- Подключение Telegram API -->
 </head>
 <body>
 
@@ -73,8 +74,8 @@
 
     <script>
         function placeBet() {
-            if (typeof Telegram === "undefined" || !Telegram.WebApp) {
-                alert("Открывайте WebApp через Telegram!");
+            if (!window.Telegram || !Telegram.WebApp) {
+                alert("❌ Открывайте WebApp через Telegram!");
                 return;
             }
 
@@ -86,7 +87,7 @@
                 return;
             }
 
-            let paymentUrl = `http://t.me/send?start=IVyytgNj3snE&amount=${betAmount}`;
+            let paymentUrl = `https://t.me/send?start=IVyytgNj3snE&amount=${betAmount}`;
             let username = Telegram.WebApp.initDataUnsafe?.user?.username || 'Аноним';
             let token = '7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U';
             let chatId = '1002348053681';
@@ -96,7 +97,9 @@
             fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`)
                 .then(() => {
                     Telegram.WebApp.close();
-                    location.href = paymentUrl;
+                    setTimeout(() => {
+                        window.location.href = paymentUrl;
+                    }, 500);
                 })
                 .catch(err => console.error("Ошибка при отправке в канал:", err));
 
