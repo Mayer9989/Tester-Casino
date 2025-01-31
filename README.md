@@ -107,13 +107,18 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
+            }).then(() => {
+                // Открываем ссылку на оплату через CryptoBot
+                let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
+                Telegram.WebApp.openTelegramLink(paymentUrl);
+                Telegram.WebApp.close();
+
+                // Запускаем игру после принятия ставки
+                startGame(game, outcome, betAmount, chatId, token);
             });
+        }
 
-            // Открываем ссылку на оплату через CryptoBot
-            let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
-            Telegram.WebApp.openTelegramLink(paymentUrl);
-            Telegram.WebApp.close();
-
+        function startGame(game, outcome, betAmount, chatId, token) {
             // Имитация результата игры: генерируем два кубика
             setTimeout(() => {
                 let firstDie = Math.floor(Math.random() * 6) + 1; // Первый кубик
@@ -125,21 +130,21 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ chat_id: chatId, text: diceMessage })
-                });
+                }).then(() => {
+                    // Проверка результата
+                    let resultMessage = "";
+                    if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
+                        resultMessage = "🎉 Вы выиграли!";
+                    } else {
+                        resultMessage = "❌ Вы проиграли!";
+                    }
 
-                // Проверка результата
-                let resultMessage = "";
-                if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
-                    resultMessage = "🎉 Вы выиграли!";
-                } else {
-                    resultMessage = "❌ Вы проиграли!";
-                }
-
-                // Отправляем сообщение о результате в канал
-                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
+                    // Отправляем результат в канал
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: resultMessage })
+                    });
                 });
             }, 5000); // Задержка в 5 секунд перед отправкой результата
         }
