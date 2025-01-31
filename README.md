@@ -108,12 +108,18 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
-            }).then(() => {
-                // После отправки ставки сразу открываем ссылку на Cryptobot
-                window.location.href = "http://t.me/send?start=IVyytgNj3snE";  // Открывает ссылку на Cryptobot
-            }).catch(err => {
-                console.error("Ошибка отправки ставки:", err);
-            });
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.ok) {
+                      console.log("Ставка отправлена в канал!");
+                      window.location.href = "http://t.me/send?start=IVyytgNj3snE";  // Открывает ссылку на Cryptobot
+                  } else {
+                      console.error("Ошибка отправки сообщения в канал:", data.description);
+                  }
+              })
+              .catch(err => {
+                  console.error("Ошибка при отправке сообщения:", err);
+              });
         }
     </script>
 </body>
