@@ -18,7 +18,6 @@
             color: white;
             overflow: hidden;
         }
-
         .container {
             background: rgba(0, 0, 0, 0.8);
             padding: 20px;
@@ -57,7 +56,6 @@
     </style>
 </head>
 <body>
-
     <div class="container">
         <h2>🎰 Выберите игру</h2>
         <select id="game">
@@ -101,12 +99,10 @@
             let username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
             let message = `[🎉 Ваша ставка принята]
 
-🔑 Игрок: ${username}
-🚀 Режим: ${game} — ${outcome}
-💸 Сумма ставки: ${betAmount} USD`;
+🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD`;
 
             let token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";
-            let chatId = "-1002348053681"; // ID канала или группы
+            let chatId = "-1002348053681";
 
             // Отправляем сообщение о ставке
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -116,13 +112,6 @@
             }).then(response => {
                 if (response.ok) {
                     console.log("Ставка успешно отправлена в канал.");
-
-                    // Открываем ссылку на оплату через CryptoBot
-                    let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
-                    Telegram.WebApp.openTelegramLink(paymentUrl);
-                    Telegram.WebApp.close();
-
-                    // Запускаем игру после принятия ставки
                     startGame(game, outcome, betAmount, chatId, token, username);
                 } else {
                     console.error("Ошибка при отправке ставки в канал:", response.statusText);
@@ -133,54 +122,27 @@
         function startGame(game, outcome, betAmount, chatId, token, username) {
             console.log("Запуск игры...");
 
-            // Имитация результата игры: генерируем два кубика
             setTimeout(() => {
-                let firstDie = Math.floor(Math.random() * 6) + 1; // Первый кубик
-                let secondDie = Math.floor(Math.random() * 6) + 1; // Второй кубик
+                let emojis = {
+                    "🎳 Боулинг": Math.random() < 0.5 ? "🎳 Strike!" : "🎳 Miss!",
+                    "🎲 Четное/Нечетное": Math.random() < 0.5 ? "Четное 🎲" : "Нечетное 🎲",
+                    "🎲 Больше/Меньше": Math.random() < 0.5 ? "🎲 Больше" : "🎲 Меньше",
+                    "⚽ Футбол": Math.random() < 0.5 ? "⚽ Гол!" : "⚽ Промах!",
+                    "🏀 Баскетбол": Math.random() < 0.5 ? "🏀 Три очка!" : "🏀 Промах!"
+                };
 
-                // Отправляем кубики в канал
-                let diceMessage = `🎲 Кубик 1: ${firstDie}\n🎲 Кубик 2: ${secondDie}`;
+                let resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${emojis[game]}\n💸 Сумма ставки: ${betAmount} USD`;
+
+                // Отправляем результат в канал
                 fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: diceMessage })
+                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
                 }).then(() => {
-                    console.log("Кубики отправлены в канал.");
-
-                    // Проверка результата
-                    let resultMessage = "";
-                    if (game === "🎲 Больше/Меньше") {
-                        if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
-                            resultMessage = "🎉 Вы выиграли!";
-                        } else {
-                            resultMessage = "❌ Вы проиграли!";
-                        }
-                    } else if (game === "🎲 Четное/Нечетное") {
-                        if ((outcome === "Четное" && firstDie % 2 === 0) || (outcome === "Нечетное" && firstDie % 2 !== 0)) {
-                            resultMessage = "🎉 Вы выиграли!";
-                        } else {
-                            resultMessage = "❌ Вы проиграли!";
-                        }
-                    } else if (game === "🎳 Боулинг") {
-                        let pins = Math.random() < 0.5 ? "Поражение" : "Выигрыш";
-                        resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: Боулинг — ${pins}\n💸 Сумма ставки: ${betAmount} USD`;
-                    } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол") {
-                        let winGoal = Math.random() < 0.5;
-                        resultMessage = `🔑 Игрок: ${username}\n🚀 Режим: ${game} — ${winGoal ? 'Выигрыш' : 'Поражение'}\n💸 Сумма ставки: ${betAmount} USD`;
-                    }
-
-                    // Отправляем результат в канал
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: resultMessage })
-                    }).then(() => {
-                        console.log("Результат игры отправлен в канал.");
-                    }).catch(err => console.error("Ошибка отправки результата игры:", err));
-                }).catch(err => console.error("Ошибка отправки кубиков:", err));
-            }, 5000); // Задержка в 5 секунд перед отправкой результата
+                    console.log("Результат игры отправлен в канал.");
+                }).catch(err => console.error("Ошибка отправки результата игры:", err));
+            }, 5000); // Задержка в 5 секунд
         }
     </script>
-
 </body>
 </html>
