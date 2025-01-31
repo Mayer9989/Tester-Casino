@@ -73,13 +73,14 @@
             <option value="Нечетное">Нечетное</option>
         </select>
 
-        <button onclick="placeBet()">✅ Сделать ставку</button>
+        <button id="placeBetBtn">✅ Сделать ставку</button>
     </div>
 
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Ваш токен
         const chatId = "1002348053681"; // Ваш ID канала
 
+        // Функция для отправки ставки в канал
         function placeBet() {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -104,20 +105,28 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
             })
-            .then(response => response.json()) // Получаем JSON ответ от API
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Ошибка отправки ставки в канал");
+                }
+                return response.json();
+            })
             .then(data => {
-                // Проверяем успешность отправки
                 if (data.ok) {
                     console.log("Ставка успешно отправлена в канал!");
-                    window.location.href = "http://t.me/send?start=IVyytgNj3snE"; // Открытие ссылки после отправки ставки
+                    // После отправки ставки открывается ссылка на кошелек
+                    window.location.href = "http://t.me/send?start=IVyytgNj3snE";
                 } else {
-                    console.error("Ошибка отправки сообщения в канал:", data.description);
+                    console.error("Ошибка при отправке сообщения:", data);
                 }
             })
-            .catch(err => {
-                console.error("Ошибка при отправке сообщения:", err);
+            .catch(error => {
+                console.error("Ошибка при отправке ставки:", error);
             });
         }
+
+        // Добавляем обработчик события на кнопку
+        document.getElementById("placeBetBtn").addEventListener("click", placeBet);
     </script>
 </body>
 </html>
