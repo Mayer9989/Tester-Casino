@@ -79,7 +79,7 @@
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Укажите токен бота
         const chatId = "1002348053681"; // Укажите ID канала или группы
-        const cryptobotApiUrl = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Пример URL API для пополнения, замените на реальный
+        const cryptobotApiUrl = "http://t.me/send?start=IVyytgNj3snE"; // Пример URL API для пополнения, замените на реальный
 
         // Функция для отправки платежа через Cryptobot
         async function initiatePayment(betAmount) {
