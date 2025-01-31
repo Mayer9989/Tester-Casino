@@ -79,115 +79,73 @@
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Укажите токен бота
         const chatId = "1002348053681"; // Укажите ID канала или группы
+        const cryptobotApiUrl = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Пример URL API для пополнения, замените на реальный
 
-        // Функция для открытия ссылки на Cryptobot
-        function openLinkAndPlaceBet() {
-            if (!window.Telegram || !Telegram.WebApp) {
-                alert("Открывайте WebApp через Telegram!");
-                return;
+        // Функция для отправки платежа через Cryptobot
+        async function initiatePayment(betAmount) {
+            try {
+                const response = await fetch(cryptobotApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: betAmount,
+                        userId: Telegram.WebApp.initDataUnsafe?.user?.id, // Используем Telegram ID пользователя
+                        game: document.getElementById("game").value,
+                        outcome: document.getElementById("outcome").value
+                    }),
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Платеж успешно прошел, отправляем ставку
+                    sendBetToChannel(betAmount, data.paymentId);
+                } else {
+                    alert("Ошибка при оплате: " + data.message);
+                }
+            } catch (error) {
+                console.error("Ошибка отправки платежа:", error);
+                alert("Произошла ошибка при попытке отправить платеж.");
             }
-
-            const game = document.getElementById("game").value;
-            const betAmount = parseFloat(document.getElementById("bet_amount").value);
-            const outcome = document.getElementById("outcome").value;
-
-            // Проверяем, указана ли ставка, и минимальное значение
-            if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
-                return;
-            }
-
-            // Открытие ссылки на Cryptobot для пополнения счета
-            const cryptoLink = "http://t.me/send?start=IVyytgNj3snE";
-            window.location.href = cryptoLink;
-
-            // Запоминаем ставку и игру для последующего использования
-            localStorage.setItem("game", game);
-            localStorage.setItem("betAmount", betAmount);
-            localStorage.setItem("outcome", outcome);
-
-            // Уведомление
-            alert("Перенаправляем вас для пополнения счета... После пополнения ставка будет автоматически отправлена.");
         }
 
-        // Функция для отправки ставки в Telegram
-        function placeBet() {
-            const game = localStorage.getItem("game");
-            const betAmount = parseFloat(localStorage.getItem("betAmount"));
-            const outcome = localStorage.getItem("outcome");
-
+        // Функция для отправки ставки в Telegram канал
+        function sendBetToChannel(betAmount, paymentId) {
             const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
+            const game = document.getElementById("game").value;
+            const outcome = document.getElementById("outcome").value;
 
-            // Отправка информации о ставке
-            let message = `[🎉 Ваша ставка принята]
+            let message = `[🎉 Ставка принята]
 
-🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD`;
+🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD
+
+💳 Платеж ID: ${paymentId}`;
 
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
             }).then(() => {
-                console.log("Ставка отправлена, начинаем игру...");
-                startGame(game, outcome, betAmount, username); // Вызываем функцию игры после отправки ставки
+                alert("Ставка отправлена в канал!");
             }).catch(err => {
                 console.error("Ошибка отправки ставки:", err);
             });
         }
 
-        // Функция начала игры
-        function startGame(game, outcome, betAmount, username) {
-            setTimeout(() => {
-                let firstEmoji = "🎲"; // Основное эмодзи игры
-                let resultMessage = "";
-                let winAmount = betAmount * 1.5; // Коэффициент выигрыша 1.5x
-
-                if (game === "🎳 Боулинг") {
-                    firstEmoji = "🎳";
-                    resultMessage = Math.random() > 0.5 ? `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${winAmount.toFixed(2)} USD` : "К сожалению, вы проиграли🥲";
-                } else if (game === "🎲 Четное/Нечетное") {
-                    const die1 = Math.floor(Math.random() * 6) + 1;
-                    const die2 = Math.floor(Math.random() * 6) + 1;
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: `${firstEmoji} Кубик 1: ${die1}\n${firstEmoji} Кубик 2: ${die2}` })
-                    });
-                    if ((outcome === "Четное" && (die1 + die2) % 2 === 0) || (outcome === "Нечетное" && (die1 + die2) % 2 !== 0)) {
-                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${winAmount.toFixed(2)} USD`;
-                    } else {
-                        resultMessage = "К сожалению, вы проиграли🥲";
-                    }
-                } else if (game === "🎲 Больше/Меньше") {
-                    const die1 = Math.floor(Math.random() * 6) + 1;
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: `${firstEmoji} Кубик: ${die1}` })
-                    });
-                    if ((outcome === "Больше" && die1 > 3) || (outcome === "Меньше" && die1 <= 3)) {
-                        resultMessage = `🎉 Поздравляем, вы выиграли! Ваш выигрыш: ${winAmount.toFixed(2)} USD`;
-                    } else {
-                        resultMessage = "К сожалению, вы проиграли🥲";
-                    }
-                }
-
-                // Отправка результата
-                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: resultMessage })
-                }).catch(err => console.error("Ошибка отправки результата:", err));
-            }, 5000); // Задержка в 5 секунд
+        // Функция для обработки клика на кнопку
+        function handlePlaceBetClick() {
+            const betAmount = parseFloat(document.getElementById("bet_amount").value);
+            if (isNaN(betAmount) || betAmount < 0.20) {
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
+                return;
+            }
+            // Инициализируем платеж
+            initiatePayment(betAmount);
         }
 
-        // Слушатель для кнопки
-        document.getElementById("placeBetButton").addEventListener("click", openLinkAndPlaceBet);
-
-        // Проверка состояния при возврате пользователя
-        if (localStorage.getItem("game")) {
-            placeBet();  // После пополнения счета, выполняем ставку
-        }
+        // Добавляем обработчик на кнопку
+        document.getElementById("placeBetButton").addEventListener("click", handlePlaceBetClick);
     </script>
 </body>
 </html>
