@@ -49,6 +49,11 @@
         button:hover {
             background-color: #218838;
         }
+        .payment-options {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -62,8 +67,13 @@
             <option value="🏀 Баскетбол">🏀 Баскетбол</option>
         </select>
 
-        <h2>💰 Введите сумму ставки</h2>
-        <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
+        <h2>💰 Выберите сумму ставки</h2>
+        <div class="payment-options">
+            <button onclick="payAmount(0.20)">0.20 USD</button>
+            <button onclick="payAmount(0.50)">0.50 USD</button>
+            <button onclick="payAmount(1.00)">1.00 USD</button>
+            <button onclick="payAmount(5.00)">5.00 USD</button>
+        </div>
 
         <h2>🔮 Выберите исход игры</h2>
         <select id="outcome">
@@ -73,15 +83,17 @@
             <option value="Нечетное">Нечетное</option>
         </select>
 
-        <button id="placeBetButton">✅ Сделать ставку</button>
+        <button id="placeBetButton" disabled>✅ Сделать ставку</button>
     </div>
 
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Укажите токен бота
         const chatId = "1002348053681"; // Укажите ID канала или группы
-        const cryptobotApiUrl = "http://t.me/send?start=IVyytgNj3snE"; // Пример URL API для пополнения, замените на реальный
+        const cryptobotApiUrl = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Пример URL API для пополнения, замените на реальный
 
-        // Функция для отправки платежа через Cryptobot
+        let selectedBetAmount = 0;
+
+        // Функция для инициирования платежа через Cryptobot
         async function initiatePayment(betAmount) {
             try {
                 const response = await fetch(cryptobotApiUrl, {
@@ -99,8 +111,10 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // Платеж успешно прошел, отправляем ставку
-                    sendBetToChannel(betAmount, data.paymentId);
+                    // Платеж успешно прошел, активируем кнопку ставки
+                    selectedBetAmount = betAmount;
+                    document.getElementById("placeBetButton").disabled = false;
+                    alert(`Платеж на сумму ${betAmount} USD успешно выполнен!`);
                 } else {
                     alert("Ошибка при оплате: " + data.message);
                 }
@@ -133,15 +147,18 @@
             });
         }
 
-        // Функция для обработки клика на кнопку
+        // Функция для обработки клика на одну из кнопок оплаты
+        function payAmount(amount) {
+            initiatePayment(amount);
+        }
+
+        // Функция для обработки клика на кнопку "Сделать ставку"
         function handlePlaceBetClick() {
-            const betAmount = parseFloat(document.getElementById("bet_amount").value);
-            if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
-                return;
+            if (selectedBetAmount > 0) {
+                sendBetToChannel(selectedBetAmount, "paymentId123"); // Заглушка для paymentId, заменить на реальный ID
+            } else {
+                alert("Сначала выполните платеж!");
             }
-            // Инициализируем платеж
-            initiatePayment(betAmount);
         }
 
         // Добавляем обработчик на кнопку
