@@ -77,20 +77,15 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Укажите токен бота
-        const chatId = "1002348053681"; // Укажите ID канала или группы
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Ваш токен
+        const chatId = "1002348053681"; // Ваш ID канала
 
         function placeBet() {
-            if (!window.Telegram || !Telegram.WebApp) {
-                alert("Открывайте WebApp через Telegram!");
-                return;
-            }
-
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const outcome = document.getElementById("outcome").value;
 
-            // Проверяем, указана ли ставка, и минимальное значение
+            // Проверяем, указана ли ставка и минимальное значение
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
@@ -98,28 +93,32 @@
 
             const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
 
-            // Отправка информации о ставке в канал
+            // Формируем сообщение для канала
             let message = `[🎉 Ваша ставка принята]
 
 🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD`;
 
-            // Отправка ставки в канал
+            // Отправка запроса в Telegram API
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.ok) {
-                      console.log("Ставка отправлена в канал!");
-                      window.location.href = "http://t.me/send?start=IVyytgNj3snE";  // Открывает ссылку на Cryptobot
-                  } else {
-                      console.error("Ошибка отправки сообщения в канал:", data.description);
-                  }
-              })
-              .catch(err => {
-                  console.error("Ошибка при отправке сообщения:", err);
-              });
+            })
+            .then(response => {
+                return response.json(); // Получаем JSON ответ от API
+            })
+            .then(data => {
+                // Проверяем успешность отправки
+                if (data.ok) {
+                    console.log("Ставка успешно отправлена в канал!");
+                    window.location.href = "http://t.me/send?start=IVyytgNj3snE"; // Открытие ссылки после отправки ставки
+                } else {
+                    console.error("Ошибка отправки сообщения в канал:", data.description);
+                }
+            })
+            .catch(err => {
+                console.error("Ошибка при отправке сообщения:", err);
+            });
         }
     </script>
 </body>
