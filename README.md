@@ -78,6 +78,7 @@
 
     <script>
         function placeBet() {
+            // Проверка на наличие Telegram WebApp
             if (!window.Telegram || !Telegram.WebApp) {
                 alert("Открывайте WebApp через Telegram!");
                 return;
@@ -103,22 +104,30 @@
             let chatId = "-1002348053681"; // ID канала или группы
 
             // Отправляем сообщение о ставке
+            console.log("Отправка ставки в канал...");
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: message })
-            }).then(() => {
-                // Открываем ссылку на оплату через CryptoBot
-                let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
-                Telegram.WebApp.openTelegramLink(paymentUrl);
-                Telegram.WebApp.close();
+            }).then(response => {
+                if (response.ok) {
+                    console.log("Ставка успешно отправлена в канал.");
+                    // Открываем ссылку на оплату через CryptoBot
+                    let paymentUrl = `https://t.me/CryptoBot?start=IVyytgNj3snE&amount=${betAmount}`;
+                    Telegram.WebApp.openTelegramLink(paymentUrl);
+                    Telegram.WebApp.close();
 
-                // Запускаем игру после принятия ставки
-                startGame(game, outcome, betAmount, chatId, token);
-            });
+                    // Запускаем игру после принятия ставки
+                    startGame(game, outcome, betAmount, chatId, token);
+                } else {
+                    console.error("Ошибка при отправке ставки в канал:", response.statusText);
+                }
+            }).catch(err => console.error("Ошибка отправки запроса:", err));
         }
 
         function startGame(game, outcome, betAmount, chatId, token) {
+            console.log("Запуск игры...");
+
             // Имитация результата игры: генерируем два кубика
             setTimeout(() => {
                 let firstDie = Math.floor(Math.random() * 6) + 1; // Первый кубик
@@ -131,6 +140,8 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ chat_id: chatId, text: diceMessage })
                 }).then(() => {
+                    console.log("Кубики отправлены в канал.");
+
                     // Проверка результата
                     let resultMessage = "";
                     if ((outcome === "Больше" && firstDie > secondDie) || (outcome === "Меньше" && firstDie < secondDie)) {
@@ -144,8 +155,10 @@
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ chat_id: chatId, text: resultMessage })
-                    });
-                });
+                    }).then(() => {
+                        console.log("Результат игры отправлен в канал.");
+                    }).catch(err => console.error("Ошибка отправки результата игры:", err));
+                }).catch(err => console.error("Ошибка отправки кубиков:", err));
             }, 5000); // Задержка в 5 секунд перед отправкой результата
         }
     </script>
