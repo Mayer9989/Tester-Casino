@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>TESTER CASINO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Казино</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -21,14 +21,20 @@
             border-radius: 15px;
             width: 350px;
             padding: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
         }
-        h2 {
+        .casino-title {
             text-align: center;
-            color: #FFD700;
             margin-bottom: 20px;
             font-size: 30px;
-            text-transform: uppercase;
+        }
+        .casino-title span:first-child {
+            color: #000; /* Ярко черный цвет */
+            font-weight: bold;
+        }
+        .casino-title span:last-child {
+            color: #FF0000; /* Ярко красный цвет */
+            font-weight: bold;
         }
         select, input, button {
             width: 100%;
@@ -66,7 +72,9 @@
 </head>
 <body>
     <div class="container">
-        <h2>TESTER CASINO</h2>
+        <div class="casino-title">
+            <span>TESTER</span> <span>CASINO</span>
+        </div>
 
         <label for="game">Выберите игру:</label>
         <select id="game">
@@ -81,16 +89,50 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
+        <div id="outcomeOptions" style="display: none;">
+            <label for="outcome">Выберите исход:</label>
+            <select id="outcome"></select>
+        </div>
+
         <button id="placeBetBtn">✅ Сделать ставку</button>
 
         <div class="footer">TESTER CASINO. Удачи!</div>
     </div>
 
     <script>
-        const token = "ВАШ_ТОКЕН"; // Укажите правильный токен бота
-        const chatId = "-100XXXXXXXXXX"; // Укажите корректный chat_id канала
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
+        const chatId = "-1002348053681"; 
 
-        // Функция для отправки сообщений через Telegram API
+        const outcomes = {
+            "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
+            "⚽ Футбол": ["Гол", "Промах"],
+            "🏀 Баскетбол": ["Попал", "Не попал"],
+            "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
+            "🎯 Дартс": ["В точку", "Мимо"],
+            "🎳 Боулинг": ["Страйк", "Сплэт"]
+        };
+
+        function updateOutcomeOptions(game) {
+            const outcomeSelect = document.getElementById("outcome");
+            outcomeSelect.innerHTML = '';
+
+            if (outcomes[game]) {
+                outcomes[game].forEach(option => {
+                    const opt = document.createElement("option");
+                    opt.value = option;
+                    opt.textContent = option;
+                    outcomeSelect.appendChild(opt);
+                });
+                document.getElementById("outcomeOptions").style.display = "block";
+            } else {
+                document.getElementById("outcomeOptions").style.display = "none";
+            }
+        }
+
+        document.getElementById("game").addEventListener("change", function () {
+            updateOutcomeOptions(this.value);
+        });
+
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -103,31 +145,43 @@
                     })
                 });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.description || "Ошибка запроса");
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.description || "Ошибка запроса");
+                }
 
-                console.log("Сообщение успешно отправлено:", data);
+                alert("✅ Ставка успешно отправлена!");
             } catch (error) {
+                alert(`❌ Ошибка: ${error.message}`);
                 console.error("Ошибка отправки сообщения:", error);
-                alert(`Ошибка: ${error.message}`);
             }
         }
 
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
+            const selectedOutcome = document.getElementById("outcome").value;
 
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
             }
 
-            const username = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || "Аноним";
+            if (!selectedOutcome) {
+                alert("❌ Пожалуйста, выберите исход игры.");
+                return;
+            }
+
+            let username = "Аноним";
+            if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+                username = Telegram.WebApp.initDataUnsafe.user.username || `ID ${Telegram.WebApp.initDataUnsafe.user.id}`;
+            }
 
             const betMessage = `[🎰 Ставка принята]\n\n` +
-                               `🔑 Игрок: ${username}\n` +
-                               `🚀 Режим: ${game}\n` +
-                               `💸 Сумма ставки: ${betAmount.toFixed(2)} USD`;
+                `🔑 Игрок: ${username}\n` +
+                `🚀 Игра: ${game}\n` +
+                `💸 Сумма ставки: ${betAmount.toFixed(2)} USD\n` +
+                `🏁 Исход: ${selectedOutcome}`;
 
             sendMessage(betMessage);
         });
