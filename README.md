@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>TESTER CASINO</title>
+    <title>💎 TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -25,14 +25,9 @@
         }
         h2 {
             text-align: center;
-            font-size: 24px;
+            color: #FFD700;
             margin-bottom: 20px;
-        }
-        .white-text {
-            color: white;
-        }
-        .red-text {
-            color: red;
+            font-size: 24px;
         }
         select, input, button {
             width: 100%;
@@ -70,7 +65,7 @@
 </head>
 <body>
     <div class="container">
-        <h2><span class="white-text">TESTER </span><span class="red-text">CASINO</span></h2>
+        <h2>🎰 TESTER CASINO</h2>
         
         <label for="game">Выберите игру:</label>
         <select id="game">
@@ -85,6 +80,7 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
+        <!-- Раздел для выбора исхода -->
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome">
@@ -135,7 +131,7 @@
                         [
                             {
                                 text: "Сделать ставку ♣️",  // Кнопка для новой ставки
-                                url: "https://your-webapp-url.com"  // Ссылка на ваш WebApp
+                                url: "https://mayer9989.github.io/Tester-Casino/"  // Ссылка на ваш WebApp
                             }
                         ]
                     ]
@@ -230,8 +226,7 @@
 
             let username = "Аноним";  // Пример имени игрока
             let userId = "123456";  // Пример ID игрока (можно заменить на реальный)
-
-            // Отправляем информацию в Telegram канал
+            
             sendMessage(`[🎰 Ставка принята]
 
 🔑 Игрок: ${username}
@@ -240,16 +235,15 @@
 💸 Сумма ставки: ${betAmount} USD
 🏁 Исход: ${selectedOutcome}`);
 
-            // Через 2 секунды отправляем "Загружаем результат"
+            // Отправляем сообщение с результатом и удаляем его через 3 секунды
             setTimeout(() => {
-                sendMessage("🎯 Загружаем результат игры...");
-                
-                // Получаем случайный результат
                 const result = getRandomOutcome(game);
+                sendMessage(`🎯 Загружаем результат игры...`);
+
                 const isWin = result === selectedOutcome;
                 const resultMessage = isWin ?
-                    `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!` :
-                    `❌ Вы проиграли ${betAmount} USD.`;
+                    `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)! 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 🔥 Удачи в следующих ставках!` :
+                    `❌ Вы проиграли ${betAmount} USD (${(betAmount * 70).toFixed(2)} RUB). 🔥 Удачи в следующих ставках!`;
 
                 // Через 3 секунды отправляем результат
                 setTimeout(() => {
