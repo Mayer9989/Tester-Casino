@@ -95,7 +95,7 @@
 
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Укажите ваш токен
-        const chatId = "1002348053681";  // Укажите ID вашего канала
+        const chatId = "1002348053681";  // Укажите ID вашего канала (или его username, например @your_channel_username)
 
         // Функция для отправки сообщений на Telegram через API
         async function sendMessage(text) {
