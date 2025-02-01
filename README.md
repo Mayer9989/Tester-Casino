@@ -26,9 +26,9 @@
         h2 {
             text-align: center;
             color: white;
-            font-size: 32px;
             margin-bottom: 20px;
-            font-weight: bold;
+            font-size: 32px;
+            text-transform: uppercase;
         }
         select, input, button {
             width: 100%;
@@ -67,7 +67,7 @@
 <body>
     <div class="container">
         <h2>TESTER CASINO</h2>
-
+        
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -83,18 +83,17 @@
 
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome">
-            </select>
+            <select id="outcome"></select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
 
-        <div class="footer">Ваше казино в Telegram. Удачи!</div>
+        <div class="footer">Ваше казино TESTER CASINO в Telegram. Удачи!</div>
     </div>
 
     <script>
-        const token = "ВАШ_ТОКЕН";  // Замените на корректный токен вашего бота
-        const chatId = "-1002348053681";  // Обязательно с префиксом -100 для каналов
+        const token = "ВАШ_ТОКЕН";  // Укажите ваш токен Telegram Bot
+        const chatId = "-1001234567890";  // Укажите корректный ID канала
 
         async function sendMessage(text) {
             try {
@@ -108,13 +107,12 @@
                     })
                 });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-
-                console.log("Сообщение успешно отправлено:", data);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.description || 'Ошибка отправки сообщения');
+                }
             } catch (error) {
-                console.error("Ошибка отправки сообщения:", error);
-                alert(`Ошибка: ${error.message}`);
+                alert(`Ошибка отправки сообщения: ${error.message}`);
             }
         }
 
@@ -140,9 +138,8 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        document.getElementById("game").addEventListener("change", function () {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);
+        document.getElementById("game").addEventListener("change", function() {
+            updateOutcomeOptions(this.value);
         });
 
         document.getElementById("placeBetBtn").addEventListener("click", function () {
@@ -174,10 +171,15 @@
             sendMessage(betMessage);
 
             setTimeout(() => {
-                const isWin = Math.random() < 0.5;
+                const possibleResults = document.getElementById("outcome").options;
+                const randomResult = possibleResults[Math.floor(Math.random() * possibleResults.length)].value;
+
+                sendMessage(`🎯 Результат игры: ${randomResult}`);
+
+                const isWin = randomResult === selectedOutcome;
                 const resultMessage = isWin ?
-                    `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!` :
-                    `❌ Вы проиграли ${betAmount} USD.`;
+                    `🎉 Поздравляем, вы выиграли ${(betAmount * 2).toFixed(2)} USD!` :
+                    `❌ Вы проиграли ${betAmount.toFixed(2)} USD.`;
 
                 sendMessage(resultMessage);
             }, 2000);
