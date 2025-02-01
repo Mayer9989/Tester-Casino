@@ -80,7 +80,6 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
-        <!-- Раздел для выбора исхода -->
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome">
@@ -94,10 +93,9 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Укажите ваш токен
-        const chatId = "-1002348053681";  // Укажите ID вашего канала с минусом
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
+        const chatId = "-1002348053681";  
 
-        // Функция для отправки сообщений на Telegram через API
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -120,7 +118,6 @@
             }
         }
 
-        // Функция для отправки сообщения с кнопкой "Сделать ставку"
         async function sendMessageWithButton(text) {
             const messageData = {
                 chat_id: chatId,
@@ -130,8 +127,8 @@
                     inline_keyboard: [
                         [
                             {
-                                text: "Сделать ставку ♣️",  // Кнопка для новой ставки
-                                url: "https://your-webapp-url.com"  // Ссылка на ваш WebApp
+                                text: "Сделать ставку ♣️",  
+                                url: "https://your-webapp-url.com"  
                             }
                         ]
                     ]
@@ -154,7 +151,6 @@
             }
         }
 
-        // Функция для получения случайного исхода игры
         function getRandomOutcome(game) {
             if (game === "🎲 Четное/Нечетное") {
                 return Math.random() < 0.5 ? "Четное" : "Нечетное";
@@ -177,7 +173,6 @@
             }
         }
 
-        // Функция для обновления исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -189,7 +184,6 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            // Очищаем текущие опции
             outcomeSelect.innerHTML = '';
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
@@ -198,17 +192,14 @@
                 outcomeSelect.appendChild(opt);
             });
 
-            // Показываем блок с выбором исхода
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Обработчик изменения игры
         document.getElementById("game").addEventListener("change", function() {
             const selectedGame = this.value;
             updateOutcomeOptions(selectedGame);
         });
 
-        // Обработчик события для кнопки "Сделать ставку"
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -224,10 +215,9 @@
                 return;
             }
 
-            let username = "Аноним";  // Пример имени игрока
-            let userId = "123456";  // Пример ID игрока (можно заменить на реальный)
-            
-            // Отправляем сообщение о принятии ставки
+            let username = "Аноним";  
+            let userId = "123456";  
+
             sendMessage(`[🎰 Ставка принята]
 
 🔑 Игрок: ${username}
@@ -236,8 +226,8 @@
 💸 Сумма ставки: ${betAmount} USD
 🏁 Исход: ${selectedOutcome}`);
 
-            // Отправляем сообщение с "Загружаем результат" и удаляем его через 3 секунды
             sendMessage("🎯 Загружаем результат игры...");
+            
             setTimeout(() => {
                 const result = getRandomOutcome(game);
                 const isWin = result === selectedOutcome;
@@ -246,9 +236,7 @@
                     `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)! 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 🔥 Удачи в следующих ставках!` :
                     `❌ Вы проиграли ${betAmount} USD (${(betAmount * 70).toFixed(2)} RUB). 🔥 Удачи в следующих ставках!`;
 
-                // Отправляем сообщение о результате
                 sendMessage(resultMessage);
-                // Отправляем кнопку для новой ставки через 3 секунды
                 sendMessageWithButton("Хотите сделать новую ставку? 🎯");
             }, 3000);
         });
