@@ -107,7 +107,30 @@
                 let resultMessage = "";
                 let resultEmoji = "";
 
-                if (game === "🔢 Больше/Меньше") {
+                if (game === "🎲 Четное/Нечетное") {
+                    resultEmoji = "🎲";
+                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            emoji: resultEmoji
+                        })
+                    });
+                    resultMessage = `🎯 Результат игры: 🎲`;
+                } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
+                    const randomOutcome = Math.random() > 0.5 ? "Гол" : "Промах";
+                    resultEmoji = randomOutcome === "Гол" ? "⚽" : "❌";
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `🎯 Результат игры: ${resultEmoji}`,
+                            parse_mode: "HTML"
+                        })
+                    });
+                } else if (game === "🔢 Больше/Меньше") {
                     resultEmoji = "🎲";
                     // Отправляем два кубика с интервалом
                     fetch(`https://api.telegram.org/bot${token}/sendDice`, {
@@ -131,11 +154,8 @@
                     }, 5000); // Второй кубик через 5 секунд
 
                     resultMessage = "🎯 Результат игры: 🎲 🎲";
-                } else {
-                    resultMessage = `❌ Игра не поддерживается.`;
                 }
 
-                // Отправка результата игры в канал
                 fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -150,25 +170,20 @@
                     let isWin = false;
                     let winAmount = 0;
 
-                    // Логика для игры "🔢 Больше/Меньше"
-                    if (game === "🔢 Больше/Меньше") {
-                        // Смотрим на результат двух случайных кубиков
-                        const dice1 = Math.floor(Math.random() * 6) + 1; // Кубик 1
-                        const dice2 = Math.floor(Math.random() * 6) + 1; // Кубик 2
+                    if (game === "🎲 Четное/Нечетное") {
+                        const diceResult = Math.floor(Math.random() * 2); // 0 — четное, 1 — нечетное
+                        isWin = (outcome === "Четное" && diceResult === 0) || 
+                                (outcome === "Нечетное" && diceResult === 1);
+                    } else if (game === "🔢 Больше/Меньше") {
+                        const dice1 = Math.floor(Math.random() * 6) + 1;
+                        const dice2 = Math.floor(Math.random() * 6) + 1;
                         const isBigger = dice1 > dice2;
 
                         isWin = (outcome === "Больше" && isBigger) || (outcome === "Меньше" && !isBigger);
-
-                        // Отправляем информацию о значениях кубиков
-                        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                chat_id: chatId,
-                                text: `🎲 Кубик 1: ${dice1} 🎲 Кубик 2: ${dice2}`,
-                                parse_mode: "HTML"
-                            })
-                        });
+                    } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
+                        const result = Math.random() > 0.5 ? "Гол" : "Промах";
+                        isWin = (outcome === "Гол" && result === "Гол") || 
+                                (outcome === "Промах" && result === "Промах");
                     }
 
                     if (isWin) {
@@ -179,7 +194,6 @@
                         resultMessage = `❌ Вы проиграли!🥲\n🔥 Удачи в следующих ставках!`;
                     }
 
-                    // Отправка сообщения о выигрыше или проигрыше
                     fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
