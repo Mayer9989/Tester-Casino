@@ -77,7 +77,24 @@
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
         const chatId = "-1001002348053681"; // Префикс для канала
 
-        function placeBet() {
+        async function sendMessage(text) {
+            const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: text,
+                    parse_mode: "HTML"
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Ошибка отправки сообщения:', errorText);
+            }
+        }
+
+        async function placeBet() {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const outcome = document.getElementById("outcome").value;
@@ -97,19 +114,16 @@
                                `🚀 Режим: ${game} — ${outcome}\n` +
                                `💸 Сумма ставки: ${betAmount.toFixed(2)} USD`;
 
-            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: betMessage, parse_mode: "HTML" })
-            });
+            // Отправка сообщения о ставке
+            await sendMessage(betMessage);
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 let resultMessage = "";
                 let resultEmoji = "";
 
                 if (game === "🎲 Четное/Нечетное") {
                     resultEmoji = "🎲";
-                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                    await fetch(`https://api.telegram.org/bot${token}/sendDice`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -121,19 +135,10 @@
                 } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
                     const randomOutcome = Math.random() > 0.5 ? "Гол" : "Промах";
                     resultEmoji = randomOutcome === "Гол" ? "⚽" : "❌";
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: `🎯 Результат игры: ${resultEmoji}`,
-                            parse_mode: "HTML"
-                        })
-                    });
+                    await sendMessage(`🎯 Результат игры: ${resultEmoji}`);
                 } else if (game === "🔢 Больше/Меньше") {
                     resultEmoji = "🎲";
-                    // Отправляем два кубика с интервалом
-                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                    await fetch(`https://api.telegram.org/bot${token}/sendDice`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -142,8 +147,8 @@
                         })
                     });
 
-                    setTimeout(() => {
-                        fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                    setTimeout(async () => {
+                        await fetch(`https://api.telegram.org/bot${token}/sendDice`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
@@ -156,17 +161,9 @@
                     resultMessage = "🎯 Результат игры: 🎲 🎲";
                 }
 
-                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: resultMessage,
-                        parse_mode: "HTML"
-                    })
-                });
+                await sendMessage(resultMessage);
 
-                setTimeout(() => {
+                setTimeout(async () => {
                     let isWin = false;
                     let winAmount = 0;
 
@@ -194,17 +191,9 @@
                         resultMessage = `❌ Вы проиграли!🥲\n🔥 Удачи в следующих ставках!`;
                     }
 
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: resultMessage,
-                            parse_mode: "HTML"
-                        })
-                    });
+                    await sendMessage(resultMessage);
                 }, 10000); // Завершаем результат через 10 секунд
-            }, 3000);
+            }, 3000); // Задержка перед началом игры
         }
 
         document.getElementById("placeBetBtn").addEventListener("click", placeBet);
