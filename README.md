@@ -13,6 +13,9 @@
             justify-content: center;
             align-items: center;
             background-color: black;
+            background-image: url('ak47_white.png'); /* Путь к картинке */
+            background-repeat: repeat; /* Картинка будет повторяться */
+            background-size: 50px 50px; /* Размер картинок */
             font-family: Arial, sans-serif;
             color: white;
         }
