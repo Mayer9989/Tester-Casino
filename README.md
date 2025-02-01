@@ -97,7 +97,7 @@
         const chatId = "-1002348053681";  
 
         // Функция для отправки сообщения в Telegram
-        async function sendMessage(text) {
+        async function sendMessage(text, keyboard = null) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
@@ -105,7 +105,8 @@
                     body: JSON.stringify({
                         chat_id: chatId,
                         text: text,
-                        parse_mode: "HTML"
+                        parse_mode: "HTML",
+                        reply_markup: keyboard
                     })
                 });
 
