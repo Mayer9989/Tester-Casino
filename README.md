@@ -77,6 +77,7 @@
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
         const chatId = "-1001002348053681"; // Префикс для канала
 
+        // Функция отправки сообщения в Telegram
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -89,12 +90,12 @@
                     })
                 });
 
+                const responseData = await response.json(); // Получаем ответ от Telegram API
                 if (response.ok) {
-                    console.log('Сообщение отправлено успешно!');
+                    console.log('Сообщение отправлено успешно!', responseData);
                 } else {
-                    const errorText = await response.text();
-                    console.error('Ошибка отправки сообщения:', errorText);
-                    alert(`Ошибка отправки сообщения: ${errorText}`);
+                    console.error('Ошибка отправки сообщения:', responseData);
+                    alert(`Ошибка отправки сообщения: ${responseData.description}`);
                 }
             } catch (error) {
                 console.error('Ошибка при выполнении запроса:', error);
@@ -102,6 +103,7 @@
             }
         }
 
+        // Функция обработки ставки
         function placeBet() {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -124,53 +126,24 @@
 
             sendMessage(betMessage);
 
+            // Симуляция результатов игры
             setTimeout(() => {
                 let resultMessage = "";
                 let resultEmoji = "";
 
                 if (game === "🎲 Четное/Нечетное") {
                     resultEmoji = "🎲";
-                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            emoji: resultEmoji
-                        })
-                    });
-                    resultMessage = `🎯 Результат игры: 🎲`;
+                    sendMessage(`🎯 Результат игры: 🎲`);
                 } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
                     const randomOutcome = Math.random() > 0.5 ? "Гол" : "Промах";
                     resultEmoji = randomOutcome === "Гол" ? "⚽" : "❌";
                     sendMessage(`🎯 Результат игры: ${resultEmoji}`);
                 } else if (game === "🔢 Больше/Меньше") {
                     resultEmoji = "🎲";
-                    // Отправляем два кубика с интервалом
-                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            emoji: resultEmoji
-                        })
-                    });
-
-                    setTimeout(() => {
-                        fetch(`https://api.telegram.org/bot${token}/sendDice`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                chat_id: chatId,
-                                emoji: resultEmoji
-                            })
-                        });
-                    }, 5000); // Второй кубик через 5 секунд
-
-                    resultMessage = "🎯 Результат игры: 🎲 🎲";
+                    sendMessage(`🎯 Результат игры: 🎲 🎲`);
                 }
 
-                sendMessage(resultMessage);
-
+                // Подсчет выигрыша или проигрыша
                 setTimeout(() => {
                     let isWin = false;
                     let winAmount = 0;
@@ -201,7 +174,7 @@
 
                     sendMessage(resultMessage);
                 }, 10000); // Завершаем результат через 10 секунд
-            }, 3000);
+            }, 3000); // Завершаем начальный процесс через 3 секунды
         }
 
         document.getElementById("placeBetBtn").addEventListener("click", placeBet);
