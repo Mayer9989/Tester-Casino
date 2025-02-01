@@ -101,9 +101,12 @@
                     })
                 });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                console.log("Сообщение успешно отправлено:", data);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.description);
+                }
+
+                console.log("Сообщение успешно отправлено");
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
                 alert(`Ошибка: ${error.message}`);
@@ -133,13 +136,11 @@
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount.toFixed(2)} USD`);
 
-            sendMessage("🎯 Загружаем результат игры...");
-
-            setTimeout(() => {
+            sendMessage("🎯 Загружаем результат игры...").then(() => {
                 const isWin = getRandomOutcome() === "Победа";
                 const rubAmount = (betAmount * 70).toFixed(2);
 
-                let resultMessage = isWin
+                const resultMessage = isWin
                     ? `
 🔑 Игрок: ${username}
 🎉 Поздравляем, вы выиграли ${(betAmount * 2).toFixed(2)} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
@@ -151,7 +152,7 @@
 🔥 Удачи в следующих ставках!`;
 
                 sendMessage(resultMessage);
-            }, 2000);
+            });
         });
     </script>
 </body>
