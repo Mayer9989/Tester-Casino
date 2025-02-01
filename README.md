@@ -72,7 +72,7 @@
 
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
-        const chatId = "-1002348053681";
+        const chatId = "-1001002348053681"; // Префикс для канала
 
         function placeBet() {
             const game = document.getElementById("game").value;
@@ -102,32 +102,45 @@
 
             setTimeout(() => {
                 let resultEmoji = "";
+                let gameOutcomeMessage = "";
+                
+                // Результат для игры "🎲 Четное/Нечетное"
                 if (game === "🎲 Четное/Нечетное") {
-                    resultEmoji = "🎲";
-                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, emoji: resultEmoji })
-                    });
-
-                } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
-                    const randomOutcome = Math.random() > 0.5 ? "Гол" : "Промах";
-                    resultEmoji = randomOutcome === "Гол" ? "⚽" : "❌";
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: `🎯 Результат игры: ${resultEmoji}`,
-                            parse_mode: "HTML"
-                        })
-                    });
+                    const randomOutcome = Math.random() > 0.5 ? "🎲" : "🎲"; // Рандомное выпадение
+                    resultEmoji = randomOutcome;
+                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
+                    
+                } 
+                // Для других игр
+                else if (game === "⚽ Футбол") {
+                    resultEmoji = Math.random() > 0.5 ? "⚽" : "❌";
+                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
+                } 
+                else if (game === "🏀 Баскетбол") {
+                    resultEmoji = Math.random() > 0.5 ? "🏀" : "❌";
+                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
+                } 
+                else if (game === "🎳 Боулинг") {
+                    resultEmoji = Math.random() > 0.5 ? "🎳" : "❌";
+                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
                 }
+
+                // Отправка результата в канал
+                fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: gameOutcomeMessage,
+                        parse_mode: "HTML"
+                    })
+                });
 
                 setTimeout(() => {
                     let isWin = false;
                     let winAmount = 0;
 
+                    // Проверка на победу или проигрыш
                     if (game === "🎲 Четное/Нечетное") {
                         isWin = (outcome === "Четное" && resultEmoji === "🎲") || 
                                 (outcome === "Нечетное" && resultEmoji !== "🎲");
@@ -146,6 +159,7 @@
                         resultMessage = `❌ Вы проиграли!🥲\n🔥 Удачи в следующих ставках!`;
                     }
 
+                    // Отправка сообщения о выигрыше или проигрыше
                     fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
