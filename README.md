@@ -13,9 +13,9 @@
             justify-content: center;
             align-items: center;
             background-color: black;
-            background-image: url('ak47_white.png'); /* Путь к картинке */
-            background-repeat: repeat; /* Картинка будет повторяться */
-            background-size: 50px 50px; /* Размер картинок */
+            background-image: url('ak47_white.png');
+            background-repeat: repeat;
+            background-size: 50px 50px;
             font-family: Arial, sans-serif;
             color: white;
         }
@@ -77,8 +77,8 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Ваш токен бота
-        const chatId = "-1001002348053681"; // Пример правильного chat_id канала, убедитесь, что это именно ваш канал
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Ваш токен
+        const chatId = "-1001002348053681"; // chat_id канала
 
         // Функция отправки сообщения в Telegram
         async function sendMessage(text) {
@@ -87,15 +87,17 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        chat_id: chatId, // Убедитесь, что это правильный chat_id
+                        chat_id: chatId,
                         text: text,
                         parse_mode: "HTML"
                     })
                 });
 
-                const responseData = await response.json(); // Получаем ответ от Telegram API
+                const responseData = await response.json();
+                console.log('API Response:', responseData); // Логирование ответа
+
                 if (response.ok) {
-                    console.log('Сообщение отправлено успешно!', responseData);
+                    console.log('Сообщение отправлено успешно!');
                 } else {
                     console.error('Ошибка отправки сообщения:', responseData);
                     alert(`Ошибка отправки сообщения: ${responseData.description}`);
