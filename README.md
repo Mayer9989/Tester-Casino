@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <title>Казино</title>
+    <title>TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -157,6 +157,28 @@
             }
         }
 
+        function getRandomOutcome(game) {
+            if (game === "🎲 Четное/Нечетное") {
+                return Math.random() < 0.5 ? "Четное" : "Нечетное";
+            }
+            if (game === "⚽ Футбол") {
+                return Math.random() < 0.5 ? "Гол" : "Промах";
+            }
+            if (game === "🏀 Баскетбол") {
+                return Math.random() < 0.5 ? "Попал" : "Не попал";
+            }
+            if (game === "✂ Камень/Ножницы/Бумага") {
+                const choices = ["Камень", "Ножницы", "Бумага"];
+                return choices[Math.floor(Math.random() * choices.length)];
+            }
+            if (game === "🎯 Дартс") {
+                return Math.random() < 0.5 ? "В точку" : "Мимо";
+            }
+            if (game === "🎳 Боулинг") {
+                return Math.random() < 0.5 ? "Страйк" : "Сплэт";
+            }
+        }
+
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -184,6 +206,19 @@
                 `🏁 Исход: ${selectedOutcome}`;
 
             sendMessage(betMessage);
+
+            // Задержка перед результатом игры
+            setTimeout(() => {
+                const result = getRandomOutcome(game);
+                sendMessage(`🎯 Результат игры: ${result}`);
+
+                const isWin = result === selectedOutcome;
+                const resultMessage = isWin ?
+                    `🎉 Поздравляем, вы выиграли ${(betAmount * 1.5).toFixed(2)} USD!` :
+                    `❌ Вы проиграли ${betAmount.toFixed(2)} USD.`;
+
+                sendMessage(resultMessage);
+            }, 2000);
         });
     </script>
 </body>
