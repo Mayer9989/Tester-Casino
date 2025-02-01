@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>💎 TESTER CASINO</title>
+    <title>TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -25,9 +25,14 @@
         }
         h2 {
             text-align: center;
-            color: #FFD700;
-            margin-bottom: 20px;
             font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .white-text {
+            color: white;
+        }
+        .red-text {
+            color: red;
         }
         select, input, button {
             width: 100%;
@@ -65,7 +70,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>🎰 TESTER CASINO</h2>
+        <h2><span class="white-text">TESTER </span><span class="red-text">CASINO</span></h2>
         
         <label for="game">Выберите игру:</label>
         <select id="game">
@@ -226,20 +231,6 @@
             let username = "Аноним";  // Пример имени игрока
             let userId = "123456";  // Пример ID игрока (можно заменить на реальный)
 
-            // Отображаем информацию в WebApp
-            Telegram.WebApp.setHeaderColor("#ff0000");  // Настройка цвета для WebApp
-            Telegram.WebApp.setTitle("Ставка принята");
-
-            // Отображаем информацию о ставке в WebApp
-            document.body.innerHTML = `
-                <h2>🎰 Ставка принята</h2>
-                <p><strong>Игрок:</strong> ${username}</p>
-                <p><strong>Айди игрока:</strong> ${userId}</p>
-                <p><strong>Игра:</strong> ${game}</p>
-                <p><strong>Сумма ставки:</strong> ${betAmount} USD</p>
-                <p><strong>Исход:</strong> ${selectedOutcome}</p>
-            `;
-            
             // Отправляем информацию в Telegram канал
             sendMessage(`[🎰 Ставка принята]
 
@@ -249,11 +240,12 @@
 💸 Сумма ставки: ${betAmount} USD
 🏁 Исход: ${selectedOutcome}`);
 
-            // Через 3 секунды отправляем результат
+            // Через 2 секунды отправляем "Загружаем результат"
             setTimeout(() => {
+                sendMessage("🎯 Загружаем результат игры...");
+                
+                // Получаем случайный результат
                 const result = getRandomOutcome(game);
-                sendMessage(`🎯 Загружаем результат игры...`);
-
                 const isWin = result === selectedOutcome;
                 const resultMessage = isWin ?
                     `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!` :
