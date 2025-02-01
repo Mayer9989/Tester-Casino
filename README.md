@@ -135,7 +135,8 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = '';
+            outcomeSelect.innerHTML = '';  // Очистить предыдущее содержимое
+
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
                 opt.value = option;
@@ -203,6 +204,15 @@
             sendMessage(resultMessage);
             sendMessage("Хотите сделать новую ставку? 🎯");
         });
+
+        // Обработчик изменения игры для обновления исходов
+        document.getElementById("game").addEventListener("change", function() {
+            const selectedGame = this.value;
+            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
+        });
+
+        // Инициализируем начальные исходы для выбранной игры
+        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
