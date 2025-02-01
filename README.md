@@ -130,6 +130,9 @@
                         isWin = (outcome === "Гол" && resultEmoji1 === "⚽") || (outcome === "Промах" && resultEmoji1 === "❌");
                     }
 
+                    let resultMessage = "";
+                    let buttonText = "";
+
                     if (isWin) {
                         winAmount = betAmount * 1.5;
                         resultMessage = `🎉 Поздравляем, вы выиграли!\n\n` +
@@ -145,21 +148,3 @@
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            chat_id: chatId,
-                            text: resultMessage,
-                            parse_mode: "HTML",
-                            reply_markup: {
-                                inline_keyboard: [[{ text: buttonText, web_app: { url: webAppUrl } }]]
-                            }
-                        })
-                    });
-
-                }, 10000);
-
-            }, 1000);
-        }
-
-        document.getElementById("placeBetBtn").addEventListener("click", placeBet);
-    </script>
-</body>
-</html>
