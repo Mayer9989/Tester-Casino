@@ -61,30 +61,11 @@
             text-align: center;
             color: #bbb;
         }
-
-        .hidden {
-            display: none;
-        }
-
-        #finalMessage {
-            margin-top: 20px;
-            font-size: 18px;
-            text-align: center;
-            color: white;
-        }
-
-        #gameResult {
-            font-size: 20px;
-            font-weight: bold;
-            text-align: center;
-            color: white;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2><span style="color: white;">TESTER</span> <span style="color: red;">CASINO</span></h2>
+        <h2>🎰 TESTER CASINO</h2>
         
         <label for="game">Выберите игру:</label>
         <select id="game">
@@ -109,12 +90,6 @@
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
 
-        <div id="gameResult" class="hidden"></div>
-        <div id="finalMessage" class="hidden"></div>
-        
-        <!-- Кнопка для новой ставки -->
-        <button id="newBetButton" class="hidden">♣ Сделать ставку</button>
-
         <div class="footer">Ваше казино в Telegram. Удачи!</div>
     </div>
 
@@ -138,6 +113,40 @@
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
                 
+                console.log("Сообщение успешно отправлено:", data);
+            } catch (error) {
+                console.error("Ошибка отправки сообщения:", error);
+                alert(`Ошибка: ${error.message}`);
+            }
+        }
+
+        // Функция для отправки сообщения с кнопкой "Сделать ставку"
+        async function sendMessageWithButton(text) {
+            const messageData = {
+                chat_id: chatId,
+                text: text,
+                parse_mode: "HTML",
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "Сделать ставку ♣️",  // Кнопка для новой ставки
+                                url: "https://your-webapp-url.com"  // Ссылка на WebApp для новой ставки
+                            }
+                        ]
+                    ]
+                }
+            };
+
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(messageData)
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
                 console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
@@ -215,47 +224,26 @@
                 return;
             }
 
-            let username = "Аноним";
-            if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-                username = Telegram.WebApp.initDataUnsafe.user.username || `ID ${Telegram.WebApp.initDataUnsafe.user.id}`;
-            }
+            let username = "Аноним";  // Пример имени игрока
+            sendMessage(`🎯 Загружаем результат игры...`);
 
-            // Сообщение о принятой ставке
-            const betMessage = `[🎉 Ваша ставка принята]\n\n` +
-                               `🔑 Игрок: ${username}\n` +
-                               `🚀 Режим: ${game}\n` +
-                               `💸 Сумма ставки: ${betAmount.toFixed(2)} USD\n` +
-                               `🏁 Исход игры: ${selectedOutcome}`;
-
-            // Отправка сообщения о ставке
-            sendMessage(betMessage);
-
-            // Показать "Загружаем результат игры..."
-            sendMessage("🎯 Загружаем результат игры...");
-
-            // Задержка перед результатом игры
+            // Отправляем сообщение с результатом и удаляем его через 3 секунды
             setTimeout(() => {
                 const result = getRandomOutcome(game);
-                const winAmount = betAmount * 1.5;  // Коэффициент для выигрыша
+                sendMessage(`🎯 Результат игры: ${result}`);
+
                 const isWin = result === selectedOutcome;
+                const resultMessage = isWin ?
+                    `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)! 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 🔥 Удачи в следующих ставках!` :
+                    `❌ Вы проиграли ${betAmount} USD (${(betAmount * 70).toFixed(2)} RUB). 🔥 Удачи в следующих ставках!`;
 
-                let finalMessage;
-                if (isWin) {
-                    finalMessage = `🎉 Поздравляем, вы выиграли ${winAmount.toFixed(2)} USD (${(winAmount * 75).toFixed(2)} RUB)!
-
-🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время!
-🔥 Удачи в следующих ставках!`;
-                } else {
-                    finalMessage = `❌ Вы проиграли ${betAmount.toFixed(2)} USD (${(betAmount * 75).toFixed(2)} RUB)
-                    
-🔥 Удачи в следующих ставках!`;
-                }
-
-                // Отправить результат
-                sendMessage(finalMessage);
-            }, 3000); // Задержка 3 секунды перед выводом результата
+                // Через 3 секунды отправляем результат
+                setTimeout(() => {
+                    sendMessage(resultMessage);
+                    sendMessageWithButton("Хотите сделать новую ставку?");
+                }, 3000);
+            }, 2000);
         });
-
     </script>
 </body>
 </html>
