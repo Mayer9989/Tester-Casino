@@ -80,11 +80,6 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
-        <div id="outcomeOptions" style="display:none;">
-            <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome"></select>
-        </div>
-
         <button id="placeBetBtn">✅ Сделать ставку</button>
 
         <div class="footer">Ваше казино в Telegram. Удачи!</div>
@@ -122,7 +117,6 @@
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
-            const selectedOutcome = document.getElementById("outcome").value;
 
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
@@ -137,64 +131,28 @@
 🔑 Игрок: ${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USD`);
+💸 Сумма ставки: ${betAmount.toFixed(2)} USD`);
 
             sendMessage("🎯 Загружаем результат игры...");
 
-            const result = getRandomOutcome();
-            const isWin = result === "Победа";
-            const rubAmount = (betAmount * 70).toFixed(2);
-
-            let resultMessage = "";
-
-            if (isWin) {
-                resultMessage = `
-🔑 Игрок: ${username}
-🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
-🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
-🔥 Удачи в следующих ставках!
-                `;
-            } else {
-                resultMessage = `
-🔑 Игрок: ${username}
-❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
-🔥 Удачи в следующих ставках!
-                `;
-            }
-
             setTimeout(() => {
+                const isWin = getRandomOutcome() === "Победа";
+                const rubAmount = (betAmount * 70).toFixed(2);
+
+                let resultMessage = isWin
+                    ? `
+🔑 Игрок: ${username}
+🎉 Поздравляем, вы выиграли ${(betAmount * 2).toFixed(2)} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время!
+🔥 Удачи в следующих ставках!`
+                    : `
+🔑 Игрок: ${username}
+❌ Вы проиграли ${betAmount.toFixed(2)} USD (${rubAmount} RUB)
+🔥 Удачи в следующих ставках!`;
+
                 sendMessage(resultMessage);
-            }, 2000); 
+            }, 2000);
         });
-
-        document.getElementById("game").addEventListener("change", function() {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);
-        });
-
-        function updateOutcomeOptions(game) {
-            const outcomeSelect = document.getElementById("outcome");
-            const outcomeOptions = {
-                "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
-                "⚽ Футбол": ["Гол", "Промах"],
-                "🏀 Баскетбол": ["Попал", "Не попал"],
-                "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
-                "🎯 Дартс": ["В точку", "Мимо"],
-                "🎳 Боулинг": ["Страйк", "Сплэт"]
-            };
-
-            outcomeSelect.innerHTML = '';
-            outcomeOptions[game].forEach(option => {
-                const opt = document.createElement("option");
-                opt.value = option;
-                opt.textContent = option;
-                outcomeSelect.appendChild(opt);
-            });
-
-            document.getElementById("outcomeOptions").style.display = "block";
-        }
-
-        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
