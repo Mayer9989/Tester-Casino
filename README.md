@@ -77,14 +77,8 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Ваш токен
-        const chatId = "-1001002348053681"; // chat_id канала
-
-        // Проверка на null и пустое значение chat_id
-        if (!chatId || chatId.trim() === "") {
-            alert("Ошибка: chat_id канала не указан или некорректен.");
-            throw new Error("Некорректный chat_id");
-        }
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
+        const chatId = "-1001002348053681"; // Убедитесь, что chatId правильный (канал)
 
         // Функция отправки сообщения в Telegram
         async function sendMessage(text) {
@@ -93,15 +87,15 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        chat_id: chatId,
+                        chat_id: chatId, // Используйте правильный chat_id канала
                         text: text,
                         parse_mode: "HTML"
                     })
                 });
 
-                const responseData = await response.json(); // Получаем ответ от API Telegram
+                const responseData = await response.json(); // Получаем ответ от Telegram API
                 if (response.ok) {
-                    console.log('Сообщение отправлено успешно!');
+                    console.log('Сообщение отправлено успешно!', responseData);
                 } else {
                     console.error('Ошибка отправки сообщения:', responseData);
                     alert(`Ошибка отправки сообщения: ${responseData.description}`);
@@ -133,7 +127,7 @@
                                `🚀 Режим: ${game} — ${outcome}\n` +
                                `💸 Сумма ставки: ${betAmount.toFixed(2)} USD`;
 
-            sendMessage(betMessage); // Отправка сообщения о ставке
+            sendMessage(betMessage);
 
             // Симуляция результатов игры
             setTimeout(() => {
@@ -181,7 +175,7 @@
                         resultMessage = `❌ Вы проиграли!🥲\n🔥 Удачи в следующих ставках!`;
                     }
 
-                    sendMessage(resultMessage); // Отправка сообщения о результате
+                    sendMessage(resultMessage);
                 }, 10000); // Завершаем результат через 10 секунд
             }, 3000); // Завершаем начальный процесс через 3 секунды
         }
