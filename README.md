@@ -78,23 +78,31 @@
         const chatId = "-1001002348053681"; // Префикс для канала
 
         async function sendMessage(text) {
-            const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: text,
-                    parse_mode: "HTML"
-                })
-            });
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: "HTML"
+                    })
+                });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Ошибка отправки сообщения:', errorText);
+                if (response.ok) {
+                    console.log('Сообщение отправлено успешно!');
+                } else {
+                    const errorText = await response.text();
+                    console.error('Ошибка отправки сообщения:', errorText);
+                    alert(`Ошибка отправки сообщения: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Ошибка при выполнении запроса:', error);
+                alert(`Ошибка при выполнении запроса: ${error}`);
             }
         }
 
-        async function placeBet() {
+        function placeBet() {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const outcome = document.getElementById("outcome").value;
@@ -114,16 +122,15 @@
                                `🚀 Режим: ${game} — ${outcome}\n` +
                                `💸 Сумма ставки: ${betAmount.toFixed(2)} USD`;
 
-            // Отправка сообщения о ставке
-            await sendMessage(betMessage);
+            sendMessage(betMessage);
 
-            setTimeout(async () => {
+            setTimeout(() => {
                 let resultMessage = "";
                 let resultEmoji = "";
 
                 if (game === "🎲 Четное/Нечетное") {
                     resultEmoji = "🎲";
-                    await fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -135,10 +142,11 @@
                 } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
                     const randomOutcome = Math.random() > 0.5 ? "Гол" : "Промах";
                     resultEmoji = randomOutcome === "Гол" ? "⚽" : "❌";
-                    await sendMessage(`🎯 Результат игры: ${resultEmoji}`);
+                    sendMessage(`🎯 Результат игры: ${resultEmoji}`);
                 } else if (game === "🔢 Больше/Меньше") {
                     resultEmoji = "🎲";
-                    await fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                    // Отправляем два кубика с интервалом
+                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -147,8 +155,8 @@
                         })
                     });
 
-                    setTimeout(async () => {
-                        await fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                    setTimeout(() => {
+                        fetch(`https://api.telegram.org/bot${token}/sendDice`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
@@ -161,9 +169,9 @@
                     resultMessage = "🎯 Результат игры: 🎲 🎲";
                 }
 
-                await sendMessage(resultMessage);
+                sendMessage(resultMessage);
 
-                setTimeout(async () => {
+                setTimeout(() => {
                     let isWin = false;
                     let winAmount = 0;
 
@@ -191,9 +199,9 @@
                         resultMessage = `❌ Вы проиграли!🥲\n🔥 Удачи в следующих ставках!`;
                     }
 
-                    await sendMessage(resultMessage);
+                    sendMessage(resultMessage);
                 }, 10000); // Завершаем результат через 10 секунд
-            }, 3000); // Задержка перед началом игры
+            }, 3000);
         }
 
         document.getElementById("placeBetBtn").addEventListener("click", placeBet);
