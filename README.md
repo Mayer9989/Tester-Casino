@@ -72,7 +72,7 @@
 
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
-        const chatId = "1002348053681";
+        const chatId = "-1002348053681";
 
         function placeBet() {
             const game = document.getElementById("game").value;
