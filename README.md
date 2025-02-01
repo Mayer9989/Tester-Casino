@@ -231,8 +231,7 @@
             sendMessage(betMessage);
 
             // Показать "Загружаем результат игры..."
-            document.getElementById("gameResult").textContent = "🎯 Загружаем результат игры...";
-            document.getElementById("gameResult").classList.remove("hidden");
+            sendMessage("🎯 Загружаем результат игры...");
 
             // Задержка перед результатом игры
             setTimeout(() => {
@@ -252,22 +251,11 @@
 🔥 Удачи в следующих ставках!`;
                 }
 
-                // Показываем результат
-                document.getElementById("gameResult").textContent = result;
-                document.getElementById("finalMessage").textContent = finalMessage;
-
-                // Показать кнопку для новой ставки через 1 секунду
-                setTimeout(() => {
-                    document.getElementById("newBetButton").classList.remove("hidden");
-                }, 1000);
+                // Отправить результат
+                sendMessage(finalMessage);
             }, 3000); // Задержка 3 секунды перед выводом результата
         });
 
-        // Обработчик нажатия на кнопку для новой ставки
-        document.getElementById("newBetButton").addEventListener("click", function() {
-            // Открытие WebApp для новой ставки
-            Telegram.WebApp.openLink("https://ваш-сайт.com");  // Замените на ваш сайт
-        });
     </script>
 </body>
 </html>
