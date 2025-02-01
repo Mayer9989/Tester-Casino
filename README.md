@@ -97,17 +97,21 @@
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Укажите ваш токен
         const chatId = "1002348053681";  // Укажите ID вашего канала
 
-        // Функция для отправки сообщений на сервер
+        // Функция для отправки сообщений на Telegram через API
         async function sendMessage(text) {
             try {
-                const response = await fetch('http://localhost:3000/sendMessage', {  // Укажите адрес вашего сервера
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: "HTML"
+                    })
                 });
 
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Неизвестная ошибка');
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
                 
                 console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
@@ -135,7 +139,7 @@
                 return Math.random() < 0.5 ? "В точку" : "Мимо";
             }
             if (game === "🎳 Боулинг") {
-                return Math.random() < 0.5 ? "Сплэт" : "Страйк";
+                return Math.random() < 0.5 ? "Страйк" : "Сплэт";
             }
         }
 
