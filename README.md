@@ -214,6 +214,41 @@
 
         // Инициализируем начальные исходы для выбранной игры
         updateOutcomeOptions(document.getElementById("game").value);
+
+        // Отправка кнопки для перехода в WebApp
+        async function sendInlineButton() {
+            const keyboard = {
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Сделать ставку♣",
+                            web_app: { url: "https://your-webapp-url.com" } // Замените на ваш URL WebApp
+                        }
+                    ]
+                ]
+            };
+
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: "Хотите сделать новую ставку? 🎯",
+                        reply_markup: keyboard
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
+                console.log("Инлайн кнопка отправлена:", data);
+            } catch (error) {
+                console.error("Ошибка отправки инлайн кнопки:", error);
+            }
+        }
+
+        // Отправка инлайн кнопки при загрузке страницы
+        sendInlineButton();
     </script>
 </body>
 </html>
