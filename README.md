@@ -76,6 +76,11 @@
             <option value="🎳 Боулинг">🎳 Боулинг</option>
         </select>
         
+        <label for="outcome">Выберите исход:</label>
+        <select id="outcome">
+            <!-- Исходы будут добавляться динамически в зависимости от выбранной игры -->
+        </select>
+        
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
         
@@ -85,8 +90,17 @@
     </div>
 
     <script>
-        const token = "ВАШ_ТОКЕН";  // Вставьте ваш токен Telegram бота
-        const chatId = "-1002348053681";  // Укажите корректный ID вашего канала (всегда с "-100")
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Укажите ваш токен
+        const chatId = "1002348053681";  // Укажите ID вашего канала
+
+        const outcomes = {
+            "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
+            "⚽ Футбол": ["Гол", "Промах"],
+            "🏀 Баскетбол": ["Попал", "Не попал"],
+            "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
+            "🎯 Дартс": ["Попал в мишень", "Промах"],
+            "🎳 Боулинг": ["Сплэт", "Страйк"]
+        };
 
         // Функция отправки сообщения
         async function sendMessage(text) {
@@ -102,8 +116,12 @@
                 });
 
                 const data = await response.json();
+
+                // Логирование ответа от Telegram
+                console.log('Ответ от Telegram:', data);
+
                 if (!response.ok) {
-                    throw new Error(data.description);
+                    throw new Error(data.description || 'Неизвестная ошибка');
                 }
                 console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
@@ -112,33 +130,39 @@
             }
         }
 
+        function updateOutcomes() {
+            const game = document.getElementById("game").value;
+            const outcomeSelect = document.getElementById("outcome");
+            const availableOutcomes = outcomes[game] || [];
+            outcomeSelect.innerHTML = ""; // Очистить старые варианты
+
+            availableOutcomes.forEach(outcome => {
+                const option = document.createElement("option");
+                option.value = outcome;
+                option.textContent = outcome;
+                outcomeSelect.appendChild(option);
+            });
+        }
+
+        document.getElementById("game").addEventListener("change", updateOutcomes);
+
         function getRandomOutcome(game) {
-            if (game === "🎲 Четное/Нечетное") {
-                return Math.random() < 0.5 ? "Четное" : "Нечетное";
-            }
-            if (game === "⚽ Футбол") {
-                return Math.random() < 0.5 ? "Гол" : "Промах";
-            }
-            if (game === "🏀 Баскетбол") {
-                return Math.random() < 0.5 ? "Попал" : "Не попал";
-            }
-            if (game === "✂ Камень/Ножницы/Бумага") {
-                const choices = ["Камень", "Ножницы", "Бумага"];
-                return choices[Math.floor(Math.random() * choices.length)];
-            }
-            if (game === "🎯 Дартс") {
-                return Math.random() < 0.5 ? "Попал в мишень" : "Промах";
-            }
-            if (game === "🎳 Боулинг") {
-                return Math.random() < 0.5 ? "Сплэт" : "Страйк";
-            }
+            const possibleOutcomes = outcomes[game] || [];
+            return possibleOutcomes[Math.floor(Math.random() * possibleOutcomes.length)];
         }
 
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
+            const selectedOutcome = document.getElementById("outcome").value;
+
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
+                return;
+            }
+
+            if (!selectedOutcome) {
+                alert("❌ Выберите исход игры.");
                 return;
             }
 
@@ -150,7 +174,8 @@
             const betMessage = `[🎉 Ваша ставка принята]\n\n` +
                                `🔑 Игрок: ${username}\n` +
                                `🚀 Режим: ${game}\n` +
-                               `💸 Сумма ставки: ${betAmount.toFixed(2)} USD`;
+                               `💸 Сумма ставки: ${betAmount.toFixed(2)} USD\n` +
+                               `🎯 Выбранный исход: ${selectedOutcome}`;
 
             sendMessage(betMessage);
 
@@ -158,7 +183,7 @@
                 const result = getRandomOutcome(game);
                 sendMessage(`🎯 Результат игры: ${result}`);
 
-                const isWin = result.includes("Гол") || result.includes("Попал") || result.includes("Страйк");
+                const isWin = (selectedOutcome === result);
                 const resultMessage = isWin ?
                     `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!` :
                     `❌ Вы проиграли ${betAmount} USD.`;
@@ -166,6 +191,9 @@
                 sendMessage(resultMessage);
             }, 2000);
         });
+
+        // Инициализация исходов для первой игры при загрузке
+        updateOutcomes();
     </script>
 </body>
 </html>
