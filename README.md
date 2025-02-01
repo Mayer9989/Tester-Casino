@@ -91,8 +91,8 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
-        const chatId = "-1002348053681";  
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";
+        const chatId = "-1002348053681";
 
         async function sendMessage(text) {
             try {
@@ -119,28 +119,6 @@
             return Math.random() < 0.4 ? "Победа" : "Проигрыш";
         }
 
-        function updateOutcomeOptions(game) {
-            const outcomeSelect = document.getElementById("outcome");
-            const outcomeOptions = {
-                "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
-                "⚽ Футбол": ["Гол", "Промах"],
-                "🏀 Баскетбол": ["Попал", "Не попал"],
-                "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
-                "🎯 Дартс": ["В точку", "Мимо"],
-                "🎳 Боулинг": ["Страйк", "Сплэт"]
-            };
-
-            outcomeSelect.innerHTML = '';  
-            outcomeOptions[game].forEach(option => {
-                const opt = document.createElement("option");
-                opt.value = option;
-                opt.textContent = option;
-                outcomeSelect.appendChild(opt);
-            });
-
-            document.getElementById("outcomeOptions").style.display = "block";
-        }
-
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -151,27 +129,21 @@
                 return;
             }
 
-            if (!selectedOutcome) {
-                alert("❌ Пожалуйста, выберите исход игры.");
-                return;
-            }
-
-            let username = "Игрок_1";  
-            let userId = "123456";  
+            let username = "Игрок_1";
+            let userId = "123456";
 
             sendMessage(`[🎰 Ставка принята]
 
 🔑 Игрок: ${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}`);
+💸 Сумма ставки: ${betAmount} USD`);
 
             sendMessage("🎯 Загружаем результат игры...");
 
             const result = getRandomOutcome();
             const isWin = result === "Победа";
-            const rubAmount = (betAmount * 70).toFixed(2);  
+            const rubAmount = (betAmount * 70).toFixed(2);
 
             let resultMessage = "";
 
@@ -199,6 +171,28 @@
             const selectedGame = this.value;
             updateOutcomeOptions(selectedGame);
         });
+
+        function updateOutcomeOptions(game) {
+            const outcomeSelect = document.getElementById("outcome");
+            const outcomeOptions = {
+                "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
+                "⚽ Футбол": ["Гол", "Промах"],
+                "🏀 Баскетбол": ["Попал", "Не попал"],
+                "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
+                "🎯 Дартс": ["В точку", "Мимо"],
+                "🎳 Боулинг": ["Страйк", "Сплэт"]
+            };
+
+            outcomeSelect.innerHTML = '';
+            outcomeOptions[game].forEach(option => {
+                const opt = document.createElement("option");
+                opt.value = option;
+                opt.textContent = option;
+                outcomeSelect.appendChild(opt);
+            });
+
+            document.getElementById("outcomeOptions").style.display = "block";
+        }
 
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
