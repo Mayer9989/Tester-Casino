@@ -96,6 +96,7 @@
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
         const chatId = "-1002348053681";  
 
+        // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -117,6 +118,7 @@
             }
         }
 
+        // Функция для отправки сообщения с кнопкой
         async function sendMessageWithButton(text) {
             const messageData = {
                 chat_id: chatId,
@@ -143,18 +145,19 @@
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                console.log("Сообщение успешно отправлено:", data);
+                console.log("Сообщение успешно отправлено с кнопкой:", data);
             } catch (error) {
-                console.error("Ошибка отправки сообщения:", error);
+                console.error("Ошибка отправки сообщения с кнопкой:", error);
                 alert(`Ошибка: ${error.message}`);
             }
         }
 
+        // Функция для генерации исхода игры с 40% шансом на победу
         function getRandomOutcome() {
-            // Для всех игр шанс на победу 40%
             return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
         }
 
+        // Функция для обновления возможных исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -177,11 +180,7 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        document.getElementById("game").addEventListener("change", function() {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);
-        });
-
+        // Отправка выбранных данных при клике на кнопку
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -200,6 +199,7 @@
             let username = "Аноним";  
             let userId = "123456";  
 
+            // Отправляем сообщение о ставке
             sendMessage(`[🎰 Ставка принята]
 
 🔑 Игрок: ${username}
@@ -214,16 +214,15 @@
                 const result = getRandomOutcome();  // Генерация случайного исхода игры
                 console.log(`Результат игры: ${result}`);  // Логируем результат для отладки
                 
-                // Проверяем, выиграл ли игрок
-                const isWin = result === "Победа";
+                const isWin = result === "Победа"; // Проверка на победу
                 const resultMessage = isWin ?
                     `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)! 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 🔥 Удачи в следующих ставках!` :
                     `❌ Вы проиграли ${betAmount} USD (${(betAmount * 70).toFixed(2)} RUB). 🔥 Удачи в следующих ставках!`;
 
-                // Отправляем сообщение о результате
+                // Отправка результата в чат
                 sendMessage(resultMessage);
                 sendMessageWithButton("Хотите сделать новую ставку? 🎯");
-            }, 3000);
+            }, 3000); // Задержка в 3 секунды для загрузки результата
         });
     </script>
 </body>
