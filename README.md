@@ -3,115 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>Tester Casino - WebApp</title>
+    <title>💎 Казино</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
             height: 100%;
             margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: #141414;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: black;
-            background-image: url('ak47_white.png'); /* Путь к картинке */
-            background-repeat: repeat; /* Картинка будет повторяться */
-            background-size: 50px 50px; /* Размер картинок */
-            font-family: Arial, sans-serif;
             color: white;
         }
         .container {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            width: 400px;
-            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 15px;
+            width: 350px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
         }
         h2 {
-            font-size: 24px;
+            text-align: center;
+            color: #FFD700;
             margin-bottom: 20px;
+            font-size: 24px;
         }
         select, input, button {
-            display: block;
             width: 100%;
-            margin: 10px auto;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 18px;
+            border-radius: 10px;
+            border: 2px solid #444;
+            background: #222;
+            color: white;
+        }
+        select {
+            background: #333;
         }
         button {
-            background-color: #28a745;
-            color: white;
+            background: #28a745;
             border: none;
+            color: white;
             cursor: pointer;
+            font-size: 20px;
         }
         button:hover {
-            background-color: #218838;
+            background: #218838;
+        }
+        button:active {
+            background: #1e7e34;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            color: #bbb;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🎰 Выберите игру</h2>
+        <h2>🎰 Ваше Казино</h2>
+        <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
             <option value="⚽ Футбол">⚽ Футбол</option>
             <option value="🏀 Баскетбол">🏀 Баскетбол</option>
+            <option value="✂ Камень/Ножницы/Бумага">✂ Камень/Ножницы/Бумага</option>
+            <option value="🎯 Дартс">🎯 Дартс</option>
             <option value="🎳 Боулинг">🎳 Боулинг</option>
-            <option value="🔢 Больше/Меньше">🔢 Больше/Меньше</option>
         </select>
         
-        <h2>💰 Введите сумму ставки</h2>
+        <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
         
-        <h2>🔮 Выберите исход игры</h2>
-        <select id="outcome">
-            <option value="Четное">Четное</option>
-            <option value="Нечетное">Нечетное</option>
-            <option value="Гол">Гол</option>
-            <option value="Промах">Промах</option>
-            <option value="Больше">Больше</option>
-            <option value="Меньше">Меньше</option>
-        </select>
-
         <button id="placeBetBtn">✅ Сделать ставку</button>
+
+        <div class="footer">Ваше казино в Telegram. Удачи!</div>
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Ваш API токен
-        const chatId = "-1002348053681"; // Ваш ID канала
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Укажите ваш токен
+        const chatId = "1002348053681";  // Укажите ID вашего канала
 
-        // Функция отправки сообщения в Telegram
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        chat_id: chatId,  // Ваш chat_id канала
+                        chat_id: chatId,
                         text: text,
                         parse_mode: "HTML"
                     })
                 });
-
-                const responseData = await response.json(); // Получаем ответ от Telegram API
-                if (response.ok) {
-                    console.log('Сообщение отправлено успешно!', responseData);
-                } else {
-                    console.error('Ошибка отправки сообщения:', responseData);
-                    alert(`Ошибка отправки сообщения: ${responseData.description}`);
-                }
+                const responseData = await response.json();
+                if (!response.ok) throw new Error(responseData.description);
             } catch (error) {
-                console.error('Ошибка при выполнении запроса:', error);
-                alert(`Ошибка при выполнении запроса: ${error}`);
+                console.error('Ошибка отправки сообщения:', error);
+                alert(`Ошибка: ${error.message}`);
             }
         }
 
-        // Функция обработки ставки
-        function placeBet() {
+        function getRandomOutcome(game) {
+            if (game === "🎲 Четное/Нечетное") {
+                return Math.random() < 0.5 ? "Четное" : "Нечетное";
+            }
+            if (game === "⚽ Футбол") {
+                return Math.random() < 0.5 ? "Гол" : "Промах";
+            }
+            if (game === "🏀 Баскетбол") {
+                return Math.random() < 0.5 ? "Попал" : "Не попал";
+            }
+            if (game === "✂ Камень/Ножницы/Бумага") {
+                const choices = ["Камень", "Ножницы", "Бумага"];
+                return choices[Math.floor(Math.random() * choices.length)];
+            }
+            if (game === "🎯 Дартс") {
+                return Math.random() < 0.5 ? "Попал в мишень" : "Промах";
+            }
+            if (game === "🎳 Боулинг") {
+                return Math.random() < 0.5 ? "Сплэт" : "Страйк";
+            }
+        }
+
+        document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
-            const outcome = document.getElementById("outcome").value;
-
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
@@ -124,66 +144,23 @@
 
             const betMessage = `[🎉 Ваша ставка принята]\n\n` +
                                `🔑 Игрок: ${username}\n` +
-                               `🚀 Режим: ${game} — ${outcome}\n` +
+                               `🚀 Режим: ${game}\n` +
                                `💸 Сумма ставки: ${betAmount.toFixed(2)} USD`;
 
-            sendMessage(betMessage); // Отправка сообщения о принятии ставки
+            sendMessage(betMessage);
 
-            // Симуляция результатов игры
             setTimeout(() => {
-                let resultMessage = "";
-                let resultEmoji = "";
+                const result = getRandomOutcome(game);
+                sendMessage(`🎯 Результат игры: ${result}`);
 
-                // Для игры "Четное/Нечетное"
-                if (game === "🎲 Четное/Нечетное") {
-                    const diceResult = Math.floor(Math.random() * 2); // 0 — четное, 1 — нечетное
-                    resultEmoji = diceResult === 0 ? "🔵" : "🟠"; // Отправляем эмодзи для четного/нечетного
-                    resultMessage = `🎲 Результат игры: ${resultEmoji}`;
-                } 
-                // Для игры "Больше/Меньше"
-                else if (game === "🔢 Больше/Меньше") {
-                    const dice1 = Math.floor(Math.random() * 6) + 1;
-                    const dice2 = Math.floor(Math.random() * 6) + 1;
-                    resultEmoji = dice1 > dice2 ? "⬆️" : "⬇️"; // Эмодзи для больше/меньше
-                    resultMessage = `🎲 Результат игры: ${dice1} ${dice2} ${resultEmoji}`;
-                } 
-                // Для игр "Футбол", "Баскетбол", "Боулинг"
-                else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
-                    const randomOutcome = Math.random() > 0.5 ? "Гол" : "Промах";
-                    resultEmoji = randomOutcome === "Гол" ? "⚽" : "❌"; // Гол или Промах
-                    resultMessage = `🎯 Результат игры: ${resultEmoji}`;
-                }
+                const isWin = result.includes("Гол") || result.includes("Попал") || result.includes("Страйк");
+                const resultMessage = isWin ?
+                    `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!` :
+                    `❌ Вы проиграли ${betAmount} USD.`;
 
-                // Отправка результата эмодзи
-                sendMessage(resultMessage); // Отправка результата в канал
-
-                // Подсчет выигрыша или проигрыша
-                setTimeout(() => {
-                    let isWin = false;
-                    let winAmount = 0;
-
-                    // Определение выигрыша по эмодзи
-                    if (game === "🎲 Четное/Нечетное") {
-                        isWin = (outcome === "Четное" && resultEmoji === "🔵") || 
-                                (outcome === "Нечетное" && resultEmoji === "🟠");
-                    } else if (game === "🔢 Больше/Меньше") {
-                        const isBigger = resultEmoji === "⬆️";
-                        isWin = (outcome === "Больше" && isBigger) || 
-                                (outcome === "Меньше" && !isBigger);
-                    } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
-                        isWin = (outcome === "Гол" && resultEmoji === "⚽") || 
-                                (outcome === "Промах" && resultEmoji === "❌");
-                    }
-
-                    // Выводим итог
-                    resultMessage = isWin ? `🎉 Поздравляем, вы выиграли!` : `❌ Вы проиграли!`;
-                    sendMessage(resultMessage); // Отправка итога
-                }, 1000); // Завершаем результат через 1 секунду
-
-            }, 3000); // Завершаем начальный процесс через 3 секунды
-        }
-
-        document.getElementById("placeBetBtn").addEventListener("click", placeBet);
+                sendMessage(resultMessage);
+            }, 2000);
+        });
     </script>
 </body>
 </html>
