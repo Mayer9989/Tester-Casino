@@ -85,9 +85,10 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Укажите ваш токен
-        const chatId = "1002348053681";  // Укажите ID вашего канала
+        const token = "ВАШ_ТОКЕН";  // Вставьте ваш токен Telegram бота
+        const chatId = "-1002348053681";  // Укажите корректный ID вашего канала (всегда с "-100")
 
+        // Функция отправки сообщения
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -99,11 +100,15 @@
                         parse_mode: "HTML"
                     })
                 });
-                const responseData = await response.json();
-                if (!response.ok) throw new Error(responseData.description);
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.description);
+                }
+                console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
-                console.error('Ошибка отправки сообщения:', error);
-                alert(`Ошибка: ${error.message}`);
+                console.error("Ошибка отправки сообщения:", error);
+                alert(`Ошибка отправки: ${error.message}`);
             }
         }
 
