@@ -13,9 +13,9 @@
             justify-content: center;
             align-items: center;
             background-color: black;
-            background-image: url('ak47_white.png');
-            background-repeat: repeat;
-            background-size: 50px 50px;
+            background-image: url('ak47_white.png'); /* Путь к картинке */
+            background-repeat: repeat; /* Картинка будет повторяться */
+            background-size: 50px 50px; /* Размер картинок */
             font-family: Arial, sans-serif;
             color: white;
         }
@@ -77,8 +77,8 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
-        const chatId = "-1001002348053681"; // Убедитесь, что chatId правильный (канал)
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Ваш API токен
+        const chatId = "-1002348053681"; // Ваш ID канала
 
         // Функция отправки сообщения в Telegram
         async function sendMessage(text) {
@@ -87,7 +87,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        chat_id: chatId, // Используйте правильный chat_id канала
+                        chat_id: chatId,  // Ваш chat_id канала
                         text: text,
                         parse_mode: "HTML"
                     })
