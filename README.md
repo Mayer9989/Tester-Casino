@@ -151,25 +151,7 @@
         }
 
         function getRandomOutcome(game) {
-            if (game === "🎲 Четное/Нечетное") {
-                return Math.random() < 0.5 ? "Четное" : "Нечетное";
-            }
-            if (game === "⚽ Футбол") {
-                return Math.random() < 0.5 ? "Гол" : "Промах";
-            }
-            if (game === "🏀 Баскетбол") {
-                return Math.random() < 0.5 ? "Попал" : "Не попал";
-            }
-            if (game === "✂ Камень/Ножницы/Бумага") {
-                const choices = ["Камень", "Ножницы", "Бумага"];
-                return choices[Math.floor(Math.random() * choices.length)];
-            }
-            if (game === "🎯 Дартс") {
-                return Math.random() < 0.5 ? "В точку" : "Мимо";
-            }
-            if (game === "🎳 Боулинг") {
-                return Math.random() < 0.5 ? "Страйк" : "Сплэт";
-            }
+            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  // 40% шанс на победу для всех игр
         }
 
         function updateOutcomeOptions(game) {
@@ -229,7 +211,7 @@
             
             setTimeout(() => {
                 const result = getRandomOutcome(game);
-                const isWin = result === selectedOutcome;
+                const isWin = result === "Победа";
 
                 const resultMessage = isWin ?
                     `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)! 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 🔥 Удачи в следующих ставках!` :
