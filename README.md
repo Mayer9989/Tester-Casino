@@ -20,6 +20,9 @@
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
             <option value="🎲 Больше/Меньше">🎲 Больше/Меньше</option>
+            <option value="⚽ Футбол">⚽ Футбол</option>
+            <option value="🏀 Баскетбол">🏀 Баскетбол</option>
+            <option value="🎳 Боулинг">🎳 Боулинг</option>
         </select>
 
         <h2>💰 Введите сумму ставки</h2>
@@ -29,8 +32,10 @@
         <select id="outcome">
             <option value="Четное">Четное</option>
             <option value="Нечетное">Нечетное</option>
-            <option value="Больше">Больше (от 4 до 6)</option>
-            <option value="Меньше">Меньше (от 1 до 3)</option>
+            <option value="Больше">Больше</option>
+            <option value="Меньше">Меньше</option>
+            <option value="Гол">Гол</option>
+            <option value="Промах">Промах</option>
         </select>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -68,61 +73,88 @@
             });
 
             setTimeout(() => {
-                const rolledNumber1 = Math.floor(Math.random() * 6) + 1;
-                fetch(`https://api.telegram.org/bot${token}/sendDice`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, emoji: "🎲" })
-                });
+                let resultEmoji1 = "";
+                let resultEmoji2 = "";
 
-                setTimeout(() => {
-                    let rolledNumber2 = rolledNumber1;
-                    if (game.includes("Больше/Меньше")) {
-                        rolledNumber2 = Math.floor(Math.random() * 6) + 1;
+                // Логика для разных игр
+                if (game === "🎲 Четное/Нечетное") {
+                    resultEmoji1 = "🎲";
+                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, emoji: resultEmoji1 })
+                    });
+
+                } else if (game === "🎲 Больше/Меньше") {
+                    resultEmoji1 = "🎲";
+                    resultEmoji2 = "🎲";
+                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, emoji: resultEmoji1 })
+                    });
+
+                    setTimeout(() => {
                         fetch(`https://api.telegram.org/bot${token}/sendDice`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ chat_id: chatId, emoji: "🎲" })
+                            body: JSON.stringify({ chat_id: chatId, emoji: resultEmoji2 })
                         });
+                    }, 5000);
+
+                } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
+                    // Для футбола, баскетбола и боулинга отправляем "Гол" или "Промах"
+                    const randomOutcome = Math.random() > 0.5 ? "Гол" : "Промах";
+                    resultEmoji1 = randomOutcome === "Гол" ? "⚽" : "❌";
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `🎯 Результат игры: ${resultEmoji1}`,
+                            parse_mode: "HTML"
+                        })
+                    });
+                }
+
+                setTimeout(() => {
+                    let isWin = false;
+                    let winAmount = 0;
+
+                    if (game === "🎲 Четное/Нечетное") {
+                        isWin = (outcome === "Четное" && resultEmoji1 === "🎲") || (outcome === "Нечетное" && resultEmoji1 !== "🎲");
+                    } else if (game === "🎲 Больше/Меньше") {
+                        isWin = (outcome === "Больше" && resultEmoji1 === "🎲" && resultEmoji2 === "🎲") ||
+                                (outcome === "Меньше" && resultEmoji1 === "🎲" && resultEmoji2 === "🎲");
+                    } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
+                        isWin = (outcome === "Гол" && resultEmoji1 === "⚽") || (outcome === "Промах" && resultEmoji1 === "❌");
                     }
 
-                    setTimeout(() => {
-                        let isWin = false;
-                        if (game.includes("Четное/Нечетное")) {
-                            isWin = (outcome === "Четное" && rolledNumber1 % 2 === 0) || (outcome === "Нечетное" && rolledNumber1 % 2 !== 0);
-                        } else if (game.includes("Больше/Меньше")) {
-                            isWin = (outcome === "Больше" && rolledNumber2 >= rolledNumber1) || (outcome === "Меньше" && rolledNumber2 < rolledNumber1);
-                        }
+                    if (isWin) {
+                        winAmount = betAmount * 1.5;
+                        resultMessage = `🎉 Поздравляем, вы выиграли!\n\n` +
+                                        `💰 Выигрыш: ${winAmount.toFixed(2)} USD [${(winAmount * 90).toFixed(2)} RUB]\n\n` +
+                                        `🚀 Ваш выигрыш в чеке, активируйте его!\n🔥 Удачи в следующих ставках!`;
+                        buttonText = "🔄 Сделать новую ставку";
+                    } else {
+                        resultMessage = `❌ Вы проиграли!🥲\n🔥 Удачи в следующих ставках!`;
+                        buttonText = "🔄 Попробовать снова";
+                    }
 
-                        let resultMessage;
-                        let buttonText;
-                        if (isWin) {
-                            const winAmount = betAmount * 1.5;
-                            resultMessage = `🎉 Поздравляем, вы выиграли!\n\n` +
-                                            `💰 Выигрыш: ${winAmount.toFixed(2)} USD [${(winAmount * 90).toFixed(2)} RUB]\n\n` +
-                                            `🚀 Ваш выигрыш в чеке, активируйте его!\n🔥 Удачи в следующих ставках!`;
-                            buttonText = "🔄 Сделать новую ставку";
-                        } else {
-                            resultMessage = `❌ Вы проиграли!🥲\n🔥 Удачи в следующих ставках!`;
-                            buttonText = "🔄 Попробовать снова";
-                        }
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: resultMessage,
+                            parse_mode: "HTML",
+                            reply_markup: {
+                                inline_keyboard: [[{ text: buttonText, web_app: { url: webAppUrl } }]]
+                            }
+                        })
+                    });
 
-                        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                chat_id: chatId,
-                                text: resultMessage,
-                                parse_mode: "HTML",
-                                reply_markup: {
-                                    inline_keyboard: [[{ text: buttonText, web_app: { url: webAppUrl } }]]
-                                }
-                            })
-                        });
-
-                    }, 1000);
-
-                }, 5000);
+                }, 10000);
 
             }, 1000);
         }
