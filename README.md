@@ -77,10 +77,9 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Ваш токен
-        const chatId = "1002348053681"; // Ваш ID канала
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Твой токен бота
+        const chatId = "-1002348053681"; // ID канала, убедись, что перед ним стоит "-100" (если это канал)
 
-        // Функция для отправки ставки в канал
         function placeBet() {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -92,41 +91,47 @@
                 return;
             }
 
-            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Аноним";
+            // Получаем данные пользователя из Telegram WebApp
+            let username = "Аноним";
+            if (window.Telegram && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+                username = Telegram.WebApp.initDataUnsafe.user.username || `ID ${Telegram.WebApp.initDataUnsafe.user.id}`;
+            }
 
             // Формируем сообщение для канала
-            let message = `[🎉 Ваша ставка принята]
+            const message = `[🎉 Ваша ставка принята]
 
-🔑 Игрок: ${username} 🚀 Режим: ${game} — ${outcome} 💸 Сумма ставки: ${betAmount} USD`;
+🔑 Игрок: ${username} 
+🚀 Режим: ${game} — ${outcome} 
+💸 Сумма ставки: ${betAmount} USD`;
+
+            console.log("Отправка сообщения:", message);
 
             // Отправка запроса в Telegram API
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: message })
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: "HTML"
+                })
             })
-            .then(response => {
-                console.log("Response status:", response.status); // Логируем статус ответа
-                if (!response.ok) {
-                    throw new Error("Ошибка отправки ставки в канал");
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log("Ответ от API Telegram:", data); // Логируем ответ
+                console.log("Ответ от Telegram API:", data);
                 if (data.ok) {
-                    // После отправки ставки открывается ссылка на кошелек
-                    window.location.href = "http://t.me/send?start=IVyytgNj3snE";
+                    alert("✅ Ставка принята!");
+                    window.location.href = "http://t.me/send?start=IVyytgNj3snE"; // Ссылка на кошелек или оплату
                 } else {
-                    console.error("Ошибка при отправке сообщения:", data);
+                    alert("❌ Ошибка при отправке ставки! Проверьте настройки.");
                 }
             })
             .catch(error => {
-                console.error("Ошибка при отправке ставки:", error);
+                console.error("Ошибка при отправке запроса:", error);
+                alert("❌ Ошибка соединения с Telegram API.");
             });
         }
 
-        // Добавляем обработчик события на кнопку
         document.getElementById("placeBetBtn").addEventListener("click", placeBet);
     </script>
 </body>
