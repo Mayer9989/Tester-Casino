@@ -78,7 +78,7 @@
 
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; 
-        const chatId = "-1001002348053681"; // Префикс для канала, укажите свой правильный chat_id
+        const chatId = "-1002348053681"; // Префикс для канала, укажите свой правильный chat_id
 
         // Функция отправки сообщения в Telegram
         async function sendMessage(text) {
