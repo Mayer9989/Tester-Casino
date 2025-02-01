@@ -54,6 +54,7 @@
             <option value="⚽ Футбол">⚽ Футбол</option>
             <option value="🏀 Баскетбол">🏀 Баскетбол</option>
             <option value="🎳 Боулинг">🎳 Боулинг</option>
+            <option value="🔢 Больше/Меньше">🔢 Больше/Меньше</option>
         </select>
         
         <h2>💰 Введите сумму ставки</h2>
@@ -65,6 +66,8 @@
             <option value="Нечетное">Нечетное</option>
             <option value="Гол">Гол</option>
             <option value="Промах">Промах</option>
+            <option value="Больше">Больше</option>
+            <option value="Меньше">Меньше</option>
         </select>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -101,37 +104,44 @@
             });
 
             setTimeout(() => {
+                let resultMessage = "";
                 let resultEmoji = "";
-                let gameOutcomeMessage = "";
-                
-                // Результат для игры "🎲 Четное/Нечетное"
-                if (game === "🎲 Четное/Нечетное") {
-                    const randomOutcome = Math.random() > 0.5 ? "🎲" : "🎲"; // Рандомное выпадение
-                    resultEmoji = randomOutcome;
-                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
-                    
-                } 
-                // Для других игр
-                else if (game === "⚽ Футбол") {
-                    resultEmoji = Math.random() > 0.5 ? "⚽" : "❌";
-                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
-                } 
-                else if (game === "🏀 Баскетбол") {
-                    resultEmoji = Math.random() > 0.5 ? "🏀" : "❌";
-                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
-                } 
-                else if (game === "🎳 Боулинг") {
-                    resultEmoji = Math.random() > 0.5 ? "🎳" : "❌";
-                    gameOutcomeMessage = `🎯 Результат игры: ${resultEmoji}`;
+
+                if (game === "🔢 Больше/Меньше") {
+                    resultEmoji = "🎲";
+                    // Отправляем два кубика с интервалом
+                    fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            emoji: resultEmoji
+                        })
+                    });
+
+                    setTimeout(() => {
+                        fetch(`https://api.telegram.org/bot${token}/sendDice`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                chat_id: chatId,
+                                emoji: resultEmoji
+                            })
+                        });
+                    }, 5000); // Второй кубик через 5 секунд
+
+                    resultMessage = "🎯 Результат игры: 🎲 🎲";
+                } else {
+                    resultMessage = `❌ Игра не поддерживается.`;
                 }
 
-                // Отправка результата в канал
+                // Отправка результата игры в канал
                 fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         chat_id: chatId,
-                        text: gameOutcomeMessage,
+                        text: resultMessage,
                         parse_mode: "HTML"
                     })
                 });
@@ -140,16 +150,26 @@
                     let isWin = false;
                     let winAmount = 0;
 
-                    // Проверка на победу или проигрыш
-                    if (game === "🎲 Четное/Нечетное") {
-                        isWin = (outcome === "Четное" && resultEmoji === "🎲") || 
-                                (outcome === "Нечетное" && resultEmoji !== "🎲");
-                    } else if (game === "⚽ Футбол" || game === "🏀 Баскетбол" || game === "🎳 Боулинг") {
-                        isWin = (outcome === "Гол" && resultEmoji === "⚽") || 
-                                (outcome === "Промах" && resultEmoji === "❌");
-                    }
+                    // Логика для игры "🔢 Больше/Меньше"
+                    if (game === "🔢 Больше/Меньше") {
+                        // Смотрим на результат двух случайных кубиков
+                        const dice1 = Math.floor(Math.random() * 6) + 1; // Кубик 1
+                        const dice2 = Math.floor(Math.random() * 6) + 1; // Кубик 2
+                        const isBigger = dice1 > dice2;
 
-                    let resultMessage = "";
+                        isWin = (outcome === "Больше" && isBigger) || (outcome === "Меньше" && !isBigger);
+
+                        // Отправляем информацию о значениях кубиков
+                        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                chat_id: chatId,
+                                text: `🎲 Кубик 1: ${dice1} 🎲 Кубик 2: ${dice2}`,
+                                parse_mode: "HTML"
+                            })
+                        });
+                    }
 
                     if (isWin) {
                         winAmount = betAmount * 2;
@@ -169,7 +189,7 @@
                             parse_mode: "HTML"
                         })
                     });
-                }, 3000);
+                }, 10000); // Завершаем результат через 10 секунд
             }, 3000);
         }
 
