@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>💎 Казино</title>
+    <title>💎 TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -25,9 +25,10 @@
         }
         h2 {
             text-align: center;
-            color: #FFD700;
+            color: white;
+            font-size: 32px;
             margin-bottom: 20px;
-            font-size: 24px;
+            font-weight: bold;
         }
         select, input, button {
             width: 100%;
@@ -65,8 +66,8 @@
 </head>
 <body>
     <div class="container">
-        <h2>🎰 Ваше Казино</h2>
-        
+        <h2>TESTER CASINO</h2>
+
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -80,11 +81,9 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
-        <!-- Раздел для выбора исхода -->
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome">
-                <!-- Исходы будут добавляться динамически -->
             </select>
         </div>
 
@@ -94,10 +93,9 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Укажите ваш токен
-        const chatId = "1002348053681";  // Укажите ID вашего канала
+        const token = "ВАШ_ТОКЕН";  // Замените на корректный токен вашего бота
+        const chatId = "-1002348053681";  // Обязательно с префиксом -100 для каналов
 
-        // Функция для отправки сообщений на Telegram через API
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -112,7 +110,7 @@
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                
+
                 console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
@@ -120,30 +118,6 @@
             }
         }
 
-        // Функция для получения случайного исхода игры
-        function getRandomOutcome(game) {
-            if (game === "🎲 Четное/Нечетное") {
-                return Math.random() < 0.5 ? "Четное" : "Нечетное";
-            }
-            if (game === "⚽ Футбол") {
-                return Math.random() < 0.5 ? "Гол" : "Промах";
-            }
-            if (game === "🏀 Баскетбол") {
-                return Math.random() < 0.5 ? "Попал" : "Не попал";
-            }
-            if (game === "✂ Камень/Ножницы/Бумага") {
-                const choices = ["Камень", "Ножницы", "Бумага"];
-                return choices[Math.floor(Math.random() * choices.length)];
-            }
-            if (game === "🎯 Дартс") {
-                return Math.random() < 0.5 ? "В точку" : "Мимо";
-            }
-            if (game === "🎳 Боулинг") {
-                return Math.random() < 0.5 ? "Страйк" : "Сплэт";
-            }
-        }
-
-        // Функция для обновления исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -155,7 +129,6 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            // Очищаем текущие опции
             outcomeSelect.innerHTML = '';
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
@@ -164,17 +137,14 @@
                 outcomeSelect.appendChild(opt);
             });
 
-            // Показываем блок с выбором исхода
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Обработчик изменения игры
-        document.getElementById("game").addEventListener("change", function() {
+        document.getElementById("game").addEventListener("change", function () {
             const selectedGame = this.value;
             updateOutcomeOptions(selectedGame);
         });
 
-        // Обработчик события для кнопки "Сделать ставку"
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -195,22 +165,16 @@
                 username = Telegram.WebApp.initDataUnsafe.user.username || `ID ${Telegram.WebApp.initDataUnsafe.user.id}`;
             }
 
-            // Сообщение о принятой ставке
             const betMessage = `[🎉 Ваша ставка принята]\n\n` +
                                `🔑 Игрок: ${username}\n` +
                                `🚀 Режим: ${game}\n` +
                                `💸 Сумма ставки: ${betAmount.toFixed(2)} USD\n` +
                                `🏁 Исход игры: ${selectedOutcome}`;
 
-            // Отправка сообщения о ставке
             sendMessage(betMessage);
 
-            // Задержка перед результатом игры
             setTimeout(() => {
-                const result = getRandomOutcome(game);
-                sendMessage(`🎯 Результат игры: ${result}`);
-
-                const isWin = result === selectedOutcome;
+                const isWin = Math.random() < 0.5;
                 const resultMessage = isWin ?
                     `🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!` :
                     `❌ Вы проиграли ${betAmount} USD.`;
