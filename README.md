@@ -95,12 +95,6 @@
     <script>
         const telegramToken = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
         const chatId = "-1002348053681";  
-        const cryptoBotToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Замените на ваш реальный токен CryptoBot API
-
-        // Получение информации о пользователе через Telegram WebApp
-        const user = Telegram.WebApp.initDataUnsafe;
-        const userId = user.user.id;
-        const username = user.user.username || 'Без имени'; // Если у пользователя нет username, то отображаем 'Без имени'
 
         // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
@@ -110,8 +104,8 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         chat_id: chatId,
-                        text: text,
-                        parse_mode: "Markdown" // Используем Markdown для цитирования
+                        text: `<blockquote>${text}</blockquote>`,  // Используем <blockquote> для цитирования
+                        parse_mode: "HTML"  // Используем HTML для обработки тега <blockquote>
                     })
                 });
 
@@ -124,9 +118,9 @@
             }
         }
 
-        // Функция для генерации исхода игры с 40% шансом на победу
+        // Функция для генерации исхода игры с 20% шансом на победу
         function getRandomOutcome() {
-            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
+            return Math.random() < 0.2 ? "Победа" : "Проигрыш";  // Вероятность победы 20%
         }
 
         // Функция для обновления возможных исходов в зависимости от выбранной игры
@@ -153,29 +147,6 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Функция для создания счета через CryptoBot API
-        async function createPaymentRequest(betAmount, game, outcome) {
-            const response = await fetch("https://api.crypto-payment-system.com/create-payment", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    token: cryptoBotToken,  // Токен CryptoBot API
-                    amount: betAmount,
-                    description: `Ставка на игру: ${game}`,
-                    outcome: outcome,  // Исход игры
-                    callback_url: "https://your-server-url.com/payment-webhook"  // Ваш URL для обработки успешной оплаты
-                })
-            });
-
-            const data = await response.json();
-            if (data.payment_url) {
-                // Перенаправление пользователя на страницу оплаты
-                window.location.href = data.payment_url;
-            } else {
-                alert("Ошибка при создании счета для оплаты.");
-            }
-        }
-
         // Отправка выбранных данных при клике на кнопку
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
@@ -192,10 +163,13 @@
                 return;
             }
 
-            // Отправляем сообщение о ставке
-            sendMessage(`> 🎉 Ваша ставка принята!
+            const username = "Игрок_1";  // Замените на реальное имя игрока
+            const userId = "123456";  // Замените на реальный ID игрока
 
-🔑 Игрок: ${username} (@${username})
+            // Отправляем сообщение о ставке
+            sendMessage(`🎉 Ваша ставка принята!
+
+🔑 Игрок: ${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
@@ -204,24 +178,23 @@
             // Отправляем сообщение "🎯 Загружаем результат игры..."
             sendMessage("🎯 Загружаем результат игры...");
 
-            // Генерируем результат
-            const result = getRandomOutcome();  // Генерация случайного исхода игры
+            // Генерация случайного исхода игры
+            const result = getRandomOutcome();
             const isWin = result === "Победа"; // Проверка на победу
             const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
 
             let resultMessage = "";
 
-            // Текст результата для всех игр
             if (isWin) {
                 resultMessage = `
-🔑 Игрок: ${username} (@${username})
+🔑 Игрок: ${username}
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
                 `;
             } else {
                 resultMessage = `
-🔑 Игрок: ${username} (@${username})
+🔑 Игрок: ${username}
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
                 `;
@@ -231,9 +204,6 @@
             setTimeout(() => {
                 sendMessage(resultMessage);
             }, 2000); // Ожидание 2 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
-
-            // Создаем счет через CryptoBot API
-            createPaymentRequest(betAmount, game, result);
         });
 
         // Обработчик изменения игры для обновления исходов
