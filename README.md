@@ -77,7 +77,7 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
-        <div id="outcomeOptions">
+        <div id="outcomeContainer">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome"></select>
         </div>
@@ -91,9 +91,9 @@
         const telegramToken = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
         const chatId = "-1002348053681";  
 
-        const user = Telegram.WebApp.user;
+        const user = Telegram.WebApp.initDataUnsafe?.user || {};  
         const userName = user.username ? `@${user.username}` : 'Без имени';
-        const userId = user.id;
+        const userId = user.id || 'Неизвестный ID';
 
         async function sendMessage(text, isQuoted = false) {
             try {
@@ -107,7 +107,7 @@
                     })
                 });
             } catch (error) {
-                alert(`Ошибка: ${error.message}`);
+                alert(`Ошибка отправки в Telegram: ${error.message}`);
             }
         }
 
