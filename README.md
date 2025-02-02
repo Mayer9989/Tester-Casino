@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <h2>🎰 TESTER CASINO</h2>
-        
+
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -78,13 +78,11 @@
         </select>
 
         <label for="bet_amount">Введите сумму ставки:</label>
-        <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
+        <input type="number" id="bet_amount" placeholder="Минимум 0.20 USDT" step="0.01" min="0.20">
 
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome">
-                <!-- Исходы будут добавляться динамически -->
-            </select>
+            <select id="outcome"></select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -93,64 +91,67 @@
     </div>
 
     <script>
-        const token = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  
-        const chatId = "-1002348053681";  
-        const cryptoPayUrl = "https://pay.crypt.bot/api/";
+        const botToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Замените на токен вашего CryptoBot
+        const cryptoPayApiUrl = "https://pay.crypt.bot/api/";
+        const telegramBotToken = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Замените на токен вашего Telegram-бота
+        const telegramChatId = "-1002348053681";  // Замените на ID вашего канала или группы
 
-        // Функция создания платежа через Cryptobot
+        // Создание платежа через CryptoBot
         async function createPayment(amount) {
-            const requestData = {
-                amount: parseFloat(amount).toFixed(2),
-                currency: "USDT",  
-                description: `Оплата ставки ${amount} USDT`
-            };
+            try {
+                const response = await fetch(`${cryptoPayApiUrl}createInvoice`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${botToken}`
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount).toFixed(2),
+                        currency: "USDT",
+                        description: `Оплата ставки ${amount} USDT`
+                    })
+                });
 
-            const response = await fetch(`${cryptoPayUrl}createInvoice`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(requestData)
-            });
-
-            const data = await response.json();
-            if (data.ok) {
-                return data.result.pay_url;
-            } else {
-                alert("Ошибка создания платежа: " + data.error.message);
-                throw new Error(data.error.message);
+                const data = await response.json();
+                if (data.ok) {
+                    return data.result.pay_url;
+                } else {
+                    throw new Error(data.error.message || "Ошибка создания платежа");
+                }
+            } catch (error) {
+                alert("Ошибка создания платежа: " + error.message);
+                throw error;
             }
         }
 
-        // Функция для отправки сообщения в Telegram
+        // Отправка сообщения в Telegram
         async function sendMessage(text) {
             try {
-                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        chat_id: chatId,
+                        chat_id: telegramChatId,
                         text: text,
                         parse_mode: "HTML"
                     })
                 });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                console.log("Сообщение успешно отправлено:", data);
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.description || "Ошибка отправки сообщения");
+                }
             } catch (error) {
-                console.error("Ошибка отправки сообщения:", error);
-                alert(`Ошибка: ${error.message}`);
+                alert(`Ошибка отправки сообщения: ${error.message}`);
             }
         }
 
-        // Функция для генерации исхода игры с 40% шансом на победу
+        // Генерация случайного исхода игры с 40% шансом на победу
         function getRandomOutcome() {
-            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
+            return Math.random() < 0.4 ? "Победа" : "Проигрыш";
         }
 
-        // Функция для обновления возможных исходов в зависимости от выбранной игры
+        // Обновление возможных исходов игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -162,8 +163,7 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = '';  
-
+            outcomeSelect.innerHTML = '';
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
                 opt.value = option;
@@ -174,14 +174,14 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Отправка выбранных данных при клике на кнопку
+        // Обработка события нажатия на кнопку ставки
         document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
 
             if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
+                alert("❌ Минимальная ставка — 0.20 USDT");
                 return;
             }
 
@@ -190,59 +190,53 @@
                 return;
             }
 
-            let username = "Игрок_1";  
-            let userId = "123456";  
-
-            sendMessage(`[🎰 Ставка принята]
-
-🔑 Игрок: ${username}
-🔑 Айди игрока: ${userId}
-🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}`);
-
-            sendMessage("🎯 Загружаем результат игры...");
-
-            const result = getRandomOutcome();  
-            const isWin = result === "Победа"; 
-            const rubAmount = (betAmount * 70).toFixed(2);  
-
-            let resultMessage = "";
-
-            if (isWin) {
-                resultMessage = `
-🔑 Игрок: ${username}
-🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
-🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
-🔥 Удачи в следующих ставках!
-                `;
-            } else {
-                resultMessage = `
-🔑 Игрок: ${username}
-❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
-🔥 Удачи в следующих ставках!
-                `;
-            }
-
-            setTimeout(() => {
-                sendMessage(resultMessage);
-            }, 2000);
-
             try {
                 const paymentUrl = await createPayment(betAmount);
                 alert("Перенаправляем вас на оплату...");
                 window.location.href = paymentUrl;
+
+                const username = "Игрок_1";
+                const userId = "123456";
+
+                sendMessage(`[🎰 Ставка принята]
+
+🔑 Игрок: ${username}
+🔑 Айди игрока: ${userId}
+🚀 Игра: ${game}
+💸 Сумма ставки: ${betAmount} USDT
+🏁 Исход: ${selectedOutcome}`);
+
+                sendMessage("🎯 Загружаем результат игры...");
+
+                const result = getRandomOutcome();
+                const rubAmount = (betAmount * 70).toFixed(2);  
+
+                const resultMessage = result === "Победа"
+                    ? `
+🔑 Игрок: ${username}
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USDT (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
+🔥 Удачи в следующих ставках!
+`
+                    : `
+🔑 Игрок: ${username}
+❌ Вы проиграли ${betAmount} USDT (${rubAmount} RUB)
+🔥 Удачи в следующих ставках!
+`;
+
+                setTimeout(() => {
+                    sendMessage(resultMessage);
+                }, 2000);
             } catch (error) {
                 console.error("Ошибка оплаты:", error);
             }
         });
 
         document.getElementById("game").addEventListener("change", function () {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);  
+            updateOutcomeOptions(this.value);
         });
 
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
-</html>
+</html> 
