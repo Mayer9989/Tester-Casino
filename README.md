@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>💎 TESTER CASINO</title>
+    <title>TESTER CASINO🥷</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -25,9 +25,9 @@
         }
         h2 {
             text-align: center;
-            color: #FFD700;
+            color: white;
+            font-size: 30px;
             margin-bottom: 20px;
-            font-size: 24px;
         }
         select, input, button {
             width: 100%;
@@ -65,8 +65,8 @@
 </head>
 <body>
     <div class="container">
-        <h2>🎰 TESTER CASINO</h2>
-        
+        <h2><span style="color: white;">TESTER</span><span style="color: red;"> CASINO🥷</span></h2>
+
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -110,11 +110,7 @@
                 });
 
                 const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.description || 'Неизвестная ошибка');
-                }
-
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
                 console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
@@ -171,9 +167,9 @@
             let userId = "123456";  // Замените на реальный ID игрока
 
             // Отправляем сообщение о ставке
-            sendMessage(`[🎰 Ставка принята]
+            sendMessage(`[Ставка принята]
 
-🔑 Игрок: ${username}
+🔑 Игрок: @${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
@@ -191,14 +187,14 @@
 
             if (isWin) {
                 resultMessage = `
-🔑 Игрок: ${username}
+🔑 Игрок: @${username}
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
                 `;
             } else {
                 resultMessage = `
-🔑 Игрок: ${username}
+🔑 Игрок: @${username}
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
                 `;
