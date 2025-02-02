@@ -118,6 +118,7 @@
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
+                console.log("Message sent successfully:", data);
                 return data.result.message_id;  // Возвращаем ID отправленного сообщения
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
