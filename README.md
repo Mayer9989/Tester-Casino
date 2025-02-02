@@ -26,15 +26,17 @@
         }
         h2 {
             text-align: center;
-            font-size: 150px;  /* Сделаем шрифт намного больше */
+            font-size: 250px;  /* Заголовок очень большой */
             font-family: 'Roboto', sans-serif;
-            font-weight: bolder;  /* Сделаем шрифт жирным */
-            letter-spacing: 10px;  /* Сделаем буквы шире */
+            font-weight: bolder;  /* Жирный текст */
+            letter-spacing: 20px;  /* Сделаем буквы шире */
             color: white;
-            text-shadow: 0 0 25px rgba(255, 0, 0, 0.7), 0 0 50px red, 0 0 60px darkred;
+            text-shadow: 0 0 35px rgba(255, 0, 0, 0.7), 0 0 50px red, 0 0 60px darkred;
             word-wrap: break-word;
             margin: 0;
             display: inline-block;
+            text-align: center;
+            max-width: 100%; /* Максимальная ширина для заголовка */
         }
         h2 span {
             color: #ff0000;
