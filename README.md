@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <title>💎 TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
     <style>
         body, html {
             height: 100%;
@@ -26,13 +27,21 @@
         h2 {
             text-align: center;
             margin-bottom: 20px;
-            font-size: 24px;
+            font-size: 32px;
         }
         .tester {
+            font-family: 'Anton', sans-serif; /* Установить шрифт Anton */
             color: white;
+            font-size: 50px;
+            font-weight: bold;
+            letter-spacing: 4px;
         }
         .casino {
+            font-family: 'Anton', sans-serif; /* Установить шрифт Anton */
             color: red;
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 3px;
         }
         select, input, button {
             width: 100%;
