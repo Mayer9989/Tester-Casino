@@ -80,9 +80,11 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
-        <div id="outcomeOptions">
+        <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome"></select>
+            <select id="outcome">
+                <!-- Исходы будут добавляться динамически -->
+            </select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -111,10 +113,10 @@
                 });
 
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.description || 'Ошибка при отправке');
-                console.log("Сообщение отправлено:", data);
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
+                console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
-                console.error("Ошибка отправки:", error);
+                console.error("Ошибка отправки сообщения:", error);
                 alert(`Ошибка: ${error.message}`);
             }
         }
@@ -123,8 +125,7 @@
             return Math.random() < 0.2 ? "Победа" : "Проигрыш";  
         }
 
-        function updateOutcomeOptions() {
-            const game = document.getElementById("game").value;
+        function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
                 "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
@@ -135,16 +136,17 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = ""; 
+            outcomeSelect.innerHTML = '';  
+
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
                 opt.value = option;
                 opt.textContent = option;
                 outcomeSelect.appendChild(opt);
             });
-        }
 
-        document.getElementById("game").addEventListener("change", updateOutcomeOptions);
+            document.getElementById("outcomeOptions").style.display = "block";
+        }
 
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
@@ -157,31 +159,52 @@
             }
 
             if (!selectedOutcome) {
-                alert("❌ Выберите исход игры.");
+                alert("❌ Пожалуйста, выберите исход игры.");
                 return;
             }
 
-            sendMessage(`🎉 Ваша ставка принята!\n\n🔑 Игрок: ${userName}\n🔑 Айди игрока: ${userId}\n🚀 Игра: ${game}\n💸 Сумма: ${betAmount} USD\n🏁 Исход: ${selectedOutcome}`, true);
+            sendMessage(`🎉 Ваша ставка принята!
+
+🔑 Игрок: ${userName}
+🔑 Айди игрока: ${userId}
+🚀 Игра: ${game}
+💸 Сумма ставки: ${betAmount} USD
+🏁 Исход: ${selectedOutcome}`, true);  
 
             sendMessage("🎯 Загружаем результат игры...");
 
+            const result = getRandomOutcome();
+            const isWin = result === "Победа"; 
+            const rubAmount = (betAmount * 70).toFixed(2);  
+
+            let resultMessage = "";
+
+            if (isWin) {
+                resultMessage = `
+🔑 Игрок: ${userName}
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
+🔥 Удачи в следующих ставках!
+                `;
+            } else {
+                resultMessage = `
+🔑 Игрок: ${userName}
+❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
+🔥 Удачи в следующих ставках!
+                `;
+            }
+
             setTimeout(() => {
-                const result = getRandomOutcome();
-                const isWin = result === "Победа";
-                const rubAmount = (betAmount * 70).toFixed(2);
-                let resultMessage = "";
-
-                if (isWin) {
-                    resultMessage = `🔑 Игрок: ${userName}\n🎉 Вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!\n🚀 Ваш выигрыш будет в чеке в канале TESTER выплаты!`;
-                } else {
-                    resultMessage = `🔑 Игрок: ${userName}\n❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)\n🔥 Удачи в следующих ставках!`;
-                }
-
                 sendMessage(resultMessage);
-            }, 2000);
+            }, 2000); 
         });
 
-        document.addEventListener("DOMContentLoaded", updateOutcomeOptions);
+        document.getElementById("game").addEventListener("change", function() {
+            const selectedGame = this.value;
+            updateOutcomeOptions(selectedGame);
+        });
+
+        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
