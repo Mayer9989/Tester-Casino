@@ -130,7 +130,7 @@
 
         // Функция для генерации случайного исхода
         function getRandomOutcome() {
-            return Math.random() < 0.2 ? "Победа" : "Проигрыш";  
+            return Math.random() < 0.5 ? "Победа" : "Проигрыш";  
         }
 
         // Функция для обновления исходов в зависимости от выбранной игры
@@ -156,13 +156,11 @@
                     outcomeSelect.appendChild(opt);
                 });
 
-                // Показать / скрыть блок с исходами
+                // Показать блок с исходами
                 document.getElementById("outcomeOptions").style.display = "block";
             } else {
                 document.getElementById("outcomeOptions").style.display = "none";
             }
-
-            console.log(`Доступные исходы для ${game}:`, outcomeOptions[game]);  // Отладочная информация
         }
 
         // Обработчик кнопки "Сделать ставку"
