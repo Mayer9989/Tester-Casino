@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>💎 TESTER CASINO</title>
+    <title>TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -23,12 +23,27 @@
             padding: 30px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.6);
         }
+        
+        /* Светящийся текст */
         h2 {
             text-align: center;
-            color: #FFD700;
-            margin-bottom: 20px;
-            font-size: 24px;
+            font-size: 70px;  /* Очень большой шрифт */
+            font-weight: bold;
+            background: linear-gradient(to right, #ffffff, #ff0000);
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: glow 1.5s ease-in-out infinite alternate;
         }
+        
+        @keyframes glow {
+            0% {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ff0000, 0 0 20px #ff0000;
+            }
+            100% {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #ff0000, 0 0 40px #ff0000;
+            }
+        }
+
         select, input, button {
             width: 100%;
             padding: 15px;
@@ -65,7 +80,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>💎 TESTER CASINO</h2>
+        <h2>TESTER CASINO</h2>
         
         <label for="game">Выберите игру:</label>
         <select id="game">
@@ -112,27 +127,9 @@
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
                 console.log("Сообщение успешно отправлено:", data);
-                return data.result.message_id; // Возвращаем message_id для последующего удаления
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
                 alert(`Ошибка: ${error.message}`);
-            }
-        }
-
-        // Функция для удаления сообщения
-        async function deleteMessage(messageId) {
-            try {
-                await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        message_id: messageId
-                    })
-                });
-                console.log("Сообщение удалено");
-            } catch (error) {
-                console.error("Ошибка удаления сообщения:", error);
             }
         }
 
@@ -187,46 +184,41 @@
             // Отправляем сообщение о ставке
             sendMessage(`[🎉 Ваша ставка принята]
 
-🔑 Игрок: @${username}
+🔑 Игрок: ${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}`).then((messageId) => {
-                // Отправляем сообщение "🎯 Загружаем результат игры..."
-                sendMessage("🎯 Загружаем результат игры...").then((messageIdLoading) => {
-                    // Удаляем сообщение "🎯 Загружаем результат игры..." через 2 секунды
-                    setTimeout(() => {
-                        deleteMessage(messageIdLoading);
-                    }, 2000);
+🏁 Исход: ${selectedOutcome}`);
 
-                    // Генерируем результат
-                    const result = getRandomOutcome();  // Генерация случайного исхода игры
-                    const isWin = result === "Победа"; // Проверка на победу
-                    const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
+            // Отправляем сообщение "🎯 Загружаем результат игры..."
+            sendMessage("🎯 Загружаем результат игры...");
 
-                    let resultMessage = "";
+            // Генерируем результат
+            const result = getRandomOutcome();  // Генерация случайного исхода игры
+            const isWin = result === "Победа"; // Проверка на победу
+            const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
 
-                    if (isWin) {
-                        resultMessage = `
-🔑 Игрок: @${username}
+            let resultMessage = "";
+
+            if (isWin) {
+                resultMessage = `
+🔑 Игрок: ${username}
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
-                        `;
-                    } else {
-                        resultMessage = `
-🔑 Игрок: @${username}
+                `;
+            } else {
+                resultMessage = `
+🔑 Игрок: ${username}
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
-                        `;
-                    }
+                `;
+            }
 
-                    // Отправляем сообщение о результате игры через 3 секунды
-                    setTimeout(() => {
-                        sendMessage(resultMessage);
-                    }, 3000); // Ожидание 3 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
-                });
-            });
+            // Отправляем сообщение о результате игры
+            setTimeout(() => {
+                sendMessage(resultMessage);
+            }, 2000); // Ожидание 2 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
         });
 
         // Обработчик изменения игры для обновления исходов
