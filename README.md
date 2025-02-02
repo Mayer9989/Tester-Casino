@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <title>💎 TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем шрифт из Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">  <!-- Пример с жирным шрифтом -->
     <style>
         body, html {
             height: 100%;
@@ -25,12 +27,12 @@
         }
         h2 {
             text-align: center;
-            font-size: 150px; /* Размер шрифта увеличен в 3 раза */
-            font-family: 'Impact', sans-serif; /* Красивый и жирный шрифт */
-            font-weight: bold;
+            font-size: 120px; /* Размер шрифта увеличен */
+            font-family: 'Roboto', sans-serif;  /* Новый шрифт */
+            font-weight: bold;  /* Жирный текст */
             letter-spacing: 5px; /* Увеличиваем межбуквенное расстояние */
             color: white;
-            text-shadow: 2px 2px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred; /* Эффект подсветки */
+            text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred; /* Усиленный эффект подсветки */
         }
         h2 span {
             color: #ff0000; /* Красный цвет для CASINO🥷 */
