@@ -98,8 +98,8 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";
-        const chatId = "-1002348053681";
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
+        const chatId = "-1002348053681";  
 
         async function sendMessage(text) {
             try {
@@ -115,7 +115,7 @@
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                return data.result.message_id;
+                return data.result.message_id;  // Возвращаем ID отправленного сообщения
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
                 alert(`Ошибка: ${error.message}`);
@@ -174,6 +174,7 @@
 🏁 Исход: ${selectedOutcome}`).then(() => {
                 return sendMessage("🎯 Загружаем результат игры...");
             }).then(messageId => {
+                // Удаляем сообщение через 2 секунды
                 setTimeout(() => {
                     fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
                         method: "POST",
@@ -182,6 +183,7 @@
                     }).catch(error => console.error("Ошибка удаления:", error));
                 }, 2000);
 
+                // Задержка 3 секунды перед отправкой результата игры
                 setTimeout(() => {
                     const result = getRandomOutcome();
                     const isWin = result === "Победа";
