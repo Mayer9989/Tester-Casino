@@ -26,7 +26,7 @@
         }
         h2 {
             text-align: center;
-            font-size: 150px;  /* Увеличен размер шрифта */
+            font-size: 180px;  /* Увеличен размер шрифта */
             font-family: 'Roboto', sans-serif;
             font-weight: bolder;  /* Сделано жирнее */
             letter-spacing: 5px;
