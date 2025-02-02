@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <title>💎 TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
+    <!-- Подключаем шрифт из Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">  <!-- Пример с жирным шрифтом -->
     <style>
         body, html {
             height: 100%;
@@ -26,20 +27,15 @@
         }
         h2 {
             text-align: center;
-            font-size: 250px;  /* Заголовок очень большой */
-            font-family: 'Roboto', sans-serif;
-            font-weight: bolder;  /* Жирный текст */
-            letter-spacing: 20px;  /* Сделаем буквы шире */
+            font-size: 150px; /* Увеличенный размер шрифта */
+            font-family: 'Roboto', sans-serif;  /* Новый шрифт */
+            font-weight: bold;  /* Жирный текст */
+            letter-spacing: 7px; /* Увеличиваем межбуквенное расстояние */
             color: white;
-            text-shadow: 0 0 35px rgba(255, 0, 0, 0.7), 0 0 50px red, 0 0 60px darkred;
-            word-wrap: break-word;
-            margin: 0;
-            display: inline-block;
-            text-align: center;
-            max-width: 100%; /* Максимальная ширина для заголовка */
+            text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred; /* Усиленный эффект подсветки */
         }
         h2 span {
-            color: #ff0000;
+            color: #ff0000; /* Красный цвет для CASINO🥷 */
         }
         select, input, button {
             width: 100%;
@@ -94,7 +90,9 @@
 
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome"></select>
+            <select id="outcome">
+                <!-- Исходы будут добавляться динамически -->
+            </select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -184,26 +182,28 @@
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}`).then(() => {
-                // Отправка "Загружаем результат"
-                return sendMessage("🎯 Загружаем результат игры...");
-            }).then(messageId => {
-                // Задержка 2 секунды перед удалением сообщения
+🏁 Исход: ${selectedOutcome}`);
+
+            // Отправляем сообщение "🎯 Загружаем результат игры..." в канал
+            sendMessage("🎯 Загружаем результат игры...").then(messageId => {
+                // Удалить сообщение через 2 секунды
                 setTimeout(() => {
                     fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ 
-                            chat_id: chatId, 
-                            message_id: messageId 
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            message_id: messageId
                         })
-                    }).catch(error => console.error("Ошибка удаления сообщения:", error));
-                }, 2000);  // Удаляем через 2 секунды
+                    });
+                }, 2000);
 
                 // Задержка 3 секунды перед отправкой результата игры
                 setTimeout(() => {
-                    const result = getRandomOutcome();
-                    const isWin = result === "Победа";
+                    // Генерируем результат
+                    const result = getRandomOutcome();  // Генерация случайного исхода игры
+                    const isWin = result === "Победа"; // Проверка на победу
+                    const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
 
                     let resultMessage = "";
 
@@ -217,22 +217,25 @@
                     } else {
                         resultMessage = `
 🔑 Игрок: @${username}
-❌ Вы проиграли ${betAmount} USD (${(betAmount * 70).toFixed(2)} RUB)
+❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
                         `;
                     }
 
                     // Отправляем сообщение о результате игры
                     sendMessage(resultMessage);
-                }, 3000);  // Ожидание 3 секунды
+                }, 3000); // Ожидание 3 секунды
             });
         });
 
         // Обработчик изменения игры для обновления исходов
         document.getElementById("game").addEventListener("change", function() {
             const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от игры
+            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
         });
+
+        // Инициализируем начальные исходы для выбранной игры
+        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
