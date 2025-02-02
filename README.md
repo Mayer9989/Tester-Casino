@@ -138,14 +138,16 @@
 
             outcomeSelect.innerHTML = '';  
 
-            outcomeOptions[game].forEach(option => {
-                const opt = document.createElement("option");
-                opt.value = option;
-                opt.textContent = option;
-                outcomeSelect.appendChild(opt);
-            });
+            if (outcomeOptions[game]) {
+                outcomeOptions[game].forEach(option => {
+                    const opt = document.createElement("option");
+                    opt.value = option;
+                    opt.textContent = option;
+                    outcomeSelect.appendChild(opt);
+                });
+            }
 
-            document.getElementById("outcomeOptions").style.display = "block";
+            document.getElementById("outcomeOptions").style.display = outcomeOptions[game] ? "block" : "none";
         }
 
         document.getElementById("placeBetBtn").addEventListener("click", function () {
@@ -204,6 +206,7 @@
             updateOutcomeOptions(selectedGame);
         });
 
+        // Инициализируем начальные исходы для выбранной игры
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
