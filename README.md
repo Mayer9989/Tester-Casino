@@ -25,14 +25,14 @@
         }
         h2 {
             text-align: center;
-            color: white;
-            background: linear-gradient(45deg, #ff0000, #ffffff);
-            -webkit-background-clip: text;
-            font-size: 50px;
+            font-size: 60px; /* Сделаем шрифт большим */
             font-family: 'Impact', sans-serif;
             font-weight: bold;
+            background: linear-gradient(45deg, #ffffff, #ff0000); /* Белый и красный градиент */
+            -webkit-background-clip: text;
+            color: transparent;
             margin-bottom: 20px;
-            letter-spacing: 2px;
+            letter-spacing: 3px; /* Увеличим межбуквенное расстояние */
         }
         select, input, button {
             width: 100%;
@@ -70,7 +70,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>TESTER CASINO🥷</h2> <!-- Убрал смайлик 🎰 -->
+        <h2>TESTER <span style="color: #ff0000;">CASINO🥷</span></h2> 
         
         <label for="game">Выберите игру:</label>
         <select id="game">
@@ -116,7 +116,7 @@
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                console.log("Сообщение успешно отправлено:", data);
+                return data.result.message_id;  // Возвращаем ID отправленного сообщения
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
                 alert(`Ошибка: ${error.message}`);
@@ -181,35 +181,47 @@
 🏁 Исход: ${selectedOutcome}`);
 
             // Отправляем сообщение "🎯 Загружаем результат игры..." в канал
-            sendMessage("🎯 Загружаем результат игры...");
+            sendMessage("🎯 Загружаем результат игры...").then(messageId => {
+                // Удалить сообщение через 2 секунды
+                setTimeout(() => {
+                    fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            message_id: messageId
+                        })
+                    });
+                }, 2000);
 
-            // Задержка 2 секунды перед отправкой результата игры
-            setTimeout(() => {
-                // Генерируем результат
-                const result = getRandomOutcome();  // Генерация случайного исхода игры
-                const isWin = result === "Победа"; // Проверка на победу
-                const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
+                // Задержка 3 секунды перед отправкой результата игры
+                setTimeout(() => {
+                    // Генерируем результат
+                    const result = getRandomOutcome();  // Генерация случайного исхода игры
+                    const isWin = result === "Победа"; // Проверка на победу
+                    const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
 
-                let resultMessage = "";
+                    let resultMessage = "";
 
-                if (isWin) {
-                    resultMessage = `
+                    if (isWin) {
+                        resultMessage = `
 🔑 Игрок: ${username}
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
-                    `;
-                } else {
-                    resultMessage = `
+                        `;
+                    } else {
+                        resultMessage = `
 🔑 Игрок: ${username}
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
-                    `;
-                }
+                        `;
+                    }
 
-                // Отправляем сообщение о результате игры
-                sendMessage(resultMessage);
-            }, 2000); // Ожидание 2 секунды
+                    // Отправляем сообщение о результате игры
+                    sendMessage(resultMessage);
+                }, 3000); // Ожидание 3 секунды
+            });
         });
 
         // Обработчик изменения игры для обновления исходов
