@@ -111,7 +111,7 @@
                     body: JSON.stringify({
                         chat_id: chatId,
                         text: text,
-                        parse_mode: "HTML"
+                        parse_mode: "Markdown" // Используем Markdown для цитирования
                     })
                 });
 
@@ -193,7 +193,7 @@
             }
 
             // Отправляем сообщение о ставке
-            sendMessage(`[🎰 Ставка принята]
+            sendMessage(`> 🎉 Ваша ставка принята!
 
 🔑 Игрок: ${username} (@${username})
 🔑 Айди игрока: ${userId}
