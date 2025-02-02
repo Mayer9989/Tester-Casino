@@ -183,14 +183,17 @@
                 // Отправка "Загружаем результат"
                 return sendMessage("🎯 Загружаем результат игры...");
             }).then(messageId => {
-                // Удаляем сообщение через 2 секунды
+                // Задержка 2 секунды перед удалением сообщения
                 setTimeout(() => {
                     fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, message_id: messageId })
-                    }).catch(error => console.error("Ошибка удаления:", error));
-                }, 2000);
+                        body: JSON.stringify({ 
+                            chat_id: chatId, 
+                            message_id: messageId 
+                        })
+                    }).catch(error => console.error("Ошибка удаления сообщения:", error));
+                }, 2000);  // Удаляем через 2 секунды
 
                 // Задержка 3 секунды перед отправкой результата игры
                 setTimeout(() => {
