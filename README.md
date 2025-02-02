@@ -29,11 +29,12 @@
             font-size: 1000px;  /* Заголовок в 10 раз больше */
             font-family: 'Roboto', sans-serif;
             font-weight: bolder;  /* Заголовок жирный */
-            letter-spacing: 25px;  /* Межбуквенное расстояние */
+            letter-spacing: 30px;  /* Межбуквенное расстояние */
             color: white;
-            text-shadow: 20px 20px 40px rgba(255, 0, 0, 0.7), 0 0 100px red, 0 0 10px darkred;
+            text-shadow: 0 0 25px rgba(255, 0, 0, 0.7), 0 0 50px red, 0 0 60px darkred;
             word-wrap: break-word; /* Для переноса длинных слов */
             margin: 0;
+            display: inline-block;
         }
         h2 span {
             color: #ff0000;
