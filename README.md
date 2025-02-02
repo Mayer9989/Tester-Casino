@@ -96,12 +96,23 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
-        <div id="outcomeOptions" style="display:none;">
-            <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome">
-                <!-- Исходы будут добавляться динамически -->
-            </select>
-        </div>
+        <label for="outcome">Выберите исход игры:</label>
+        <select id="outcome">
+            <!-- Статические исходы -->
+            <option value="Четное">Четное</option>
+            <option value="Нечетное">Нечетное</option>
+            <option value="Гол">Гол</option>
+            <option value="Промах">Промах</option>
+            <option value="Попал">Попал</option>
+            <option value="Не попал">Не попал</option>
+            <option value="Камень">Камень</option>
+            <option value="Ножницы">Ножницы</option>
+            <option value="Бумага">Бумага</option>
+            <option value="В точку">В точку</option>
+            <option value="Мимо">Мимо</option>
+            <option value="Страйк">Страйк</option>
+            <option value="Сплэт">Сплэт</option>
+        </select>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
 
@@ -137,42 +148,6 @@
             }
         }
 
-        // Функция для генерации случайного исхода
-        function getRandomOutcome() {
-            return Math.random() < 0.5 ? "Победа" : "Проигрыш";  
-        }
-
-        // Функция для обновления исходов в зависимости от выбранной игры
-        function updateOutcomeOptions(game) {
-            const outcomeSelect = document.getElementById("outcome");
-            const outcomeOptions = {
-                "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
-                "⚽ Футбол": ["Гол", "Промах"],
-                "🏀 Баскетбол": ["Попал", "Не попал"],
-                "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
-                "🎯 Дартс": ["В точку", "Мимо"],
-                "🎳 Боулинг": ["Страйк", "Сплэт"]
-            };
-
-            outcomeSelect.innerHTML = '';  // Очистить предыдущие опции
-
-            // Проверяем, если есть исходы для игры
-            if (outcomeOptions[game]) {
-                outcomeOptions[game].forEach(option => {
-                    const opt = document.createElement("option");
-                    opt.value = option;
-                    opt.textContent = option;
-                    outcomeSelect.appendChild(opt);
-                });
-
-                // Показать блок с исходами
-                document.getElementById("outcomeOptions").style.display = "block";
-            } else {
-                document.getElementById("outcomeOptions").style.display = "none";
-            }
-        }
-
-        // Обработчик кнопки "Сделать ставку"
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -198,7 +173,7 @@
 
             sendMessage("🎯 Загружаем результат игры...");
 
-            const result = getRandomOutcome();
+            const result = Math.random() < 0.5 ? "Победа" : "Проигрыш";
             const isWin = result === "Победа"; 
             const rubAmount = (betAmount * 70).toFixed(2);  
 
@@ -223,15 +198,6 @@
                 sendMessage(resultMessage);
             }, 2000); 
         });
-
-        // Обработчик изменения игры
-        document.getElementById("game").addEventListener("change", function() {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);
-        });
-
-        // Инициализируем начальные исходы для выбранной игры
-        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
