@@ -25,14 +25,16 @@
         }
         h2 {
             text-align: center;
-            font-size: 60px; /* Сделаем шрифт большим */
+            font-size: 150px; /* Сделаем шрифт в 3 раза больше */
             font-family: 'Impact', sans-serif;
             font-weight: bold;
+            letter-spacing: 5px; /* Увеличиваем межбуквенное расстояние */
             background: linear-gradient(45deg, #ffffff, #ff0000); /* Белый и красный градиент */
             -webkit-background-clip: text;
             color: transparent;
-            margin-bottom: 20px;
-            letter-spacing: 3px; /* Увеличим межбуквенное расстояние */
+        }
+        h2 span {
+            color: #ff0000; /* Красный цвет для CASINO🥷 */
         }
         select, input, button {
             width: 100%;
@@ -70,7 +72,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>TESTER <span style="color: #ff0000;">CASINO🥷</span></h2> 
+        <h2>TESTER <span>CASINO🥷</span></h2> 
         
         <label for="game">Выберите игру:</label>
         <select id="game">
