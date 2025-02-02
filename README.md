@@ -225,15 +225,18 @@
 
                         // Отправляем сообщение о результате игры
                         sendMessage(resultMessage);
-                    }, 3000); // Ожидание 3 секунды
+                    }, 3000); // Ожидание перед отправкой результата
                 });
-            }, 2000); // Ожидание 2 секунды
+            }, 2000);
         });
 
-        // Обработчик изменения игры для обновления исходов
-        document.getElementById("game").addEventListener("change", function() {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
+        // Инициализация и обновление исходов игры при изменении выбора игры
+        document.getElementById("game").addEventListener("change", function () {
+            updateOutcomeOptions(this.value);
         });
 
-        // Инициализируем
+        // Инициализация исходов игры для начальной игры
+        updateOutcomeOptions(document.getElementById("game").value);
+    </script>
+</body>
+</html>
