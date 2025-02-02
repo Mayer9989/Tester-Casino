@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <h2>🎰 TESTER CASINO</h2>
-
+        
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -78,11 +78,13 @@
         </select>
 
         <label for="bet_amount">Введите сумму ставки:</label>
-        <input type="number" id="bet_amount" placeholder="Минимум 0.20 USDT" step="0.01" min="0.20">
+        <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome"></select>
+            <select id="outcome">
+                <!-- Исходы будут добавляться динамически -->
+            </select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -91,42 +93,38 @@
     </div>
 
     <script>
-        const botToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Замените на токен вашего CryptoBot
-        const webhookUrl = "https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl";  // Замените на URL вашего вебхука Make
+        const telegramToken = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
+        const chatId = "-1002348053681";  
+        const cryptoBotToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Замените на ваш реальный токен CryptoBot API
 
-        // Отправка данных через вебхук Make
-        async function sendToWebhook(amount, game, outcome) {
+        // Функция для отправки сообщения в Telegram
+        async function sendMessage(text) {
             try {
-                const response = await fetch(webhookUrl, {
+                const response = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        amount: amount,
-                        game: game,
-                        outcome: outcome
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: "HTML"
                     })
                 });
 
                 const data = await response.json();
-                if (response.ok) {
-                    return data;  // Возвращаем данные, если все прошло успешно
-                } else {
-                    throw new Error(data.message || "Ошибка вебхука");
-                }
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
+                console.log("Сообщение успешно отправлено:", data);
             } catch (error) {
-                alert("Ошибка отправки данных: " + error.message);
-                throw error;
+                console.error("Ошибка отправки сообщения:", error);
+                alert(`Ошибка: ${error.message}`);
             }
         }
 
-        // Генерация случайного исхода игры с 40% шансом на победу
+        // Функция для генерации исхода игры с 40% шансом на победу
         function getRandomOutcome() {
-            return Math.random() < 0.4 ? "Победа" : "Проигрыш";
+            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
         }
 
-        // Обновление возможных исходов игры
+        // Функция для обновления возможных исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -138,7 +136,8 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = '';
+            outcomeSelect.innerHTML = '';  // Очистить предыдущее содержимое
+
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
                 opt.value = option;
@@ -149,14 +148,37 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Обработка события нажатия на кнопку ставки
-        document.getElementById("placeBetBtn").addEventListener("click", async function () {
+        // Функция для создания счета через CryptoBot API
+        async function createPaymentRequest(betAmount, game, outcome) {
+            const response = await fetch("https://api.crypto-payment-system.com/create-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    token: cryptoBotToken,  // Токен CryptoBot API
+                    amount: betAmount,
+                    description: `Ставка на игру: ${game}`,
+                    outcome: outcome,  // Исход игры
+                    callback_url: "https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl"  // Ваш URL для обработки успешной оплаты
+                })
+            });
+
+            const data = await response.json();
+            if (data.payment_url) {
+                // Перенаправление пользователя на страницу оплаты
+                window.location.href = data.payment_url;
+            } else {
+                alert("Ошибка при создании счета для оплаты.");
+            }
+        }
+
+        // Отправка выбранных данных при клике на кнопку
+        document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
 
             if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20 USDT");
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
             }
 
@@ -165,34 +187,59 @@
                 return;
             }
 
-            try {
-                // Отправка данных в Make
-                const result = await sendToWebhook(betAmount, game, selectedOutcome);
-                
-                // Показать пользователю информацию
-                alert("Ставка отправлена в систему.");
-                
-                // Генерация случайного результата
-                const gameResult = getRandomOutcome();
+            let username = "Игрок_1";  // Замените на реальное имя игрока
+            let userId = "123456";  // Замените на реальный ID игрока
 
-                // Отправка результата в Telegram (если необходимо)
-                const username = "Игрок_1";
-                const resultMessage = gameResult === "Победа"
-                    ? `🎉 Поздравляем, вы выиграли ${betAmount * 2} USDT!`
-                    : `❌ Вы проиграли ${betAmount} USDT.`;
+            // Отправляем сообщение о ставке
+            sendMessage(`[🎰 Ставка принята]
 
-                // Здесь можно отправить сообщение в Telegram (это не обязательно, зависит от вашего использования)
-                // await sendMessage(resultMessage);
+🔑 Игрок: ${username}
+🔑 Айди игрока: ${userId}
+🚀 Игра: ${game}
+💸 Сумма ставки: ${betAmount} USD
+🏁 Исход: ${selectedOutcome}`);
 
-            } catch (error) {
-                console.error("Ошибка: ", error);
+            // Отправляем сообщение "🎯 Загружаем результат игры..."
+            sendMessage("🎯 Загружаем результат игры...");
+
+            // Генерируем результат
+            const result = getRandomOutcome();  // Генерация случайного исхода игры
+            const isWin = result === "Победа"; // Проверка на победу
+            const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
+
+            let resultMessage = "";
+
+            if (isWin) {
+                resultMessage = `
+🔑 Игрок: ${username}
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
+🔥 Удачи в следующих ставках!
+                `;
+            } else {
+                resultMessage = `
+🔑 Игрок: ${username}
+❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
+🔥 Удачи в следующих ставках!
+                `;
             }
+
+            // Отправляем сообщение о результате игры
+            setTimeout(() => {
+                sendMessage(resultMessage);
+            }, 2000); // Ожидание 2 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
+
+            // Создаем счет через CryptoBot API
+            createPaymentRequest(betAmount, game, result);
         });
 
-        document.getElementById("game").addEventListener("change", function () {
-            updateOutcomeOptions(this.value);
+        // Обработчик изменения игры для обновления исходов
+        document.getElementById("game").addEventListener("change", function() {
+            const selectedGame = this.value;
+            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
         });
 
+        // Инициализируем начальные исходы для выбранной игры
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
