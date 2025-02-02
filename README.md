@@ -26,10 +26,10 @@
         }
         h2 {
             text-align: center;
-            font-size: 150px;
+            font-size: 120px;
             font-family: 'Roboto', sans-serif;
             font-weight: bold;
-            letter-spacing: 7px;
+            letter-spacing: 5px;
             color: white;
             text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred;
         }
@@ -45,9 +45,6 @@
             border: 2px solid #444;
             background: #222;
             color: white;
-        }
-        select {
-            background: #333;
         }
         button {
             background: #28a745;
@@ -90,7 +87,8 @@
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome">
-                <!-- Исходы будут добавляться динамически -->
+                <option value="win">Победа</option>
+                <option value="lose">Проигрыш</option>
             </select>
         </div>
 
@@ -118,7 +116,7 @@
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                console.log("Message sent successfully:", data);
+                console.log("Message sent:", data.result);  // Проверка успешной отправки
                 return data.result.message_id;  // Возвращаем ID отправленного сообщения
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
@@ -132,112 +130,51 @@
         }
 
         // Функция для обновления возможных исходов в зависимости от выбранной игры
-        function updateOutcomeOptions(game) {
+        function updateOutcomeOptions() {
+            const game = document.getElementById("game").value;
+            const outcomeOptions = document.getElementById("outcomeOptions");
             const outcomeSelect = document.getElementById("outcome");
-            const outcomeOptions = {
-                "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
-                "⚽ Футбол": ["Гол", "Промах"],
-                "🏀 Баскетбол": ["Попал", "Не попал"],
-                "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
-                "🎯 Дартс": ["В точку", "Мимо"],
-                "🎳 Боулинг": ["Страйк", "Сплэт"]
-            };
 
-            outcomeSelect.innerHTML = '';  // Очистить предыдущее содержимое
-
-            outcomeOptions[game].forEach(option => {
-                const opt = document.createElement("option");
-                opt.value = option;
-                opt.textContent = option;
-                outcomeSelect.appendChild(opt);
-            });
-
-            document.getElementById("outcomeOptions").style.display = "block";
+            if (game === "🎲 Четное/Нечетное") {
+                outcomeOptions.style.display = "block";
+                outcomeSelect.innerHTML = "<option value='win'>Победа</option><option value='lose'>Проигрыш</option>";
+            } else {
+                outcomeOptions.style.display = "none";
+            }
         }
 
-        // Отправка выбранных данных при клике на кнопку
-        document.getElementById("placeBetBtn").addEventListener("click", function () {
-            const game = document.getElementById("game").value;
+        // Обработчик для изменения игры
+        document.getElementById("game").addEventListener("change", updateOutcomeOptions);
+
+        // Обработчик для ставки
+        document.getElementById("placeBetBtn").addEventListener("click", async function() {
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
-            const selectedOutcome = document.getElementById("outcome").value;
+            const game = document.getElementById("game").value;
+            const outcome = document.getElementById("outcome") ? document.getElementById("outcome").value : getRandomOutcome();
 
-            // Получение данных игрока из Telegram Web App
-            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок_1";  // Никнейм
-            const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "123456";  // ID игрока
+            // Выводим сообщение о загрузке
+            const loadingMessage = await sendMessage("🎯 Загружаем результат игры...");
+            console.log("Loading message sent", loadingMessage);
 
-            if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
-                return;
-            }
+            setTimeout(async () => {
+                // Удаляем сообщение "Загружаем результат игры..."
+                await sendMessage(`🛑 Результат игры: ${game}`);
 
-            if (!selectedOutcome) {
-                alert("❌ Пожалуйста, выберите исход игры.");
-                return;
-            }
+                // Отправляем сообщение о победе или проигрыше
+                let resultMessage;
+                if (outcome === "win") {
+                    resultMessage = `🎉 Поздравляем! Вы выиграли ${betAmount} USD.`;
+                } else {
+                    resultMessage = `❌ Вы проиграли ${betAmount} USD.`;
+                }
 
-            // Отправляем сообщение о ставке
-            sendMessage(`[🎉 Ваша ставка принята]
-
-🔑 Игрок: @${username}
-🔑 Айди игрока: ${userId}
-🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}`);
-
-            // Отправляем сообщение о загрузке с задержкой 2 секунды
-            setTimeout(() => {
-                sendMessage("🎯 Загружаем результат игры...").then(messageId => {
-                    // Удаление сообщения через 2 секунды
-                    setTimeout(() => {
-                        fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                chat_id: chatId,
-                                message_id: messageId
-                            })
-                        });
-                    }, 2000);
-
-                    // Задержка 3 секунды перед отправкой результата игры
-                    setTimeout(() => {
-                        // Генерируем результат
-                        const result = getRandomOutcome();  // Генерация случайного исхода игры
-                        const isWin = result === "Победа"; // Проверка на победу
-                        const rubAmount = (betAmount * 100).toFixed(2);  // Преобразуем в рубли по курсу 1 доллар = 100 рублей
-
-                        let resultMessage = "";
-
-                        if (isWin) {
-                            resultMessage = `
-🔑 Игрок: @${username}
-🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 100).toFixed(2)} RUB)!
-🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
-🔥 Удачи в следующих ставках!
-                            `;
-                        } else {
-                            resultMessage = `
-🔑 Игрок: @${username}
-❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
-🔥 Удачи в следующих ставках!
-                            `;
-                        }
-
-                        // Отправляем сообщение о результате игры
-                        sendMessage(resultMessage);
-                    }, 3000); // Ожидание 3 секунды
-                });
-            }, 2000); // Ожидание 2 секунды
+                await sendMessage(resultMessage);
+                console.log("Result message sent", resultMessage);
+            }, 3000);  // Отправляем результат через 3 секунды
         });
 
-        // Обработчик изменения игры для обновления исходов
-        document.getElementById("game").addEventListener("change", function() {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
-        });
-
-        // Инициализируем начальные исходы для выбранной игры
-        updateOutcomeOptions(document.getElementById("game").value);
+        // Инициализация
+        updateOutcomeOptions();
     </script>
 </body>
 </html>
