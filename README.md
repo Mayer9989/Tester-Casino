@@ -121,10 +121,12 @@
             }
         }
 
+        // Функция для генерации случайного исхода
         function getRandomOutcome() {
             return Math.random() < 0.2 ? "Победа" : "Проигрыш";  
         }
 
+        // Функция для обновления исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -136,7 +138,7 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = '';  
+            outcomeSelect.innerHTML = '';  // Очистить предыдущие опции
 
             if (outcomeOptions[game]) {
                 outcomeOptions[game].forEach(option => {
@@ -150,6 +152,7 @@
             document.getElementById("outcomeOptions").style.display = outcomeOptions[game] ? "block" : "none";
         }
 
+        // Обработчик кнопки "Сделать ставку"
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -165,7 +168,6 @@
                 return;
             }
 
-            // Сообщение о ставке, отправленное в канал
             sendMessage(`🎉 Ваша ставка принята!
 
 🔑 Игрок: ${userName}
@@ -202,6 +204,7 @@
             }, 2000); 
         });
 
+        // Обработчик изменения игры
         document.getElementById("game").addEventListener("change", function() {
             const selectedGame = this.value;
             updateOutcomeOptions(selectedGame);
