@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <title>💎 TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем шрифт из Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">  <!-- Пример с жирным шрифтом -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
     <style>
         body, html {
             height: 100%;
@@ -27,15 +26,15 @@
         }
         h2 {
             text-align: center;
-            font-size: 120px; /* Размер шрифта увеличен */
-            font-family: 'Roboto', sans-serif;  /* Новый шрифт */
-            font-weight: bold;  /* Жирный текст */
-            letter-spacing: 5px; /* Увеличиваем межбуквенное расстояние */
+            font-size: 120px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: bold;
+            letter-spacing: 5px;
             color: white;
-            text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred; /* Усиленный эффект подсветки */
+            text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred;
         }
         h2 span {
-            color: #ff0000; /* Красный цвет для CASINO🥷 */
+            color: #ff0000;
         }
         select, input, button {
             width: 100%;
@@ -90,9 +89,7 @@
 
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome">
-                <!-- Исходы будут добавляться динамически -->
-            </select>
+            <select id="outcome"></select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -101,10 +98,9 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
-        const chatId = "-1002348053681";  
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";
+        const chatId = "-1002348053681";
 
-        // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -119,19 +115,17 @@
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-                return data.result.message_id;  // Возвращаем ID отправленного сообщения
+                return data.result.message_id;
             } catch (error) {
                 console.error("Ошибка отправки сообщения:", error);
                 alert(`Ошибка: ${error.message}`);
             }
         }
 
-        // Функция для генерации исхода игры с 40% шансом на победу
         function getRandomOutcome() {
             return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
         }
 
-        // Функция для обновления возможных исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -143,8 +137,7 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = '';  // Очистить предыдущее содержимое
-
+            outcomeSelect.innerHTML = '';
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
                 opt.value = option;
@@ -155,15 +148,12 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Отправка выбранных данных при клике на кнопку
         document.getElementById("placeBetBtn").addEventListener("click", function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
-
-            // Получение данных игрока из Telegram Web App
-            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок_1";  // Никнейм
-            const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "123456";  // ID игрока
+            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок_1";
+            const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "123456";
 
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
@@ -175,35 +165,26 @@
                 return;
             }
 
-            // Отправляем сообщение о ставке
             sendMessage(`[🎉 Ваша ставка принята]
 
 🔑 Игрок: @${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}`);
-
-            // Отправляем сообщение "🎯 Загружаем результат игры..." в канал
-            sendMessage("🎯 Загружаем результат игры...").then(messageId => {
-                // Удалить сообщение через 2 секунды
+🏁 Исход: ${selectedOutcome}`).then(() => {
+                return sendMessage("🎯 Загружаем результат игры...");
+            }).then(messageId => {
                 setTimeout(() => {
                     fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            message_id: messageId
-                        })
-                    });
+                        body: JSON.stringify({ chat_id: chatId, message_id: messageId })
+                    }).catch(error => console.error("Ошибка удаления:", error));
                 }, 2000);
 
-                // Задержка 3 секунды перед отправкой результата игры
                 setTimeout(() => {
-                    // Генерируем результат
-                    const result = getRandomOutcome();  // Генерация случайного исхода игры
-                    const isWin = result === "Победа"; // Проверка на победу
-                    const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
+                    const result = getRandomOutcome();
+                    const isWin = result === "Победа";
 
                     let resultMessage = "";
 
@@ -217,24 +198,20 @@
                     } else {
                         resultMessage = `
 🔑 Игрок: @${username}
-❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
+❌ Вы проиграли ${betAmount} USD (${(betAmount * 70).toFixed(2)} RUB)
 🔥 Удачи в следующих ставках!
                         `;
                     }
 
-                    // Отправляем сообщение о результате игры
                     sendMessage(resultMessage);
-                }, 3000); // Ожидание 3 секунды
+                }, 5000); // Задержка 5 секунд перед отправкой результата игры
             });
         });
 
-        // Обработчик изменения игры для обновления исходов
         document.getElementById("game").addEventListener("change", function() {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
+            updateOutcomeOptions(this.value);
         });
 
-        // Инициализируем начальные исходы для выбранной игры
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
