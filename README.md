@@ -25,7 +25,6 @@
         }
         h2 {
             text-align: center;
-            color: white;
             font-size: 80px;
             font-weight: bold;
             letter-spacing: 2px;
