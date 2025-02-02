@@ -97,6 +97,11 @@
         const chatId = "-1002348053681";  
         const cryptoBotToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Замените на ваш реальный токен CryptoBot API
 
+        // Получение информации о пользователе через Telegram WebApp
+        const user = Telegram.WebApp.initDataUnsafe;
+        const userId = user.user.id;
+        const username = user.user.username;
+
         // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
             try {
@@ -158,7 +163,7 @@
                     amount: betAmount,
                     description: `Ставка на игру: ${game}`,
                     outcome: outcome,  // Исход игры
-                    callback_url: "https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl"  // Ваш URL для обработки успешной оплаты
+                    callback_url: "https://your-server-url.com/payment-webhook"  // Ваш URL для обработки успешной оплаты
                 })
             });
 
@@ -187,13 +192,10 @@
                 return;
             }
 
-            let username = "${username}";  // Замените на реальное имя игрока
-            let userId = "123456";  // Замените на реальный ID игрока
-
             // Отправляем сообщение о ставке
             sendMessage(`[🎰 Ставка принята]
 
-🔑 Игрок: ${username}
+🔑 Игрок: ${username} (@${username})
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
@@ -211,14 +213,14 @@
 
             if (isWin) {
                 resultMessage = `
-🔑 Игрок: ${username}
+🔑 Игрок: ${username} (@${username})
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
                 `;
             } else {
                 resultMessage = `
-🔑 Игрок: ${username}
+🔑 Игрок: ${username} (@${username})
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
                 `;
