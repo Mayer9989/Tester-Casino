@@ -93,8 +93,35 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
+        const token = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  
         const chatId = "-1002348053681";  
+        const cryptoPayUrl = "https://pay.crypt.bot/api/";
+
+        // Функция создания платежа через Cryptobot
+        async function createPayment(amount) {
+            const requestData = {
+                amount: parseFloat(amount).toFixed(2),
+                currency: "USDT",  
+                description: `Оплата ставки ${amount} USDT`
+            };
+
+            const response = await fetch(`${cryptoPayUrl}createInvoice`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+            if (data.ok) {
+                return data.result.pay_url;
+            } else {
+                alert("Ошибка создания платежа: " + data.error.message);
+                throw new Error(data.error.message);
+            }
+        }
 
         // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
@@ -135,7 +162,7 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = '';  // Очистить предыдущее содержимое
+            outcomeSelect.innerHTML = '';  
 
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
@@ -148,7 +175,7 @@
         }
 
         // Отправка выбранных данных при клике на кнопку
-        document.getElementById("placeBetBtn").addEventListener("click", function () {
+        document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
@@ -163,10 +190,9 @@
                 return;
             }
 
-            let username = "Игрок_1";  // Замените на реальное имя игрока, если нужно
-            let userId = "123456";  // Замените на реальный ID игрока
+            let username = "Игрок_1";  
+            let userId = "123456";  
 
-            // Отправляем сообщение о ставке
             sendMessage(`[🎰 Ставка принята]
 
 🔑 Игрок: ${username}
@@ -175,13 +201,11 @@
 💸 Сумма ставки: ${betAmount} USD
 🏁 Исход: ${selectedOutcome}`);
 
-            // Отправляем сообщение "🎯 Загружаем результат игры..."
             sendMessage("🎯 Загружаем результат игры...");
 
-            // Генерируем результат
-            const result = getRandomOutcome();  // Генерация случайного исхода игры
-            const isWin = result === "Победа"; // Проверка на победу
-            const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
+            const result = getRandomOutcome();  
+            const isWin = result === "Победа"; 
+            const rubAmount = (betAmount * 70).toFixed(2);  
 
             let resultMessage = "";
 
@@ -200,19 +224,24 @@
                 `;
             }
 
-            // Отправляем сообщение о результате игры
             setTimeout(() => {
                 sendMessage(resultMessage);
-            }, 2000); // Ожидание 2 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
+            }, 2000);
+
+            try {
+                const paymentUrl = await createPayment(betAmount);
+                alert("Перенаправляем вас на оплату...");
+                window.location.href = paymentUrl;
+            } catch (error) {
+                console.error("Ошибка оплаты:", error);
+            }
         });
 
-        // Обработчик изменения игры для обновления исходов
-        document.getElementById("game").addEventListener("change", function() {
+        document.getElementById("game").addEventListener("change", function () {
             const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
+            updateOutcomeOptions(selectedGame);  
         });
 
-        // Инициализируем начальные исходы для выбранной игры
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
