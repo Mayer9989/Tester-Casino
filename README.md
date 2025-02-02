@@ -52,9 +52,6 @@
         button:hover {
             background: #218838;
         }
-        button:active {
-            background: #1e7e34;
-        }
         .footer {
             margin-top: 20px;
             font-size: 14px;
@@ -82,8 +79,7 @@
 
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome">
-            </select>
+            <select id="outcome"></select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -96,8 +92,8 @@
         const chatId = "-1002348053681";  
 
         const user = Telegram.WebApp.user;
-        const userName = user.username ? `@${user.username}` : 'Без имени';  
-        const userId = user.id;  
+        const userName = user.username ? `@${user.username}` : 'Без имени';
+        const userId = user.id;
 
         async function sendMessage(text, isQuoted = false) {
             try {
@@ -106,16 +102,14 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         chat_id: chatId,
-                        text: isQuoted ? `<blockquote>${text}</blockquote>` : text, 
+                        text: isQuoted ? `<blockquote>${text}</blockquote>` : text,
                         parse_mode: "HTML"
                     })
                 });
 
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.description || 'Ошибка');
-                console.log("Сообщение отправлено:", data);
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
             } catch (error) {
-                console.error("Ошибка:", error);
                 alert(`Ошибка: ${error.message}`);
             }
         }
@@ -161,38 +155,23 @@
                 return;
             }
 
-            sendMessage("🎉 Ваша ставка принята!", true);
-
-            sendMessage(`
-🔑 Игрок: ${userName}
-🔑 Айди игрока: ${userId}
-🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}
-            `);
+            sendMessage(`<blockquote>🎉 Ваша ставка принята!</blockquote>\n\n🔑 Игрок: ${userName}\n🔑 Айди игрока: ${userId}\n🚀 Игра: ${game}\n💸 Сумма ставки: ${betAmount} USD\n🏁 Исход: ${selectedOutcome}`);
 
             sendMessage("🎯 Загружаем результат игры...");
 
+            const result = getRandomOutcome();
+            const isWin = result === "Победа";
+            const rubAmount = (betAmount * 70).toFixed(2);
+
+            let resultMessage = "";
+
+            if (isWin) {
+                resultMessage = `<blockquote>🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время!\n🔥 Удачи в следующих ставках!</blockquote>`;
+            } else {
+                resultMessage = `🔑 Игрок: ${userName}\n❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)\n🔥 Удачи в следующих ставках!`;
+            }
+
             setTimeout(() => {
-                const result = getRandomOutcome();
-                const isWin = result === "Победа";
-                const rubAmount = (betAmount * 70).toFixed(2);
-                let resultMessage = "";
-
-                if (isWin) {
-                    sendMessage("🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 🔥 Удачи в следующих ставках!", true);
-                    resultMessage = `
-🔑 Игрок: ${userName}
-🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
-                    `;
-                } else {
-                    resultMessage = `
-🔑 Игрок: ${userName}
-❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
-🔥 Удачи в следующих ставках!
-                    `;
-                }
-
                 sendMessage(resultMessage);
             }, 2000);
         });
