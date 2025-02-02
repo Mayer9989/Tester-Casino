@@ -25,15 +25,13 @@
         }
         h2 {
             text-align: center;
-            font-size: 60px; /* Уменьшил размер текста */
+            font-size: 30px; /* Размер для обоих текстов */
             font-weight: bold;
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
         h2 span {
-            color: red;
-            font-size: 60px; /* Уменьшил размер текста, чтобы было одинаково */
-            font-weight: bold; /* Добавил жирное начертание */
+            color: red; /* Цвет для CASINO */
         }
         select, input, button {
             width: 100%;
@@ -71,7 +69,7 @@
 </head>
 <body>
     <div class="container">
-        <h2><span>CASINO</span> TESTER</h2>
+        <h2>TESTER <span>CASINO</span></h2>
         
         <label for="game">Выберите игру:</label>
         <select id="game">
@@ -83,8 +81,8 @@
         </select>
 
         <label for="bet_amount">Введите сумму ставки:</label>
-        <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
-
+        <input type="number" id="bet_amount" placeholder="Минимум 0.20$">
+        
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome">
@@ -104,15 +102,6 @@
         // Получение данных о пользователе
         const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок";
         const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID";  
-
-        // Коэффициенты для разных игр
-        const gameCoefficients = {
-            "🎲 Четное/Нечетное": 1.5,
-            "⚽ Футбол": 1.4,
-            "🏀 Баскетбол": 1.3,
-            "✂ Камень/Ножницы/Бумага": 1.5,
-            "🎯 Дартс": 1.3
-        };
 
         // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
@@ -199,10 +188,6 @@
                 return;
             }
 
-            // Получаем коэффициент для выбранной игры
-            const coefficient = gameCoefficients[game];
-            const winAmount = betAmount * coefficient;
-
             // Отправляем сообщение о ставке
             const betMessageId = await sendMessage(`[🎉 Ваша ставка принята]
 
@@ -222,21 +207,21 @@
                 // Генерируем результат
                 const result = getRandomOutcome();  // Генерация случайного исхода игры
                 const isWin = result === "Победа"; // Проверка на победу
-                const rubAmount = (winAmount * 100).toFixed(2);  // Преобразуем в рубли по курсу 100
+                const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
 
                 let resultMessage = "";
 
                 if (isWin) {
                     resultMessage = `
 🔑 Игрок: @${username}
-🎉 Поздравляем, вы выиграли ${winAmount} USD (${rubAmount} RUB)!
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
                     `;
                 } else {
                     resultMessage = `
 🔑 Игрок: @${username}
-❌ Вы проиграли ${betAmount} USD (${(betAmount * 100).toFixed(2)} RUB)
+❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
                     `;
                 }
