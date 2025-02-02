@@ -27,17 +27,7 @@
             text-align: center;
             color: #FFD700;
             margin-bottom: 20px;
-            font-size: 26px; /* Размер шрифта */
-        }
-        .casino-text {
-            font-size: 30px; /* Размер шрифта для текста */
-            font-weight: bold;
-        }
-        .tester {
-            color: white; /* Цвет для TESTER */
-        }
-        .casino {
-            color: red; /* Цвет для CASINO🥷 */
+            font-size: 24px;
         }
         select, input, button {
             width: 100%;
@@ -75,10 +65,8 @@
 </head>
 <body>
     <div class="container">
-        <h2>
-            <span class="casino-text"><span class="tester">TESTER</span> <span class="casino">CASINO🥷</span></span>
-        </h2>
-
+        <h2>🎰 TESTER CASINO</h2>
+        
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -108,7 +96,7 @@
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
         const chatId = "-1002348053681";  
 
-        // Функция для отправки сообщения в Telegram с логированием ошибок
+        // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -124,9 +112,7 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    console.error("Ошибка отправки сообщения:", data.description || 'Неизвестная ошибка');
-                    alert(`Ошибка: ${data.description || 'Неизвестная ошибка'}`);
-                    return;
+                    throw new Error(data.description || 'Неизвестная ошибка');
                 }
 
                 console.log("Сообщение успешно отправлено:", data);
@@ -176,11 +162,6 @@
                 return;
             }
 
-            if (betAmount === '' || betAmount < 0.20) {
-                alert("❌ Пожалуйста, введите сумму ставки.");
-                return;
-            }
-
             if (!selectedOutcome) {
                 alert("❌ Пожалуйста, выберите исход игры.");
                 return;
@@ -204,4 +185,39 @@
             // Генерируем результат
             const result = getRandomOutcome();  // Генерация случайного исхода игры
             const isWin = result === "Победа"; // Проверка на победу
-            const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли
+            const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
+
+            let resultMessage = "";
+
+            if (isWin) {
+                resultMessage = `
+🔑 Игрок: ${username}
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
+🔥 Удачи в следующих ставках!
+                `;
+            } else {
+                resultMessage = `
+🔑 Игрок: ${username}
+❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
+🔥 Удачи в следующих ставках!
+                `;
+            }
+
+            // Отправляем сообщение о результате игры
+            setTimeout(() => {
+                sendMessage(resultMessage);
+            }, 2000); // Ожидание 2 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
+        });
+
+        // Обработчик изменения игры для обновления исходов
+        document.getElementById("game").addEventListener("change", function() {
+            const selectedGame = this.value;
+            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
+        });
+
+        // Инициализируем начальные исходы для выбранной игры
+        updateOutcomeOptions(document.getElementById("game").value);
+    </script>
+</body>
+</html>
