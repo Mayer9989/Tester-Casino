@@ -26,7 +26,7 @@
         }
         h2 {
             text-align: center;
-            font-size: 180px;  /* Заголовок теперь гораздо больше */
+            font-size: 120px;  /* Заголовок теперь больше */
             font-family: 'Roboto', sans-serif;
             font-weight: bolder;  /* Заголовок жирный */
             letter-spacing: 5px;
