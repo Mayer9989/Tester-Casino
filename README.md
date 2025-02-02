@@ -26,10 +26,10 @@
         }
         h2 {
             text-align: center;
-            font-size: 1000px;  /* Заголовок в 10 раз больше */
+            font-size: 120px;  /* Увеличенный размер заголовка */
             font-family: 'Roboto', sans-serif;
-            font-weight: bolder;  /* Заголовок жирный */
-            letter-spacing: 30px;  /* Межбуквенное расстояние */
+            font-weight: bolder;  /* Жирный текст */
+            letter-spacing: 15px;  /* Широкие буквы */
             color: white;
             text-shadow: 0 0 25px rgba(255, 0, 0, 0.7), 0 0 50px red, 0 0 60px darkred;
             word-wrap: break-word; /* Для переноса длинных слов */
