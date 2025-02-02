@@ -25,9 +25,14 @@
         }
         h2 {
             text-align: center;
-            color: #FFD700;
             margin-bottom: 20px;
             font-size: 24px;
+        }
+        .tester {
+            color: white;
+        }
+        .casino {
+            color: red;
         }
         select, input, button {
             width: 100%;
@@ -65,7 +70,9 @@
 </head>
 <body>
     <div class="container">
-        <h2>🎰 TESTER CASINO</h2>
+        <h2>
+            <span class="tester">TESTER</span> <span class="casino">CASINO🥷</span>
+        </h2>
         
         <label for="game">Выберите игру:</label>
         <select id="game">
