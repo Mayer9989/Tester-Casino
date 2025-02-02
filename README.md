@@ -100,8 +100,8 @@
     </div>
 
     <script>
-        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
-        const chatId = "-1002348053681";  
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Ваш токен
+        const chatId = "-1002348053681";  // Ваш chat_id
 
         // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
