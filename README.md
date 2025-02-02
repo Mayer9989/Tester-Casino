@@ -149,6 +149,7 @@
                 });
             }
 
+            // Показать / скрыть блок с исходами
             document.getElementById("outcomeOptions").style.display = outcomeOptions[game] ? "block" : "none";
         }
 
