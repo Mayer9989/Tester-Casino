@@ -156,7 +156,7 @@
         }
 
         // Отправка выбранных данных при клике на кнопку
-        document.getElementById("placeBetBtn").addEventListener("click", function () {
+        document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
@@ -176,7 +176,7 @@
             }
 
             // Отправляем сообщение о ставке
-            sendMessage(`[🎉 Ваша ставка принята]
+            const betMessage = await sendMessage(`[🎉 Ваша ставка принята]
 
 🔑 Игрок: @${username}
 🔑 Айди игрока: ${userId}
@@ -185,49 +185,46 @@
 🏁 Исход: ${selectedOutcome}`);
 
             // Отправляем сообщение о загрузке с задержкой 2 секунды
-            setTimeout(() => {
-                sendMessage("🎯 Загружаем результат игры...").then(messageId => {
-                    // Удаление сообщения через 2 секунды
-                    setTimeout(() => {
-                        fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                chat_id: chatId,
-                                message_id: messageId
-                            })
-                        });
-                    }, 2000);
+            setTimeout(async () => {
+                const loadingMessage = await sendMessage("🎯 Загружаем результат игры...");
 
-                    // Задержка 3 секунды перед отправкой результата игры
-                    setTimeout(() => {
-                        // Генерируем результат
-                        const result = getRandomOutcome();  // Генерация случайного исхода игры
-                        const isWin = result === "Победа"; // Проверка на победу
-                        const rubAmount = (betAmount * 100).toFixed(2);  // Преобразуем в рубли по курсу 1 доллар = 100 рублей
+                // Удаление сообщения о загрузке через 2 секунды
+                setTimeout(async () => {
+                    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            message_id: loadingMessage.result.message_id
+                        })
+                    });
+                }, 2000);
 
-                        let resultMessage = "";
+                // Генерация случайного исхода игры
+                const result = getRandomOutcome();  
+                const isWin = result === "Победа"; // Проверка на победу
+                const rubAmount = (betAmount * 100).toFixed(2);  // Преобразуем в рубли по курсу 1 доллар = 100 рублей
 
-                        if (isWin) {
-                            resultMessage = `
+                let resultMessage = "";
+
+                if (isWin) {
+                    resultMessage = `
 🔑 Игрок: @${username}
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 100).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
-                            `;
-                        } else {
-                            resultMessage = `
+                    `;
+                } else {
+                    resultMessage = `
 🔑 Игрок: @${username}
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
-                            `;
-                        }
+                    `;
+                }
 
-                        // Отправляем сообщение о результате игры
-                        sendMessage(resultMessage);
-                    }, 3000); // Ожидание перед отправкой результата
-                });
-            }, 2000);
+                // Отправляем сообщение о результате игры
+                await sendMessage(resultMessage);
+            }, 2000); // Задержка перед отправкой результатов
         });
 
         // Инициализация и обновление исходов игры при изменении выбора игры
