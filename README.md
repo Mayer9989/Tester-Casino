@@ -211,6 +211,7 @@
 
             let resultMessage = "";
 
+            // Текст результата для всех игр
             if (isWin) {
                 resultMessage = `
 🔑 Игрок: ${username} (@${username})
