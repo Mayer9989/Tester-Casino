@@ -91,12 +91,12 @@
     </div>
 
     <script>
-        const botToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Замените на токен вашего CryptoBot
+        const botToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Токен CryptoBot
         const cryptoPayApiUrl = "https://pay.crypt.bot/api/";
-        const telegramBotToken = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Замените на токен вашего Telegram-бота
-        const telegramChatId = "-1002348053681";  // Замените на ID вашего канала или группы
+        const telegramBotToken = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Токен Telegram-бота
+        const telegramChatId = "-1002348053681";  // ID канала или группы Telegram
 
-        // Создание платежа через CryptoBot
+        // Функция создания платежа через CryptoBot
         async function createPayment(amount) {
             try {
                 const response = await fetch(`${cryptoPayApiUrl}createInvoice`, {
@@ -124,7 +124,7 @@
             }
         }
 
-        // Отправка сообщения в Telegram
+        // Функция отправки сообщений в Telegram
         async function sendMessage(text) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
@@ -146,12 +146,12 @@
             }
         }
 
-        // Генерация случайного исхода игры с 40% шансом на победу
+        // Функция для генерации случайного исхода игры с 40% шансом на победу
         function getRandomOutcome() {
             return Math.random() < 0.4 ? "Победа" : "Проигрыш";
         }
 
-        // Обновление возможных исходов игры
+        // Функция обновления исходов для выбранной игры
         function updateOutcomeOptions(game) {
             const outcomeSelect = document.getElementById("outcome");
             const outcomeOptions = {
@@ -174,7 +174,7 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Обработка события нажатия на кнопку ставки
+        // Обработчик события для кнопки "Сделать ставку"
         document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -239,4 +239,4 @@
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
-</html> 
+</html>
