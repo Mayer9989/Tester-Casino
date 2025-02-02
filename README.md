@@ -100,7 +100,7 @@
         // Получение информации о пользователе через Telegram WebApp
         const user = Telegram.WebApp.initDataUnsafe;
         const userId = user.user.id;
-        const username = user.user.username;
+        const username = user.user.username || 'Без имени'; // Если у пользователя нет username, то отображаем 'Без имени'
 
         // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
