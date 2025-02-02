@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>TESTER CASINO🥷</title>
+    <title>💎 TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -25,11 +25,14 @@
         }
         h2 {
             text-align: center;
-            color: #FFD700;
-            margin-bottom: 20px;
-            font-size: 32px;
+            color: white;
+            background: linear-gradient(45deg, #ff0000, #ffffff);
+            -webkit-background-clip: text;
+            font-size: 50px;
+            font-family: 'Impact', sans-serif;
             font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
         }
         select, input, button {
             width: 100%;
@@ -63,19 +66,12 @@
             text-align: center;
             color: #bbb;
         }
-        #gameResult {
-            text-align: center;
-            font-size: 20px;
-            color: white;
-            margin-top: 20px;
-            display: none;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>TESTER CASINO🥷</h2>
-
+        <h2>TESTER CASINO🥷</h2> <!-- Убрал смайлик 🎰 -->
+        
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -97,8 +93,6 @@
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
-
-        <div id="gameResult">🎯 Загружаем результат игры...</div>
 
         <div class="footer">Ваше казино в Telegram. Удачи!</div>
     </div>
@@ -180,26 +174,19 @@
             // Отправляем сообщение о ставке
             sendMessage(`[🎉 Ваша ставка принята]
 
-🔑 Игрок: @${username}
+🔑 Игрок: ${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
 🏁 Исход: ${selectedOutcome}`);
 
-            // Показываем текст "Загружаем результат игры..."
-            const gameResult = document.getElementById("gameResult");
-            gameResult.textContent = "🎯 Загружаем результат игры...";
-            gameResult.style.display = "block"; // Показываем элемент
+            // Отправляем сообщение "🎯 Загружаем результат игры..." в канал
+            sendMessage("🎯 Загружаем результат игры...");
 
-            // Через 2 секунды удаляем "Загружаем результат игры..."
+            // Задержка 2 секунды перед отправкой результата игры
             setTimeout(() => {
-                gameResult.style.display = "none"; // Скрыть сообщение
-            }, 2000);
-
-            // Генерируем результат
-            setTimeout(() => {
-                // Генерация случайного исхода игры
-                const result = getRandomOutcome();
+                // Генерируем результат
+                const result = getRandomOutcome();  // Генерация случайного исхода игры
                 const isWin = result === "Победа"; // Проверка на победу
                 const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
 
@@ -207,14 +194,14 @@
 
                 if (isWin) {
                     resultMessage = `
-🔑 Игрок: @${username}
+🔑 Игрок: ${username}
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
                     `;
                 } else {
                     resultMessage = `
-🔑 Игрок: @${username}
+🔑 Игрок: ${username}
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
                     `;
@@ -222,7 +209,7 @@
 
                 // Отправляем сообщение о результате игры
                 sendMessage(resultMessage);
-            }, 3000);
+            }, 2000); // Ожидание 2 секунды
         });
 
         // Обработчик изменения игры для обновления исходов
