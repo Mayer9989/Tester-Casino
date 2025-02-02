@@ -140,6 +140,7 @@
 
             outcomeSelect.innerHTML = '';  // Очистить предыдущие опции
 
+            // Проверяем, если есть исходы для игры
             if (outcomeOptions[game]) {
                 outcomeOptions[game].forEach(option => {
                     const opt = document.createElement("option");
@@ -147,10 +148,14 @@
                     opt.textContent = option;
                     outcomeSelect.appendChild(opt);
                 });
+
+                // Показать / скрыть блок с исходами
+                document.getElementById("outcomeOptions").style.display = "block";
+            } else {
+                document.getElementById("outcomeOptions").style.display = "none";
             }
 
-            // Показать / скрыть блок с исходами
-            document.getElementById("outcomeOptions").style.display = outcomeOptions[game] ? "block" : "none";
+            console.log(`Доступные исходы для ${game}:`, outcomeOptions[game]);  // Отладочная информация
         }
 
         // Обработчик кнопки "Сделать ставку"
