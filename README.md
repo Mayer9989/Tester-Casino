@@ -237,7 +237,10 @@
         });
 
         // Инициализируем начальные исходы для выбранной игры
-        updateOutcomeOptions(document.getElementById("game").value);
+        window.onload = function() {
+            const selectedGame = document.getElementById("game").value;
+            updateOutcomeOptions(selectedGame);  // Обновляем список исходов при загрузке страницы
+        }
     </script>
 </body>
 </html>
