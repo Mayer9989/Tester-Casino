@@ -25,13 +25,12 @@
         }
         h2 {
             text-align: center;
-            font-size: 150px; /* Сделаем шрифт в 3 раза больше */
-            font-family: 'Impact', sans-serif;
+            font-size: 150px; /* Размер шрифта увеличен в 3 раза */
+            font-family: 'Impact', sans-serif; /* Красивый и жирный шрифт */
             font-weight: bold;
             letter-spacing: 5px; /* Увеличиваем межбуквенное расстояние */
-            background: linear-gradient(45deg, #ffffff, #ff0000); /* Белый и красный градиент */
-            -webkit-background-clip: text;
-            color: transparent;
+            color: white;
+            text-shadow: 2px 2px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred; /* Эффект подсветки */
         }
         h2 span {
             color: #ff0000; /* Красный цвет для CASINO🥷 */
@@ -160,6 +159,10 @@
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
 
+            // Получение данных игрока из Telegram Web App
+            const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок_1";  // Никнейм
+            const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "123456";  // ID игрока
+
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
@@ -170,13 +173,10 @@
                 return;
             }
 
-            let username = "Игрок_1";  // Замените на реальное имя игрока, если нужно
-            let userId = "123456";  // Замените на реальный ID игрока
-
             // Отправляем сообщение о ставке
             sendMessage(`[🎉 Ваша ставка принята]
 
-🔑 Игрок: ${username}
+🔑 Игрок: @${username}
 🔑 Айди игрока: ${userId}
 🚀 Игра: ${game}
 💸 Сумма ставки: ${betAmount} USD
@@ -207,14 +207,14 @@
 
                     if (isWin) {
                         resultMessage = `
-🔑 Игрок: ${username}
+🔑 Игрок: @${username}
 🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
                         `;
                     } else {
                         resultMessage = `
-🔑 Игрок: ${username}
+🔑 Игрок: @${username}
 ❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
 🔥 Удачи в следующих ставках!
                         `;
