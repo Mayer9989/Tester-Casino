@@ -26,9 +26,9 @@
         }
         h2 {
             text-align: center;
-            font-size: 120px;
+            font-size: 150px;  /* Увеличен размер шрифта */
             font-family: 'Roboto', sans-serif;
-            font-weight: bold;
+            font-weight: bolder;  /* Сделано жирнее */
             letter-spacing: 5px;
             color: white;
             text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.7), 0 0 25px red, 0 0 5px darkred;
@@ -175,7 +175,6 @@
                 return sendMessage("🎯 Загружаем результат игры...");
             }).then(messageId => {
                 setTimeout(() => {
-                    // Удаляем сообщение "🎯 Загружаем результат игры..."
                     fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -204,9 +203,8 @@
                         `;
                     }
 
-                    // Отправляем результат игры
                     sendMessage(resultMessage);
-                }, 3000); // Задержка 3 секунды перед отправкой результата игры
+                }, 3000);
             });
         });
 
