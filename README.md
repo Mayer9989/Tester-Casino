@@ -92,57 +92,32 @@
 
     <script>
         const botToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Замените на токен вашего CryptoBot
-        const cryptoPayApiUrl = "https://pay.crypt.bot/api/";
-        const telegramBotToken = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  // Замените на токен вашего Telegram-бота
-        const telegramChatId = "1002348053681";  // Замените на ID вашего канала или группы
+        const webhookUrl = "https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl";  // Замените на URL вашего вебхука Make
 
-        // Создание платежа через CryptoBot
-        async function createPayment(amount) {
+        // Отправка данных через вебхук Make
+        async function sendToWebhook(amount, game, outcome) {
             try {
-                const response = await fetch(`${cryptoPayApiUrl}createInvoice`, {
+                const response = await fetch(webhookUrl, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${botToken}`
+                        "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        amount: parseFloat(amount).toFixed(2),
-                        currency: "USDT",
-                        description: `Оплата ставки ${amount} USDT`
+                        amount: amount,
+                        game: game,
+                        outcome: outcome
                     })
                 });
 
                 const data = await response.json();
-                if (data.ok) {
-                    return data.result.pay_url;
+                if (response.ok) {
+                    return data;  // Возвращаем данные, если все прошло успешно
                 } else {
-                    throw new Error(data.error.message || "Ошибка создания платежа");
+                    throw new Error(data.message || "Ошибка вебхука");
                 }
             } catch (error) {
-                alert("Ошибка создания платежа: " + error.message);
+                alert("Ошибка отправки данных: " + error.message);
                 throw error;
-            }
-        }
-
-        // Отправка сообщения в Telegram
-        async function sendMessage(text) {
-            try {
-                const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chat_id: telegramChatId,
-                        text: text,
-                        parse_mode: "HTML"
-                    })
-                });
-
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.description || "Ошибка отправки сообщения");
-                }
-            } catch (error) {
-                alert(`Ошибка отправки сообщения: ${error.message}`);
             }
         }
 
@@ -191,44 +166,26 @@
             }
 
             try {
-                const paymentUrl = await createPayment(betAmount);
-                alert("Перенаправляем вас на оплату...");
-                window.location.href = paymentUrl;
+                // Отправка данных в Make
+                const result = await sendToWebhook(betAmount, game, selectedOutcome);
+                
+                // Показать пользователю информацию
+                alert("Ставка отправлена в систему.");
+                
+                // Генерация случайного результата
+                const gameResult = getRandomOutcome();
 
+                // Отправка результата в Telegram (если необходимо)
                 const username = "Игрок_1";
-                const userId = "123456";
+                const resultMessage = gameResult === "Победа"
+                    ? `🎉 Поздравляем, вы выиграли ${betAmount * 2} USDT!`
+                    : `❌ Вы проиграли ${betAmount} USDT.`;
 
-                sendMessage(`[🎰 Ставка принята]
+                // Здесь можно отправить сообщение в Telegram (это не обязательно, зависит от вашего использования)
+                // await sendMessage(resultMessage);
 
-🔑 Игрок: ${username}
-🔑 Айди игрока: ${userId}
-🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USDT
-🏁 Исход: ${selectedOutcome}`);
-
-                sendMessage("🎯 Загружаем результат игры...");
-
-                const result = getRandomOutcome();
-                const rubAmount = (betAmount * 70).toFixed(2);  
-
-                const resultMessage = result === "Победа"
-                    ? `
-🔑 Игрок: ${username}
-🎉 Поздравляем, вы выиграли ${betAmount * 2} USDT (${(betAmount * 2 * 70).toFixed(2)} RUB)!
-🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
-🔥 Удачи в следующих ставках!
-`
-                    : `
-🔑 Игрок: ${username}
-❌ Вы проиграли ${betAmount} USDT (${rubAmount} RUB)
-🔥 Удачи в следующих ставках!
-`;
-
-                setTimeout(() => {
-                    sendMessage(resultMessage);
-                }, 2000);
             } catch (error) {
-                console.error("Ошибка оплаты:", error);
+                console.error("Ошибка: ", error);
             }
         });
 
