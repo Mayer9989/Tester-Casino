@@ -25,15 +25,15 @@
         }
         h2 {
             text-align: center;
-            font-size: 80px;
+            font-size: 60px; /* Уменьшил размер текста */
             font-weight: bold;
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
         h2 span {
             color: red;
-            font-size: 100px;
-            font-weight: bold;
+            font-size: 60px; /* Уменьшил размер текста, чтобы было одинаково */
+            font-weight: bold; /* Добавил жирное начертание */
         }
         select, input, button {
             width: 100%;
