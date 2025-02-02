@@ -77,7 +77,7 @@
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$" step="0.01" min="0.20">
 
-        <div id="outcomeOptions" style="display:none;">
+        <div id="outcomeOptions">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome"></select>
         </div>
@@ -97,7 +97,7 @@
 
         async function sendMessage(text, isQuoted = false) {
             try {
-                const response = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -106,9 +106,6 @@
                         parse_mode: "HTML"
                     })
                 });
-
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
             } catch (error) {
                 alert(`Ошибка: ${error.message}`);
             }
@@ -118,8 +115,10 @@
             return Math.random() < 0.2 ? "Победа" : "Проигрыш";  
         }
 
-        function updateOutcomeOptions(game) {
+        function updateOutcomeOptions() {
+            const game = document.getElementById("game").value;
             const outcomeSelect = document.getElementById("outcome");
+
             const outcomeOptions = {
                 "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
                 "⚽ Футбол": ["Гол", "Промах"],
@@ -129,15 +128,13 @@
                 "🎳 Боулинг": ["Страйк", "Сплэт"]
             };
 
-            outcomeSelect.innerHTML = '';
+            outcomeSelect.innerHTML = "";
             outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
                 opt.value = option;
                 opt.textContent = option;
                 outcomeSelect.appendChild(opt);
             });
-
-            document.getElementById("outcomeOptions").style.display = "block";
         }
 
         document.getElementById("placeBetBtn").addEventListener("click", function () {
@@ -176,11 +173,9 @@
             }, 2000);
         });
 
-        document.getElementById("game").addEventListener("change", function() {
-            updateOutcomeOptions(this.value);
-        });
+        document.getElementById("game").addEventListener("change", updateOutcomeOptions);
 
-        updateOutcomeOptions(document.getElementById("game").value);
+        updateOutcomeOptions();  
     </script>
 </body>
 </html>
