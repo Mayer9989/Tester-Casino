@@ -25,13 +25,13 @@
         }
         h2 {
             text-align: center;
-            font-size: 30px;
+            font-size: 30px; /* Размер для обоих текстов */
             font-weight: bold;
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
         h2 span {
-            color: red;
+            color: red; /* Цвет для CASINO */
         }
         select, input, button {
             width: 100%;
@@ -80,12 +80,14 @@
             <option value="🎯 Дартс">🎯 Дартс</option>
         </select>
 
-        <label for="bet_amount">Введите сумму ставки (USDT):</label>
-        <input type="number" id="bet_amount" placeholder="Минимум 0.20 USDT">
-
+        <label for="bet_amount">Введите сумму ставки:</label>
+        <input type="number" id="bet_amount" placeholder="Минимум 0.20$">
+        
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome"></select>
+            <select id="outcome">
+                <!-- Исходы будут добавляться динамически -->
+            </select>
         </div>
 
         <button id="placeBetBtn">✅ Сделать ставку</button>
@@ -94,25 +96,73 @@
     </div>
 
     <script>
-        const CRYPTOBOT_API_TOKEN = "334217:AAeZO0KbtAHaO7kGpIk49oskxnyXJuyKNg1"; // Ваш токен от CryptoBot
-        const TELEGRAM_BOT_TOKEN = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Токен Telegram-бота
-        const CHAT_ID = "1002348053681"; // ID чата/канала
-        const currency = "USDT"; // Валюта
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
+        const chatId = "-1002348053681";  
 
-        const outcomes = {
-            "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
-            "⚽ Футбол": ["Гол", "Промах"],
-            "🏀 Баскетбол": ["Попал", "Не попал"],
-            "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
-            "🎯 Дартс": ["В точку", "Мимо"]
-        };
+        // Получение данных о пользователе
+        const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок";
+        const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID";  
 
+        // Функция для отправки сообщения в Telegram
+        async function sendMessage(text) {
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: "HTML"
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
+                return data.result.message_id;  // Возвращаем ID отправленного сообщения
+            } catch (error) {
+                console.error("Ошибка отправки сообщения:", error);
+                alert(`Ошибка: ${error.message}`);
+            }
+        }
+
+        // Функция для удаления сообщения
+        async function deleteMessage(messageId) {
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        message_id: messageId
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
+            } catch (error) {
+                console.error("Ошибка удаления сообщения:", error);
+            }
+        }
+
+        // Функция для генерации исхода игры с 40% шансом на победу
+        function getRandomOutcome() {
+            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
+        }
+
+        // Функция для обновления возможных исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
-            console.log("Обновление исходов для игры: " + game);
             const outcomeSelect = document.getElementById("outcome");
-            outcomeSelect.innerHTML = '';
+            const outcomeOptions = {
+                "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
+                "⚽ Футбол": ["Гол", "Промах"],
+                "🏀 Баскетбол": ["Попал", "Не попал"],
+                "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
+                "🎯 Дартс": ["В точку", "Мимо"]
+            };
 
-            outcomes[game].forEach(option => {
+            outcomeSelect.innerHTML = '';  // Очистить предыдущее содержимое
+
+            outcomeOptions[game].forEach(option => {
                 const opt = document.createElement("option");
                 opt.value = option;
                 opt.textContent = option;
@@ -122,72 +172,41 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Функция для создания счета на оплату через CryptoBot
-        async function createInvoice(amount) {
-            console.log("Создание счета на оплату...");
-            const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${CRYPTOBOT_API_TOKEN}`
-                },
-                body: JSON.stringify({ 
-                    asset: currency, 
-                    amount: amount, 
-                    description: "Ставка в казино"
-                })
-            });
+        // Функция для создания счета через CryptoBot
+        async function createCryptoPayment(amount) {
+            const cryptoBotToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";
+            const url = "https://api.cryptobot.com/create_invoice";  // Убедитесь, что этот URL правильный
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: cryptoBotToken,
+                        amount: amount,
+                        currency: "USDT",
+                    })
+                });
 
-            const data = await response.json();
-            if (data.ok) {
-                console.log("Счет успешно создан. URL:", data.result.pay_url);
-                return data.result.pay_url;  // Возвращаем URL для оплаты
-            } else {
-                console.error("Ошибка при создании счета:", data.description);
-                alert("❌ Ошибка при создании счета. Попробуйте позже.");
-                return null;
+                const data = await response.json();
+                if (data.success) {
+                    return data.payment_url; // Возвращаем ссылку на оплату
+                } else {
+                    throw new Error(data.error || 'Ошибка при создании счета');
+                }
+            } catch (error) {
+                console.error("Ошибка создания счета:", error);
+                alert(`Ошибка: ${error.message}`);
             }
         }
 
-        // Функция для отправки сообщения в Telegram
-        async function sendMessage(text) {
-            console.log("Отправка сообщения в Telegram...");
-            const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: "HTML" })
-            });
-            return response.ok ? (await response.json()).result.message_id : null;
-        }
-
-        // Функция для удаления сообщения в Telegram
-        async function deleteMessage(messageId) {
-            if (!messageId) return;
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: CHAT_ID, message_id: messageId })
-            });
-        }
-
-        // Генерация случайного результата игры
-        function getRandomOutcome() {
-            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
-        }
-
-        // Обработчик нажатия кнопки "Сделать ставку"
+        // Обработчик ставки
         document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
 
-            console.log("Нажата кнопка 'Сделать ставку'");
-            console.log("Выбрана игра:", game);
-            console.log("Сумма ставки:", betAmount);
-            console.log("Выбранный исход:", selectedOutcome);
-
             if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20 USDT. Введите корректное значение.");
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
             }
 
@@ -196,66 +215,56 @@
                 return;
             }
 
-            // Создаем счёт для оплаты с введенной суммой
-            const payUrl = await createInvoice(betAmount);
-            if (payUrl) {
-                // Перенаправляем пользователя на страницу оплаты
-                window.location.href = payUrl;
+            // 1. Отправляем сообщение "Загружаем результат игры..."
+            const loadingMessage = await sendMessage("🔄 Загружаем результат игры...");
+            const messageId = loadingMessage.message_id;
 
-                // Отправка сообщения о ставке
-                const betMessageId = await sendMessage(`[🎉 Ваша ставка принята]
+            // 2. Создаем счет через CryptoBot
+            const paymentUrl = await createCryptoPayment(betAmount);
+            if (!paymentUrl) return;
 
-🔑 Игрок: @${Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок"}
-🔑 Айди игрока: ${Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID"}
-🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USDT
-🏁 Исход: ${selectedOutcome}`);
+            // 3. Отправляем сообщение с ссылкой на оплату
+            await sendMessage(`
+                📬 Для завершения ставки, перейдите по следующей ссылке для оплаты: 
+                ${paymentUrl}
+            `);
 
-                // Отправляем сообщение "🎯 Загружаем результат игры..."
-                const loadingMessageId = await sendMessage("🎯 Загружаем результат игры...");
+            // 4. После завершения оплаты (выиграл или проиграл)
+            setTimeout(async () => {
+                // Генерируем результат (победа или проигрыш)
+                const outcome = getRandomOutcome();
+                let resultMessage = '';
 
-                // Удаляем сообщение "🎯 Загружаем результат игры..."
-                setTimeout(async () => {
-                    await deleteMessage(loadingMessageId);
-
-                    // Генерация случайного результата игры
-                    const result = getRandomOutcome();  // Генерация случайного исхода игры
-                    const isWin = result === "Победа"; // Проверка на победу
-                    const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
-
-                    let resultMessage = "";
-
-                    if (isWin) {
-                        resultMessage = `
-🔑 Игрок: @${Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок"}
-🎉 Поздравляем, вы выиграли ${betAmount * 2} USDT (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+                if (outcome === "Победа") {
+                    resultMessage = `
+🔑 Игрок: @${username}
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USD!
 🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
 🔥 Удачи в следующих ставках!
-                        `;
-                    } else {
-                        resultMessage = `
-🔑 Игрок: @${Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок"}
-❌ Вы проиграли ${betAmount} USDT (${rubAmount} RUB)
+                    `;
+                } else {
+                    resultMessage = `
+🔑 Игрок: @${username}
+❌ Вы проиграли ${betAmount} USD
 🔥 Удачи в следующих ставках!
-                        `;
-                    }
+                    `;
+                }
 
-                    // Отправляем сообщение о результате игры
-                    setTimeout(() => {
-                        sendMessage(resultMessage);
-                    }, 3000); // Ожидание 3 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
-                }, 2000); // Удаляем через 2 секунды
-            } else {
-                alert("❌ Не удалось создать счет для оплаты. Попробуйте позже.");
-            }
+                // 5. Отправляем сообщение о результате игры
+                await sendMessage(resultMessage);
+
+                // 6. Удаляем сообщение "Загружаем результат игры..."
+                await deleteMessage(messageId);
+            }, 2000); // Задержка в 2 секунды перед отправкой результата
         });
 
         // Обработчик изменения игры для обновления исходов
         document.getElementById("game").addEventListener("change", function() {
-            updateOutcomeOptions(this.value);
+            const selectedGame = this.value;
+            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
         });
 
-        // Инициализируем исходы для выбранной игры
+        // Инициализируем начальные исходы для выбранной игры
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
