@@ -124,6 +124,8 @@
 
         // Функция для создания счета на оплату через CryptoBot API
         async function createPayment(amount) {
+            console.log("Запрос на создание счета с суммой:", amount);
+
             const response = await fetch('https://cryptobot.api/create_payment', {
                 method: 'POST',
                 headers: {
@@ -138,7 +140,14 @@
             });
 
             const data = await response.json();
-            return data.payment_url;  // возвращаем ссылку на оплату
+            console.log("Ответ от API CryptoBot:", data);
+
+            // Проверка, если ссылка на оплату существует
+            if (data.payment_url) {
+                return data.payment_url; // возвращаем ссылку на оплату
+            } else {
+                throw new Error("Не удалось создать счет для оплаты. Повторите попытку.");
+            }
         }
 
         // Функция для обработки ставки
@@ -152,11 +161,16 @@
                 return;
             }
 
-            // Создаем счет для оплаты через CryptoBot
-            const paymentUrl = await createPayment(betAmount);
+            try {
+                // Создаем счет для оплаты через CryptoBot
+                const paymentUrl = await createPayment(betAmount);
 
-            // Перенаправляем пользователя на страницу оплаты
-            window.location.href = paymentUrl; // Перенаправляем на страницу оплаты
+                // Перенаправляем пользователя на страницу оплаты
+                window.location.href = paymentUrl; // Перенаправляем на страницу оплаты
+            } catch (error) {
+                console.error("Ошибка при создании счета:", error);
+                alert("Ошибка: " + error.message);
+            }
 
             // Ждем завершения оплаты через Webhook
             fetch("https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl", {
