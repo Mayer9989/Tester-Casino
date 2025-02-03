@@ -25,13 +25,13 @@
         }
         h2 {
             text-align: center;
-            font-size: 30px; /* Размер для обоих текстов */
+            font-size: 30px;
             font-weight: bold;
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
         h2 span {
-            color: red; /* Цвет для CASINO */
+            color: red;
         }
         select, input, button {
             width: 100%;
@@ -131,7 +131,7 @@
             console.log("Запрос на создание счета с суммой:", amount);
             
             try {
-                const response = await fetch('https://api.cryptobot.io/create_payment', {
+                const response = await fetch('https://api.cryptobot.io/api/v1/crypto/pay', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -231,7 +231,11 @@
             // Создаем счет для оплаты
             try {
                 const paymentUrl = await createPayment(betAmount);
-                window.location.href = paymentUrl; // Переход на страницу оплаты
+                if (paymentUrl) {
+                    window.location.href = paymentUrl; // Переход на страницу оплаты
+                } else {
+                    alert("Ошибка: не удалось создать счет.");
+                }
             } catch (error) {
                 console.error("Ошибка при создании счета:", error);
                 alert("Ошибка при создании счета. Попробуйте снова.");
