@@ -94,7 +94,7 @@
     </div>
 
     <script>
-        const CRYPTOBOT_API_TOKEN = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Ваш токен от CryptoBot
+        const CRYPTOBOT_API_TOKEN = "334217:AAeZO0KbtAHaO7kGpIk49oskxnyXJuyKNg1"; // Ваш токен от CryptoBot
         const TELEGRAM_BOT_TOKEN = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Токен Telegram-бота
         const CHAT_ID = "1002348053681"; // ID чата/канала
         const currency = "USDT"; // Валюта
