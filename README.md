@@ -94,9 +94,9 @@
     </div>
 
     <script>
-        const CRYPTOBOT_API_TOKEN = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Ваш API-токен CryptoBot
-        const TELEGRAM_BOT_TOKEN = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Замени на токен бота
-        const CHAT_ID = "1002348053681"; // Замени на ID чата/канала
+        const CRYPTOBOT_API_TOKEN = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Ваш токен от CryptoBot
+        const TELEGRAM_BOT_TOKEN = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Токен Telegram-бота
+        const CHAT_ID = "1002348053681"; // ID чата/канала
         const currency = "USDT"; // Валюта
 
         const outcomes = {
@@ -137,7 +137,13 @@
             });
 
             const data = await response.json();
-            return data.ok ? data.result.pay_url : null;  // Возвращаем URL для оплаты
+            if (data.ok) {
+                return data.result.pay_url;  // Возвращаем URL для оплаты
+            } else {
+                console.error("Ошибка при создании счета:", data.description);
+                alert("❌ Ошибка при создании счета. Попробуйте позже.");
+                return null;
+            }
         }
 
         // Функция для отправки сообщения в Telegram
