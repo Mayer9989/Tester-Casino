@@ -94,7 +94,7 @@
     </div>
 
     <script>
-        const CRYPTOBOT_API_TOKEN = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Замени на свой API-токен от CryptoBot
+        const CRYPTOBOT_API_TOKEN = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Ваш API-токен CryptoBot
         const TELEGRAM_BOT_TOKEN = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Замени на токен бота
         const CHAT_ID = "1002348053681"; // Замени на ID чата/канала
         const currency = "USDT"; // Валюта
@@ -123,32 +123,21 @@
 
         // Функция для создания счета на оплату через CryptoBot
         async function createInvoice(amount) {
-            try {
-                const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${CRYPTOBOT_API_TOKEN}`
-                    },
-                    body: JSON.stringify({ 
-                        asset: currency, 
-                        amount: amount, 
-                        description: "Ставка в казино"
-                    })
-                });
+            const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${CRYPTOBOT_API_TOKEN}`
+                },
+                body: JSON.stringify({ 
+                    asset: currency, 
+                    amount: amount, 
+                    description: "Ставка в казино"
+                })
+            });
 
-                const data = await response.json();
-                console.log("Ответ от CryptoBot:", data); // Добавим лог для отладки
-                if (data.ok && data.result && data.result.pay_url) {
-                    return data.result.pay_url;  // Возвращаем URL для оплаты
-                } else {
-                    throw new Error("Ошибка при создании счета для оплаты");
-                }
-            } catch (error) {
-                console.error("Ошибка создания счета:", error);
-                alert("❌ Ошибка при создании счета. Попробуйте позже.");
-                return null;
-            }
+            const data = await response.json();
+            return data.ok ? data.result.pay_url : null;  // Возвращаем URL для оплаты
         }
 
         // Функция для отправки сообщения в Telegram
@@ -196,7 +185,6 @@
             const payUrl = await createInvoice(betAmount);
             if (payUrl) {
                 // Перенаправляем пользователя на страницу оплаты
-                console.log("Перенаправляем на страницу оплаты:", payUrl); // Отладочный вывод
                 window.location.href = payUrl;
 
                 // Отправка сообщения о ставке
