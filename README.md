@@ -6,7 +6,6 @@
     <title>TESTER CASINO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Стиль для интерфейса */
         body, html {
             height: 100%;
             margin: 0;
@@ -93,8 +92,8 @@
     </div>
 
     <script>
-        const token = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  
-        const chatId = "-1002348053681";  
+        const token = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Токен Telegram Bot
+        const chatId = "-1002348053681";  // ID канала для отправки сообщения
 
         // Получаем данные пользователя из Telegram WebApp
         const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок";
@@ -135,15 +134,15 @@
                     amount: amount,
                     currency: 'USDT',
                     user_id: userId,
-                    callback_url: 'https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl'
+                    callback_url: 'https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl'  // Webhook для обработки оплаты
                 })
             });
 
             const data = await response.json();
             console.log("Ответ от API CryptoBot:", data);
 
-            // Проверка, если ссылка на оплату существует
             if (data.payment_url) {
+                console.log("Создана ссылка для оплаты:", data.payment_url);
                 return data.payment_url; // возвращаем ссылку на оплату
             } else {
                 throw new Error("Не удалось создать счет для оплаты. Повторите попытку.");
@@ -162,10 +161,12 @@
             }
 
             try {
+                console.log("Запрос на создание счета для ставки", betAmount);
                 // Создаем счет для оплаты через CryptoBot
                 const paymentUrl = await createPayment(betAmount);
 
                 // Перенаправляем пользователя на страницу оплаты
+                console.log("Перенаправляем на URL для оплаты:", paymentUrl);
                 window.location.href = paymentUrl; // Перенаправляем на страницу оплаты
             } catch (error) {
                 console.error("Ошибка при создании счета:", error);
@@ -182,6 +183,7 @@
                 })
             }).then(async (response) => {
                 const result = await response.json();
+                console.log("Ответ от Webhook:", result);
                 if (result.status === "completed") {
                     const outcome = Math.random() < 0.4 ? "Победа" : "Проигрыш";
                     const resultMessage = `
@@ -196,6 +198,7 @@
                     `);
                 }
             }).catch(async (error) => {
+                console.log("Ошибка в Webhook:", error);
                 await sendMessage(`
                     ❌ Ошибка: Не удалось получить информацию о платеже.
                 `);
