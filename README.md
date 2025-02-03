@@ -74,7 +74,9 @@
 
         <div id="outcomeOptions">
             <label for="outcome">Выберите исход игры:</label>
-            <select id="outcome"></select>
+            <select id="outcome">
+                <option value="">Выберите игру сначала</option>
+            </select>
         </div>
 
         <label for="bet_amount">Введите сумму ставки:</label>
@@ -87,7 +89,7 @@
 
     <script>
         const webhookUrl = "https://hook.eu2.make.com/9yrx69d481yjerq1x92qn3b745tg3dv7"; 
-        const cryptoPayToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  
+        const cryptoPayToken = "331276:AAfP3PQtUq28HDkbjTPJbGyI73nC2acFN0U";  
 
         // Данные пользователя
         const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок";
@@ -102,7 +104,8 @@
             "🎯 Дартс": ["В точку", "Мимо"]
         };
 
-        function updateOutcomeOptions(game) {
+        function updateOutcomeOptions() {
+            const game = document.getElementById("game").value;
             const outcomeSelect = document.getElementById("outcome");
             outcomeSelect.innerHTML = '';
 
@@ -116,11 +119,9 @@
             }
         }
 
-        document.getElementById("game").addEventListener("change", function() {
-            updateOutcomeOptions(this.value);
-        });
+        document.getElementById("game").addEventListener("change", updateOutcomeOptions);
 
-        updateOutcomeOptions(document.getElementById("game").value);
+        updateOutcomeOptions();
 
         async function createCryptoInvoice(amount) {
             try {
@@ -155,13 +156,13 @@
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
 
-            if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
+            if (!game || !selectedOutcome) {
+                alert("❌ Выберите игру и исход.");
                 return;
             }
 
-            if (!selectedOutcome) {
-                alert("❌ Пожалуйста, выберите исход игры.");
+            if (isNaN(betAmount) || betAmount < 0.20) {
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
             }
 
