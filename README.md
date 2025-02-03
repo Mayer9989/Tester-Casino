@@ -65,6 +65,7 @@
     <div class="container">
         <h2>TESTER <span>CASINO</span></h2>
         
+        <!-- Выбор игры -->
         <label for="game">Выберите игру:</label>
         <select id="game">
             <option value="🎲 Четное/Нечетное">🎲 Четное/Нечетное</option>
@@ -73,10 +74,19 @@
             <option value="✂ Камень/Ножницы/Бумага">✂ Камень/Ножницы/Бумага</option>
             <option value="🎯 Дартс">🎯 Дартс</option>
         </select>
+        
+        <!-- Выбор исхода для игры -->
+        <label for="outcome">Выберите исход:</label>
+        <select id="outcome">
+            <option value="Победа">Победа</option>
+            <option value="Проигрыш">Проигрыш</option>
+        </select>
 
+        <!-- Ввод суммы ставки -->
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$">
         
+        <!-- Кнопка для ставки -->
         <button id="placeBetBtn">✅ Сделать ставку</button>
 
         <div class="footer">Ваше казино в Telegram. Удачи!</div>
@@ -134,6 +144,7 @@
         // Функция для обработки ставки
         document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
+            const outcome = document.getElementById("outcome").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
 
             if (isNaN(betAmount) || betAmount < 0.20) {
@@ -144,15 +155,8 @@
             // Создаем счет для оплаты через CryptoBot
             const paymentUrl = await createPayment(betAmount);
 
-            // Отправляем сообщение в канал с ссылкой на оплату
-            const paymentMessage = `
-🔑 Игрок: @${username}
-🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USD
-
-🖱️ <a href="${paymentUrl}">Перейти к оплате</a>
-`;
-            const betMessageId = await sendMessage(paymentMessage);
+            // Перенаправляем пользователя на страницу оплаты
+            window.location.href = paymentUrl; // Перенаправляем на страницу оплаты
 
             // Ждем завершения оплаты через Webhook
             fetch("https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl", {
