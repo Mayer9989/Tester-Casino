@@ -25,13 +25,13 @@
         }
         h2 {
             text-align: center;
-            font-size: 30px;
+            font-size: 30px; /* Размер для обоих текстов */
             font-weight: bold;
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
         h2 span {
-            color: red;
+            color: red; /* Цвет для CASINO */
         }
         select, input, button {
             width: 100%;
@@ -98,9 +98,8 @@
     <script>
         const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
         const chatId = "-1002348053681";  
-        const cryptoToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";  // Ваш токен для CryptoBot API
-        const webhookUrl = "https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl";  // URL Webhook
 
+        // Получение данных о пользователе
         const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок";
         const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID";  
 
@@ -126,68 +125,69 @@
             }
         }
 
-        // Функция для создания счета и получения ссылки на оплату
-        async function createPayment(amount) {
-            console.log("Запрос на создание счета с суммой:", amount);
-            
-            try {
-                const response = await fetch('https://api.cryptobot.io/api/v1/crypto/pay', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        token: cryptoToken,
-                        amount: amount,
-                        currency: 'USDT',
-                        user_id: userId,
-                        callback_url: webhookUrl
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Ошибка при создании счета: ' + response.statusText);
-                }
-
-                const data = await response.json();
-                console.log("Ответ от API CryptoBot:", data);
-
-                if (data.payment_url) {
-                    console.log("Создана ссылка для оплаты:", data.payment_url);
-                    return data.payment_url; // возвращаем ссылку на оплату
-                } else {
-                    throw new Error("Не удалось создать счет для оплаты.");
-                }
-            } catch (error) {
-                console.error("Ошибка при запросе создания счета:", error);
-                alert("Ошибка: " + error.message);
-                throw error;  // Пробрасываем ошибку дальше
+        // Функция для создания счета через CryptoPay
+        async function createCryptoPayInvoice(amount, currency) {
+            const apiToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";
+            const response = await fetch("https://api.cryptopay.me/v1/invoice/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    api_token: apiToken,
+                    amount: amount,
+                    currency: currency,
+                    description: "Ставка в казино"
+                })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                return data.invoice_url; // Возвращаем ссылку для оплаты
+            } else {
+                throw new Error(data.message || "Ошибка при создании инвойса");
             }
         }
 
-        // Функция для удаления сообщения
-        async function deleteMessage(messageId) {
-            try {
-                const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        message_id: messageId
-                    })
-                });
+        // Обработчик клика по кнопке "Сделать ставку"
+        document.getElementById("placeBetBtn").addEventListener("click", async function () {
+            const game = document.getElementById("game").value;
+            const betAmount = parseFloat(document.getElementById("bet_amount").value);
+            const selectedOutcome = document.getElementById("outcome").value;
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
-            } catch (error) {
-                console.error("Ошибка удаления сообщения:", error);
+            if (isNaN(betAmount) || betAmount < 0.20) {
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
+                return;
             }
-        }
 
-        // Функция для генерации исхода игры с 40% шансом на победу
-        function getRandomOutcome() {
-            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
-        }
+            if (!selectedOutcome) {
+                alert("❌ Пожалуйста, выберите исход игры.");
+                return;
+            }
+
+            // Создаем инвойс через CryptoPay
+            try {
+                const invoiceUrl = await createCryptoPayInvoice(betAmount, "USDT");
+
+                // Отправляем сообщение с инвойсом
+                const betMessageId = await sendMessage(`
+                [🎉 Ваша ставка принята]
+                🔑 Игрок: @${username}
+                🔑 Айди игрока: ${userId}
+                🚀 Игра: ${game}
+                💸 Сумма ставки: ${betAmount} USD
+                🏁 Исход: ${selectedOutcome}
+                💳 Для оплаты переходите по ссылке: ${invoiceUrl}`);
+                
+                // Информация об оплате (проверка)
+                alert("Для завершения ставки оплатите по ссылке: " + invoiceUrl);
+            } catch (error) {
+                alert("Ошибка при создании инвойса: " + error.message);
+            }
+        });
+
+        // Обработчик изменения игры для обновления исходов
+        document.getElementById("game").addEventListener("change", function() {
+            const selectedGame = this.value;
+            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
+        });
 
         // Функция для обновления возможных исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
@@ -212,45 +212,8 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
-        // Отправка выбранных данных при клике на кнопку
-        document.getElementById("placeBetBtn").addEventListener("click", async function () {
-            const game = document.getElementById("game").value;
-            const betAmount = parseFloat(document.getElementById("bet_amount").value);
-            const selectedOutcome = document.getElementById("outcome").value;
-
-            if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
-                return;
-            }
-
-            if (!selectedOutcome) {
-                alert("❌ Пожалуйста, выберите исход игры.");
-                return;
-            }
-
-            // Создаем счет для оплаты
-            try {
-                const paymentUrl = await createPayment(betAmount);
-                if (paymentUrl) {
-                    window.location.href = paymentUrl; // Переход на страницу оплаты
-                } else {
-                    alert("Ошибка: не удалось создать счет.");
-                }
-            } catch (error) {
-                console.error("Ошибка при создании счета:", error);
-                alert("Ошибка при создании счета. Попробуйте снова.");
-            }
-        });
-
-        // Обновление исходов игры, когда выбирается новая игра
-        document.getElementById("game").addEventListener("change", function () {
-            const game = this.value;
-            updateOutcomeOptions(game);
-        });
-
-        // Инициализация при загрузке
-        const initialGame = document.getElementById("game").value;
-        updateOutcomeOptions(initialGame);
+        // Инициализируем начальные исходы для выбранной игры
+        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
