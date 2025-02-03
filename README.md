@@ -25,13 +25,13 @@
         }
         h2 {
             text-align: center;
-            font-size: 30px; /* Размер для обоих текстов */
+            font-size: 30px; 
             font-weight: bold;
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
         h2 span {
-            color: red; /* Цвет для CASINO */
+            color: red; 
         }
         select, input, button {
             width: 100%;
@@ -138,9 +138,10 @@
                     description: "Ставка в казино"
                 })
             });
+
             const data = await response.json();
-            if (response.ok) {
-                return data.invoice_url; // Возвращаем ссылку для оплаты
+            if (response.ok && data.url) {
+                return data.url; // Возвращаем ссылку для оплаты
             } else {
                 throw new Error(data.message || "Ошибка при создании инвойса");
             }
@@ -162,32 +163,68 @@
                 return;
             }
 
-            // Создаем инвойс через CryptoPay
+            // Создаем инвойс для оплаты
             try {
-                const invoiceUrl = await createCryptoPayInvoice(betAmount, "USDT");
-
-                // Отправляем сообщение с инвойсом
-                const betMessageId = await sendMessage(`
-                [🎉 Ваша ставка принята]
-                🔑 Игрок: @${username}
-                🔑 Айди игрока: ${userId}
-                🚀 Игра: ${game}
-                💸 Сумма ставки: ${betAmount} USD
-                🏁 Исход: ${selectedOutcome}
-                💳 Для оплаты переходите по ссылке: ${invoiceUrl}`);
+                const invoiceUrl = await createCryptoPayInvoice(betAmount, 'USDT');
                 
-                // Информация об оплате (проверка)
-                alert("Для завершения ставки оплатите по ссылке: " + invoiceUrl);
+                // Отправляем сообщение о ставке
+                const betMessageId = await sendMessage(`[🎉 Ваша ставка принята]
+
+🔑 Игрок: @${username}
+🔑 Айди игрока: ${userId}
+🚀 Игра: ${game}
+💸 Сумма ставки: ${betAmount} USD
+🏁 Исход: ${selectedOutcome}
+
+💰 Перейдите по ссылке для оплаты: ${invoiceUrl}`);
+
+                // Отправляем сообщение "🎯 Загружаем результат игры..."
+                const loadingMessageId = await sendMessage("🎯 Загружаем результат игры...");
+
+                // Удаляем сообщение "🎯 Загружаем результат игры..."
+                setTimeout(async () => {
+                    await deleteMessage(loadingMessageId);
+
+                    // Генерируем результат игры
+                    const result = Math.random() < 0.4 ? "Победа" : "Проигрыш";  
+                    const isWin = result === "Победа"; 
+                    const rubAmount = (betAmount * 70).toFixed(2);  
+
+                    let resultMessage = "";
+
+                    if (isWin) {
+                        resultMessage = `
+🔑 Игрок: @${username}
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USD (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
+🔥 Удачи в следующих ставках!
+                        `;
+                    } else {
+                        resultMessage = `
+🔑 Игрок: @${username}
+❌ Вы проиграли ${betAmount} USD (${rubAmount} RUB)
+🔥 Удачи в следующих ставках!
+                        `;
+                    }
+
+                    // Отправляем сообщение о результате игры
+                    setTimeout(() => {
+                        sendMessage(resultMessage);
+                    }, 3000); // Ожидание 3 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
+                }, 2000); // Удаляем через 2 секунды
             } catch (error) {
-                alert("Ошибка при создании инвойса: " + error.message);
+                alert(`Ошибка: ${error.message}`);
             }
         });
 
         // Обработчик изменения игры для обновления исходов
         document.getElementById("game").addEventListener("change", function() {
             const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);  // Обновляем список исходов в зависимости от выбранной игры
+            updateOutcomeOptions(selectedGame);  
         });
+
+        // Инициализируем начальные исходы для выбранной игры
+        updateOutcomeOptions(document.getElementById("game").value);
 
         // Функция для обновления возможных исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
@@ -200,20 +237,17 @@
                 "🎯 Дартс": ["В точку", "Мимо"]
             };
 
-            outcomeSelect.innerHTML = '';  // Очистить предыдущее содержимое
+            outcomeSelect.innerHTML = ''; 
 
             outcomeOptions[game].forEach(option => {
-                const opt = document.createElement("option");
-                opt.value = option;
-                opt.textContent = option;
-                outcomeSelect.appendChild(opt);
+                const optionElement = document.createElement("option");
+                optionElement.value = option;
+                optionElement.textContent = option;
+                outcomeSelect.appendChild(optionElement);
             });
 
             document.getElementById("outcomeOptions").style.display = "block";
         }
-
-        // Инициализируем начальные исходы для выбранной игры
-        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
