@@ -106,12 +106,14 @@
             const outcomeSelect = document.getElementById("outcome");
             outcomeSelect.innerHTML = '';
 
-            outcomeOptions[game].forEach(option => {
-                const opt = document.createElement("option");
-                opt.value = option;
-                opt.textContent = option;
-                outcomeSelect.appendChild(opt);
-            });
+            if (outcomeOptions[game]) {
+                outcomeOptions[game].forEach(option => {
+                    const opt = document.createElement("option");
+                    opt.value = option;
+                    opt.textContent = option;
+                    outcomeSelect.appendChild(opt);
+                });
+            }
         }
 
         document.getElementById("game").addEventListener("change", function() {
@@ -122,12 +124,15 @@
 
         async function createCryptoInvoice(amount) {
             try {
-                const response = await fetch(`https://pay.crypt.bot/api/createInvoice`, {
+                const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Crypto-Pay-API-Token": cryptoPayToken },
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Crypto-Pay-API-Token": cryptoPayToken 
+                    },
                     body: JSON.stringify({
                         asset: "USDT",
-                        amount: amount,
+                        amount: amount.toFixed(2),
                         description: "Ставка в TESTER CASINO",
                         paid_btn_name: "viewItem",
                         allow_anonymous: false
