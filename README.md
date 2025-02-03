@@ -30,9 +30,7 @@
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
-        h2 span {
-            color: red;
-        }
+        h2 span { color: red; }
         select, input, button {
             width: 100%;
             padding: 15px;
@@ -74,6 +72,11 @@
             <option value="🎯 Дартс">🎯 Дартс</option>
         </select>
 
+        <div id="outcomeOptions">
+            <label for="outcome">Выберите исход игры:</label>
+            <select id="outcome"></select>
+        </div>
+
         <label for="bet_amount">Введите сумму ставки:</label>
         <input type="number" id="bet_amount" placeholder="Минимум 0.20$">
         
@@ -90,30 +93,54 @@
         const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок";
         const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID";  
 
-        async function createInvoice(amount) {
+        // Возможные исходы игр
+        const outcomeOptions = {
+            "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
+            "⚽ Футбол": ["Гол", "Промах"],
+            "🏀 Баскетбол": ["Попал", "Не попал"],
+            "✂ Камень/Ножницы/Бумага": ["Камень", "Ножницы", "Бумага"],
+            "🎯 Дартс": ["В точку", "Мимо"]
+        };
+
+        function updateOutcomeOptions(game) {
+            const outcomeSelect = document.getElementById("outcome");
+            outcomeSelect.innerHTML = '';
+
+            outcomeOptions[game].forEach(option => {
+                const opt = document.createElement("option");
+                opt.value = option;
+                opt.textContent = option;
+                outcomeSelect.appendChild(opt);
+            });
+        }
+
+        document.getElementById("game").addEventListener("change", function() {
+            updateOutcomeOptions(this.value);
+        });
+
+        updateOutcomeOptions(document.getElementById("game").value);
+
+        async function createCryptoInvoice(amount) {
             try {
                 const response = await fetch(`https://pay.crypt.bot/api/createInvoice`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Crypto-Pay-API-Token": cryptoPayToken
-                    },
+                    headers: { "Content-Type": "application/json", "Crypto-Pay-API-Token": cryptoPayToken },
                     body: JSON.stringify({
                         asset: "USDT",
                         amount: amount,
                         description: "Ставка в TESTER CASINO",
                         paid_btn_name: "viewItem",
-                        paid_btn_url: "https://t.me/TesterCasinoBot",
-                        payload: JSON.stringify({ userId, username })
+                        allow_anonymous: false
                     })
                 });
 
                 const data = await response.json();
-                if (!data.ok) throw new Error(data.error.message);
+                if (!data.ok) throw new Error(data.error);
+
                 return data.result.pay_url;
             } catch (error) {
-                console.error("Ошибка при создании инвойса:", error);
-                alert("Ошибка при создании инвойса: " + error.message);
+                console.error("Ошибка создания инвойса:", error);
+                alert("Ошибка создания инвойса. Попробуйте позже.");
                 return null;
             }
         }
@@ -121,35 +148,36 @@
         document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
+            const selectedOutcome = document.getElementById("outcome").value;
 
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
                 return;
             }
 
-            // Создаем инвойс
-            const payUrl = await createInvoice(betAmount);
-            if (!payUrl) return;
-
-            // Отправляем данные в Webhook
-            try {
-                await fetch(webhookUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        username: username,
-                        game: game,
-                        amount: betAmount,
-                        pay_url: payUrl
-                    })
-                });
-                alert("✅ Ставка создана! Вас перенаправят на оплату.");
-                window.location.href = payUrl;
-            } catch (error) {
-                console.error("Ошибка отправки Webhook:", error);
-                alert("Ошибка: " + error.message);
+            if (!selectedOutcome) {
+                alert("❌ Пожалуйста, выберите исход игры.");
+                return;
             }
+
+            const invoiceUrl = await createCryptoInvoice(betAmount);
+            if (!invoiceUrl) return;
+
+            alert("💰 Оплатите ставку, вас сейчас перенаправит на CryptoBot!");
+            window.location.href = invoiceUrl;
+
+            await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: userId,
+                    username: username,
+                    game: game,
+                    bet_amount: betAmount,
+                    selected_outcome: selectedOutcome,
+                    invoice_url: invoiceUrl
+                })
+            });
         });
     </script>
 </body>
