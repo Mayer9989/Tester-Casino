@@ -86,7 +86,6 @@
         <div id="outcomeOptions" style="display:none;">
             <label for="outcome">Выберите исход игры:</label>
             <select id="outcome">
-                <!-- Исходы будут добавляться динамически -->
             </select>
         </div>
 
@@ -96,54 +95,17 @@
     </div>
 
     <script>
-        const chatId = Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID";
+        const token = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U";  
+        const chatId = "-1002348053681";  
+
+        // Получение данных о пользователе
         const username = Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок";
+        const userId = Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID";  
 
-        // Укажите свой Webhook URL из Make
-        const webhookUrl = "https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl"; 
-
-        // Функция для создания инвойса через Webhook Make
-        async function createInvoiceThroughWebhook(amount, currency = "USDT") {
-            try {
-                // Подготовка данных для отправки в Webhook Make
-                const data = {
-                    amount: amount,
-                    currency: currency,
-                    user_id: chatId,
-                    username: username,
-                    game: document.getElementById("game").value,
-                    bet_amount: amount,
-                    outcome: document.getElementById("outcome").value,
-                    callback_url: `https://t.me/${username}` // Ссылка для callback, можно изменить
-                };
-
-                // Отправка данных в Webhook Make
-                const response = await fetch(webhookUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data)
-                });
-
-                const responseData = await response.json();
-                
-                if (response.ok) {
-                    if (responseData.status === "success" && responseData.invoice_url) {
-                        return responseData.invoice_url;
-                    } else {
-                        throw new Error(responseData.message || "Ошибка при получении инвойса.");
-                    }
-                } else {
-                    throw new Error(responseData.message || "Ошибка связи с сервером.");
-                }
-            } catch (error) {
-                throw new Error(`Ошибка при создании инвойса: ${error.message}`);
-            }
-        }
-
-        // Функция для отправки сообщений в Telegram WebApp
+        // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
             try {
-                const response = await fetch(`https://api.telegram.org/bot${apiToken}/sendMessage`, {
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -162,62 +124,29 @@
             }
         }
 
-        // Обработчик клика по кнопке "Сделать ставку"
-        document.getElementById("placeBetBtn").addEventListener("click", async function () {
-            const game = document.getElementById("game").value;
-            const betAmount = parseFloat(document.getElementById("bet_amount").value);
-            const selectedOutcome = document.getElementById("outcome").value;
-
-            if (isNaN(betAmount) || betAmount < 0.20) {
-                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
-                return;
-            }
-
-            if (!selectedOutcome) {
-                alert("❌ Пожалуйста, выберите исход игры.");
-                return;
-            }
-
-            // Создаем инвойс через Webhook Make
+        // Функция для удаления сообщения
+        async function deleteMessage(messageId) {
             try {
-                const invoiceUrl = await createInvoiceThroughWebhook(betAmount);
+                const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        message_id: messageId
+                    })
+                });
 
-                // Отправляем сообщение с инвойсом в Telegram WebApp
-                const message = `[🎉 Ваша ставка принята]
-
-🔑 Игрок: @${username}
-🔑 Айди игрока: ${chatId}
-🚀 Игра: ${game}
-💸 Сумма ставки: ${betAmount} USD
-🏁 Исход: ${selectedOutcome}
-
-💰 Перейдите по ссылке для оплаты: [🔗 Оплатить](${invoiceUrl})`;
-
-                await sendMessage(message);
-
-                // Переходим к результату игры через некоторое время
-                setTimeout(async () => {
-                    const result = Math.random() < 0.4 ? "Победа" : "Проигрыш";  
-                    const resultMessage = result === "Победа" ? `
-🎉 Поздравляем, вы выиграли! Ваша ставка удвоилась!
-                    ` : `
-❌ К сожалению, вы проиграли вашу ставку.
-                    `;
-                    await sendMessage(resultMessage);
-                }, 5000); // 5 секунд ожидания
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
             } catch (error) {
-                alert(`Ошибка: ${error.message}`);
+                console.error("Ошибка удаления сообщения:", error);
             }
-        });
+        }
 
-        // Обработчик изменения игры для обновления исходов
-        document.getElementById("game").addEventListener("change", function() {
-            const selectedGame = this.value;
-            updateOutcomeOptions(selectedGame);
-        });
-
-        // Инициализируем начальные исходы для выбранной игры
-        updateOutcomeOptions(document.getElementById("game").value);
+        // Функция для генерации исхода игры с 40% шансом на победу
+        function getRandomOutcome() {
+            return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
+        }
 
         // Функция для обновления возможных исходов в зависимости от выбранной игры
         function updateOutcomeOptions(game) {
@@ -230,17 +159,79 @@
                 "🎯 Дартс": ["В точку", "Мимо"]
             };
 
-            outcomeSelect.innerHTML = ''; 
+            outcomeSelect.innerHTML = '';
 
             outcomeOptions[game].forEach(option => {
-                const optionElement = document.createElement("option");
-                optionElement.value = option;
-                optionElement.textContent = option;
-                outcomeSelect.appendChild(optionElement);
+                const opt = document.createElement("option");
+                opt.value = option;
+                opt.textContent = option;
+                outcomeSelect.appendChild(opt);
             });
 
             document.getElementById("outcomeOptions").style.display = "block";
         }
+
+        // Отправка запроса на создание инвойса и обработка Webhook
+        async function createInvoice(betAmount) {
+            try {
+                const response = await fetch('https://hook.eu2.make.com/dyh9wamknd77wn8txtv3qgu3mdglp3sl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: betAmount,
+                        currency: 'USD',
+                        user_id: Telegram.WebApp.initDataUnsafe?.user?.id,
+                        game: document.getElementById('game').value,
+                    })
+                });
+
+                // Проверим, что Webhook действительно возвращает JSON
+                const data = await response.json();  
+                console.log('Ответ Webhook:', data);  // Диагностика: выводим ответ в консоль
+
+                if (!response.ok) {
+                    throw new Error('Ошибка при создании инвойса');
+                }
+
+                // Создаем инвойс
+                const invoiceLink = data.invoice_url;
+                return invoiceLink;
+            } catch (error) {
+                console.error('Ошибка при отправке данных на Webhook:', error);
+                alert('Ошибка при создании инвойса');
+            }
+        }
+
+        // Отправка выбранных данных при клике на кнопку
+        document.getElementById("placeBetBtn").addEventListener("click", async function () {
+            const betAmount = parseFloat(document.getElementById("bet_amount").value);
+
+            if (isNaN(betAmount) || betAmount < 0.20) {
+                alert("❌ Минимальная ставка — 0.20$. Введите корректное значение.");
+                return;
+            }
+
+            const invoiceLink = await createInvoice(betAmount);
+
+            if (!invoiceLink) {
+                alert('Не удалось создать инвойс.');
+                return;
+            }
+
+            // Отправляем ссылку на инвойс в Telegram
+            sendMessage(`Ваш инвойс для оплаты: ${invoiceLink}`);
+        });
+
+        // Обработчик изменения игры для обновления исходов
+        document.getElementById("game").addEventListener("change", function() {
+            const selectedGame = this.value;
+            updateOutcomeOptions(selectedGame);  
+        });
+
+        // Инициализируем начальные исходы для выбранной игры
+        updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
 </html>
