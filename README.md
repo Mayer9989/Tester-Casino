@@ -25,7 +25,6 @@
                         parse_mode: "HTML"
                     })
                 });
-
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.description || 'Неизвестная ошибка');
             } catch (error) {
@@ -35,7 +34,8 @@
 
         // Функция для создания инвойса через CryptoBot API
         async function createInvoice(amount) {
-            const apiUrl = "https://api.cryptobot.com/create_invoice";  // URL для создания инвойса (замените на актуальный)
+            const apiUrl = "https://api.cryptobot.com/create_invoice";  // Замените на актуальный URL
+
             try {
                 const response = await fetch(apiUrl, {
                     method: "POST",
@@ -50,6 +50,8 @@
                 });
 
                 const data = await response.json();
+                console.log(data);  // Логируем ответ от API для отладки
+
                 if (!data.payment_url) {
                     throw new Error('Ошибка при создании инвойса');
                 }
@@ -57,6 +59,7 @@
                 return data.payment_url;  // Возвращаем ссылку на инвойс
             } catch (error) {
                 console.error("Ошибка создания инвойса:", error);
+                alert("Ошибка при создании инвойса: " + error.message);  // Отображаем ошибку пользователю
             }
         }
 
