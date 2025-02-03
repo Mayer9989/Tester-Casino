@@ -97,7 +97,7 @@
         const CRYPTOBOT_API_TOKEN = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi"; // Замени на свой API-токен от CryptoBot
         const TELEGRAM_BOT_TOKEN = "7480442854:AAEs_EILlE85qomG5-hW6rZ9bvISLqaXm4U"; // Замени на токен бота
         const CHAT_ID = "1002348053681"; // Замени на ID чата/канала
-        const currency = "USDT";
+        const currency = "USDT"; // Валюта
 
         const outcomes = {
             "🎲 Четное/Нечетное": ["Четное", "Нечетное"],
@@ -121,6 +121,7 @@
             document.getElementById("outcomeOptions").style.display = "block";
         }
 
+        // Функция для создания счета на оплату через CryptoBot
         async function createInvoice(amount) {
             const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
                 method: "POST",
@@ -128,13 +129,18 @@
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${CRYPTOBOT_API_TOKEN}`
                 },
-                body: JSON.stringify({ asset: currency, amount: amount, description: "Ставка в казино" })
+                body: JSON.stringify({ 
+                    asset: currency, 
+                    amount: amount, 
+                    description: "Ставка в казино"
+                })
             });
 
             const data = await response.json();
-            return data.ok ? data.result.pay_url : null;
+            return data.ok ? data.result.pay_url : null;  // Возвращаем URL для оплаты
         }
 
+        // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
             const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                 method: "POST",
@@ -144,6 +150,7 @@
             return response.ok ? (await response.json()).result.message_id : null;
         }
 
+        // Функция для удаления сообщения в Telegram
         async function deleteMessage(messageId) {
             if (!messageId) return;
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
@@ -153,10 +160,12 @@
             });
         }
 
+        // Генерация случайного результата игры
         function getRandomOutcome() {
             return Math.random() < 0.4 ? "Победа" : "Проигрыш";  
         }
 
+        // Обработчик нажатия кнопки "Сделать ставку"
         document.getElementById("placeBetBtn").addEventListener("click", async function () {
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
@@ -167,34 +176,71 @@
                 return;
             }
 
+            if (!selectedOutcome) {
+                alert("❌ Пожалуйста, выберите исход игры.");
+                return;
+            }
+
+            // Создаем счёт для оплаты с введенной суммой
             const payUrl = await createInvoice(betAmount);
             if (payUrl) {
+                // Перенаправляем пользователя на страницу оплаты
                 window.location.href = payUrl;
+
+                // Отправка сообщения о ставке
+                const betMessageId = await sendMessage(`[🎉 Ваша ставка принята]
+
+🔑 Игрок: @${Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок"}
+🔑 Айди игрока: ${Telegram.WebApp.initDataUnsafe?.user?.id || "Неизвестный ID"}
+🚀 Игра: ${game}
+💸 Сумма ставки: ${betAmount} USDT
+🏁 Исход: ${selectedOutcome}`);
+
+                // Отправляем сообщение "🎯 Загружаем результат игры..."
+                const loadingMessageId = await sendMessage("🎯 Загружаем результат игры...");
+
+                // Удаляем сообщение "🎯 Загружаем результат игры..."
+                setTimeout(async () => {
+                    await deleteMessage(loadingMessageId);
+
+                    // Генерация случайного результата игры
+                    const result = getRandomOutcome();  // Генерация случайного исхода игры
+                    const isWin = result === "Победа"; // Проверка на победу
+                    const rubAmount = (betAmount * 70).toFixed(2);  // Преобразуем в рубли по курсу 70
+
+                    let resultMessage = "";
+
+                    if (isWin) {
+                        resultMessage = `
+🔑 Игрок: @${Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок"}
+🎉 Поздравляем, вы выиграли ${betAmount * 2} USDT (${(betAmount * 2 * 70).toFixed(2)} RUB)!
+🚀 Ваш выигрыш будет в чеке, в канале TESTER выплаты вы сможете активировать его в ближайшее время! 
+🔥 Удачи в следующих ставках!
+                        `;
+                    } else {
+                        resultMessage = `
+🔑 Игрок: @${Telegram.WebApp.initDataUnsafe?.user?.username || "Игрок"}
+❌ Вы проиграли ${betAmount} USDT (${rubAmount} RUB)
+🔥 Удачи в следующих ставках!
+                        `;
+                    }
+
+                    // Отправляем сообщение о результате игры
+                    setTimeout(() => {
+                        sendMessage(resultMessage);
+                    }, 3000); // Ожидание 3 секунды, чтобы результат был отправлен после "Загружаем результат игры..."
+                }, 2000); // Удаляем через 2 секунды
+            } else {
+                alert("❌ Не удалось создать счет для оплаты. Попробуйте позже.");
             }
         });
 
-        async function processPayment(username, game, betAmount, selectedOutcome) {
-            const betMessageId = await sendMessage(`🎉 Ваша ставка принята\n\n🔑 Игрок: @${username}\n🚀 Игра: ${game}\n💸 Сумма ставки: ${betAmount} USDT\n🏁 Исход: ${selectedOutcome}`);
-
-            const loadingMessageId = await sendMessage("🎯 Загружаем результат игры...");
-
-            setTimeout(async () => {
-                await deleteMessage(loadingMessageId);
-
-                const result = getRandomOutcome();
-                const isWin = result === "Победа";
-                let resultMessage = isWin
-                    ? `🔑 Игрок: @${username}\n🎉 Поздравляем, вы выиграли ${betAmount * 2} USDT!\n🚀 Ваш выигрыш будет в чеке!`
-                    : `🔑 Игрок: @${username}\n❌ Вы проиграли ${betAmount} USDT\n🔥 Удачи в следующих ставках!`;
-
-                setTimeout(() => sendMessage(resultMessage), 3000);
-            }, 2000);
-        }
-
+        // Обработчик изменения игры для обновления исходов
         document.getElementById("game").addEventListener("change", function() {
             updateOutcomeOptions(this.value);
         });
 
+        // Инициализируем исходы для выбранной игры
         updateOutcomeOptions(document.getElementById("game").value);
     </script>
 </body>
