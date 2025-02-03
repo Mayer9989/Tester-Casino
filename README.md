@@ -128,22 +128,25 @@
         // Функция для создания счета через CryptoPay
         async function createCryptoPayInvoice(amount, currency) {
             const apiToken = "331276:AAte1CdcNnWSNo8cCm737bePKXhPI0A3oEi";
-            const response = await fetch("https://api.cryptopay.me/v1/invoice/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    api_token: apiToken,
-                    amount: amount,
-                    currency: currency,
-                    description: "Ставка в казино"
-                })
-            });
+            try {
+                const response = await fetch("https://api.cryptopay.me/v1/invoice/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        api_token: apiToken,
+                        amount: amount,
+                        currency: currency,
+                        description: "Ставка в казино"
+                    })
+                });
 
-            const data = await response.json();
-            if (response.ok && data.url) {
+                const data = await response.json();
+                if (!response.ok || !data.url) {
+                    throw new Error(data.message || "Не удалось создать инвойс. Попробуйте снова.");
+                }
                 return data.url; // Возвращаем ссылку для оплаты
-            } else {
-                throw new Error(data.message || "Ошибка при создании инвойса");
+            } catch (error) {
+                throw new Error(`Ошибка при создании инвойса: ${error.message}`);
             }
         }
 
