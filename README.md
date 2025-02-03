@@ -108,6 +108,7 @@
         };
 
         function updateOutcomeOptions(game) {
+            console.log("Обновление исходов для игры: " + game);
             const outcomeSelect = document.getElementById("outcome");
             outcomeSelect.innerHTML = '';
 
@@ -123,6 +124,7 @@
 
         // Функция для создания счета на оплату через CryptoBot
         async function createInvoice(amount) {
+            console.log("Создание счета на оплату...");
             const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
                 method: "POST",
                 headers: {
@@ -138,6 +140,7 @@
 
             const data = await response.json();
             if (data.ok) {
+                console.log("Счет успешно создан. URL:", data.result.pay_url);
                 return data.result.pay_url;  // Возвращаем URL для оплаты
             } else {
                 console.error("Ошибка при создании счета:", data.description);
@@ -148,6 +151,7 @@
 
         // Функция для отправки сообщения в Telegram
         async function sendMessage(text) {
+            console.log("Отправка сообщения в Telegram...");
             const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -176,6 +180,11 @@
             const game = document.getElementById("game").value;
             const betAmount = parseFloat(document.getElementById("bet_amount").value);
             const selectedOutcome = document.getElementById("outcome").value;
+
+            console.log("Нажата кнопка 'Сделать ставку'");
+            console.log("Выбрана игра:", game);
+            console.log("Сумма ставки:", betAmount);
+            console.log("Выбранный исход:", selectedOutcome);
 
             if (isNaN(betAmount) || betAmount < 0.20) {
                 alert("❌ Минимальная ставка — 0.20 USDT. Введите корректное значение.");
