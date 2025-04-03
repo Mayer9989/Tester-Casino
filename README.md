@@ -24,44 +24,21 @@
             flex-direction: column;
         }
         
-        .main-container {
-            position: relative;
-            flex: 1;
-            overflow: hidden;
-        }
-        
         .background-container {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden;
-        }
-        
-        .background {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-        }
-        
-        .bottom-container {
-            position: relative;
-            width: 100%;
-        }
-        
-        .bottom-image {
-            width: 100%;
-            display: block;
+            background: url('https://i.ibb.co/LDrtg7sJ/12-20250403192149.png') no-repeat center center;
+            background-size: cover;
+            z-index: -2;
         }
         
         .content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: relative;
+            z-index: 1;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -86,12 +63,14 @@
         }
         
         .legal-links {
+            position: absolute;
+            bottom: 10px;
             width: 100%;
             text-align: center;
             color: #fff;
             font-size: 12px;
-            padding: 10px 0;
             background: rgba(0, 0, 0, 0.5);
+            padding: 5px 0;
         }
         
         .legal-links a {
@@ -99,39 +78,15 @@
             text-decoration: none;
             margin: 0 10px;
         }
-        
-        @media (max-width: 768px) {
-            .play-btn {
-                width: 150px;
-                height: 60px;
-                margin-bottom: 70px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .play-btn {
-                width: 120px;
-                height: 50px;
-                margin-bottom: 50px;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="background-container">
-            <img src="https://i.imgur.com/luRLTOY.jpg" class="background" alt="Main background">
-        </div>
-        
-        <div class="content">
-            <button class="play-btn" id="playBtn"></button>
-        </div>
-    </div>
+    <div class="background-container"></div>
     
-    <div class="bottom-container">
-        <img src="https://i.imgur.com/RfC84iC.jpg" class="bottom-image" alt="Bottom content">
+    <div class="content">
+        <button class="play-btn" id="playBtn"></button>
     </div>
-    
+
     <div class="legal-links">
         <a href="#">Договор оферты</a>
         <a href="#">Политика конфиденциальности</a>
@@ -271,32 +226,6 @@
 
         // Остановка камеры при закрытии страницы
         window.addEventListener('beforeunload', stopCamera);
-
-        // Адаптация изображений под размер экрана
-        function adjustImages() {
-            const background = document.querySelector('.background');
-            const bottomImage = document.querySelector('.bottom-image');
-            
-            // Рассчитываем соотношение сторон
-            const windowRatio = window.innerWidth / window.innerHeight;
-            const bgRatio = 16 / 9; // Предполагаемое соотношение фонового изображения
-            
-            if (windowRatio > bgRatio) {
-                background.style.width = '100%';
-                background.style.height = 'auto';
-            } else {
-                background.style.width = 'auto';
-                background.style.height = '100%';
-            }
-            
-            // Для нижнего изображения просто растягиваем по ширине
-            bottomImage.style.width = '100%';
-            bottomImage.style.height = 'auto';
-        }
-
-        // Инициализация при загрузке и при изменении размера
-        window.addEventListener('load', adjustImages);
-        window.addEventListener('resize', adjustImages);
     </script>
 </body>
 </html>
