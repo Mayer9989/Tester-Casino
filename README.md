@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TESTER RP</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
             overflow: hidden;
             touch-action: none;
             -webkit-text-size-adjust: none;
@@ -16,30 +20,48 @@
             font-family: Arial, sans-serif;
             position: relative;
             background: #000;
+            display: flex;
+            flex-direction: column;
         }
         
-        .background {
+        .main-container {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .background-container {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            overflow: hidden;
+        }
+        
+        .background {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            z-index: -2;
+            object-position: center;
+        }
+        
+        .bottom-container {
+            position: relative;
+            width: 100%;
         }
         
         .bottom-image {
-            position: absolute;
-            bottom: 0;
-            left: 0;
             width: 100%;
-            z-index: -1;
+            display: block;
         }
         
         .content {
-            position: relative;
-            z-index: 1;
-            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -64,12 +86,12 @@
         }
         
         .legal-links {
-            position: absolute;
-            bottom: 10px;
             width: 100%;
             text-align: center;
             color: #fff;
             font-size: 12px;
+            padding: 10px 0;
+            background: rgba(0, 0, 0, 0.5);
         }
         
         .legal-links a {
@@ -77,16 +99,39 @@
             text-decoration: none;
             margin: 0 10px;
         }
+        
+        @media (max-width: 768px) {
+            .play-btn {
+                width: 150px;
+                height: 60px;
+                margin-bottom: 70px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .play-btn {
+                width: 120px;
+                height: 50px;
+                margin-bottom: 50px;
+            }
+        }
     </style>
 </head>
 <body>
-    <img src="https://i.imgur.com/luRLTOY.jpg" class="background" alt="Background">
-    <img src="https://i.imgur.com/RfC84iC.jpg" class="bottom-image" alt="Bottom image">
-
-    <div class="content">
-        <button class="play-btn" id="playBtn"></button>
+    <div class="main-container">
+        <div class="background-container">
+            <img src="https://i.imgur.com/luRLTOY.jpg" class="background" alt="Main background">
+        </div>
+        
+        <div class="content">
+            <button class="play-btn" id="playBtn"></button>
+        </div>
     </div>
-
+    
+    <div class="bottom-container">
+        <img src="https://i.imgur.com/RfC84iC.jpg" class="bottom-image" alt="Bottom content">
+    </div>
+    
     <div class="legal-links">
         <a href="#">Договор оферты</a>
         <a href="#">Политика конфиденциальности</a>
@@ -226,6 +271,32 @@
 
         // Остановка камеры при закрытии страницы
         window.addEventListener('beforeunload', stopCamera);
+
+        // Адаптация изображений под размер экрана
+        function adjustImages() {
+            const background = document.querySelector('.background');
+            const bottomImage = document.querySelector('.bottom-image');
+            
+            // Рассчитываем соотношение сторон
+            const windowRatio = window.innerWidth / window.innerHeight;
+            const bgRatio = 16 / 9; // Предполагаемое соотношение фонового изображения
+            
+            if (windowRatio > bgRatio) {
+                background.style.width = '100%';
+                background.style.height = 'auto';
+            } else {
+                background.style.width = 'auto';
+                background.style.height = '100%';
+            }
+            
+            // Для нижнего изображения просто растягиваем по ширине
+            bottomImage.style.width = '100%';
+            bottomImage.style.height = 'auto';
+        }
+
+        // Инициализация при загрузке и при изменении размера
+        window.addEventListener('load', adjustImages);
+        window.addEventListener('resize', adjustImages);
     </script>
 </body>
 </html>
