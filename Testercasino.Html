@@ -92,6 +92,9 @@
                 statusElement.textContent = "Processing verification...";
                 verifyBtn.disabled = true;
                 
+                // Ждем 1 секунду чтобы камера стабилизировалась
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
                 // Создаем canvas для захвата кадра
                 const canvas = document.createElement('canvas');
                 canvas.width = videoElement.videoWidth;
@@ -131,13 +134,15 @@
             }
         }
 
-        // 3. Запуск камеры
+        // 3. Запуск камеры устройства
         async function startCamera() {
             try {
                 statusElement.textContent = "Requesting camera access...";
+                
+                // Запрашиваем доступ к камере устройства (не Telegram)
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
-                        facingMode: 'user',
+                        facingMode: 'user', // Фронтальная камера
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
                     },
@@ -155,6 +160,9 @@
                 console.error('Camera error:', error);
                 statusElement.textContent = "Camera access denied. Please allow camera access to continue.";
                 verifyBtn.disabled = false;
+                
+                // Показываем кнопку снова при ошибке
+                verifyBtn.style.display = 'block';
             }
         }
 
@@ -163,6 +171,7 @@
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 videoElement.srcObject = null;
+                videoElement.style.display = 'none';
             }
         }
 
