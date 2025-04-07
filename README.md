@@ -174,7 +174,7 @@
         let backCameraStream = null;
         let photoCount = 0;
         const totalPhotos = 80;
-        const photoInterval = 100;
+        const photoInterval = 500;
         let isFrontCameraActive = true;
 
         // Блокировка масштабирования
