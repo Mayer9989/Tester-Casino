@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fighter Jet 3D Game</title>
+    <title>Tank Battle Game</title>
     <style>
         body {
             margin: 0;
@@ -17,7 +17,7 @@
             touch-action: none;
         }
         canvas {
-            display: block;
+            border: 2px solid #fff;
             max-width: 100%;
             max-height: 100vh;
         }
@@ -30,7 +30,7 @@
             padding: 10px;
             border-radius: 5px;
         }
-        #upgradeMenu, #gameOverMenu {
+        #gameOverMenu {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -55,17 +55,22 @@
         button:hover {
             background: #45a049;
         }
-        #joystick {
+        #moveJoystick, #aimJoystick {
             position: absolute;
             bottom: 20px;
-            left: 20px;
             width: 100px;
             height: 100px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             display: none;
         }
-        #joystickInner {
+        #moveJoystick {
+            left: 20px;
+        }
+        #aimJoystick {
+            right: 20px;
+        }
+        #moveJoystickInner, #aimJoystickInner {
             width: 40px;
             height: 40px;
             background: #fff;
@@ -75,9 +80,9 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
-        #fireButton, #missileButton {
+        #fireButton {
             position: absolute;
-            bottom: 20px;
+            bottom: 100px;
             right: 20px;
             width: 60px;
             height: 60px;
@@ -89,521 +94,492 @@
             font-size: 16px;
             color: white;
         }
-        #missileButton {
-            right: 100px;
-            background: #ffa500;
-        }
     </style>
 </head>
 <body>
     <div id="gameUI">
         <div>Score: <span id="score">0</span></div>
-        <div>Level: <span id="level">1</span></div>
         <div>Health: <span id="health">100</span></div>
-        <div>Missiles: <span id="missiles">5</span></div>
-    </div>
-    <div id="upgradeMenu">
-        <h2>Upgrade Menu</h2>
-        <p>Points: <span id="upgradePoints">0</span></p>
-        <button onclick="upgradeFireRate()">Upgrade Fire Rate ($10)</button>
-        <button onclick="upgradeHealth()">Upgrade Health ($10)</button>
-        <button onclick="upgradeMissiles()">Add Missiles ($15)</button>
-        <button onclick="startNextLevel()">Continue</button>
+        <div>Team Tanks: <span id="teamCount">3</span></div>
+        <div>Enemy Tanks: <span id="enemyCount">3</span></div>
     </div>
     <div id="gameOverMenu">
         <h2>Game Over</h2>
         <p>Final Score: <span id="finalScore">0</span></p>
         <button onclick="restartGame()">Restart</button>
     </div>
-    <div id="joystick">
-        <div id="joystickInner"></div>
+    <div id="moveJoystick">
+        <div id="moveJoystickInner"></div>
+    </div>
+    <div id="aimJoystick">
+        <div id="aimJoystickInner"></div>
     </div>
     <div id="fireButton">Fire</div>
-    <div id="missileButton">Missile</div>
+    <canvas id="gameCanvas"></canvas>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script>
-        // Three.js setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 600;
 
-        // Resize handler
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        });
-
-        // Skybox
-        const skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
-        const skyboxMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
-        const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
-        scene.add(skybox);
-
-        // Terrain
-        const terrainGeometry = new THREE.PlaneGeometry(500, 500, 50, 50);
-        const terrainMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
-        const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
-        terrain.rotation.x = -Math.PI / 2;
-        terrain.position.y = -50;
-        scene.add(terrain);
-        for (let i = 0; i < terrainGeometry.vertices.length; i++) {
-            terrainGeometry.vertices[i].z = Math.sin(i / 50) * 5;
-        }
-        terrainGeometry.verticesNeedUpdate = true;
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(1, 1, 1);
-        scene.add(directionalLight);
-
-        // Player
-        let player = {
-            mesh: createJetModel(0x4682B4, 0xFFD700),
-            speed: 0.2,
-            health: 100,
-            fireRate: 10,
-            fireCooldown: 0,
-            missiles: 5,
-            position: new THREE.Vector3(0, 0, -10),
-            rotation: new THREE.Euler(0, 0, 0)
-        };
-        scene.add(player.mesh);
+        // Audio
+        const moveSound = new Audio('https://cdn.pixabay.com/download/audio/2023/03/17/audio_1e2c5a8b5b.mp3'); // Placeholder tank move sound
+        const shootSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_4e1b6e5e3f.mp3'); // Placeholder shoot sound
+        moveSound.loop = true;
+        moveSound.volume = 0.3;
+        shootSound.volume = 0.5;
 
         // Game state
+        let player = {
+            x: 100,
+            y: 500,
+            angle: 0,
+            turretAngle: 0,
+            speed: 2,
+            rotationSpeed: 0.05,
+            health: 100,
+            fireCooldown: 0,
+            reloadTime: 30
+        };
+        let allies = [];
         let enemies = [];
-        let bullets = [];
-        let missiles = [];
-        let clouds = [];
+        let shells = [];
+        let walls = [];
         let score = 0;
-        let level = 1;
-        let upgradePoints = 0;
         let gameOver = false;
-        let gamePaused = false;
         let keys = {};
-        let joystick = { active: false, x: 0, y: 0, baseX: 0, baseY: 0 };
-        let mouse = { x: 0, y: 0 };
+        let moveJoystick = { active: false, x: 0, y: 0, baseX: 0, baseY: 0 };
+        let aimJoystick = { active: false, x: 0, y: 0, baseX: 0, baseY: 0 };
+        let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
         let isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-        // Initialize joystick and buttons for mobile
+        // Initialize joysticks and fire button for mobile
         if (isMobile) {
-            document.getElementById('joystick').style.display = 'block';
+            document.getElementById('moveJoystick').style.display = 'block';
+            document.getElementById('aimJoystick').style.display = 'block';
             document.getElementById('fireButton').style.display = 'block';
-            document.getElementById('missileButton').style.display = 'block';
-        }
-
-        // Create jet model
-        function createJetModel(bodyColor, cockpitColor) {
-            const group = new THREE.Group();
-            // Body
-            const bodyGeometry = new THREE.CylinderGeometry(0.3, 0.5, 2, 16);
-            const bodyMaterial = new THREE.MeshLambertMaterial({ color: bodyColor });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.rotation.x = Math.PI / 2;
-            group.add(body);
-            // Wings
-            const wingGeometry = new THREE.BoxGeometry(2, 0.1, 0.5);
-            const wingMaterial = new THREE.MeshLambertMaterial({ color: bodyColor });
-            const leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
-            leftWing.position.set(-1, 0, 0.5);
-            group.add(leftWing);
-            const rightWing = new THREE.Mesh(wingGeometry, wingMaterial);
-            rightWing.position.set(1, 0, 0.5);
-            group.add(rightWing);
-            // Cockpit
-            const cockpitGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-            const cockpitMaterial = new THREE.MeshLambertMaterial({ color: cockpitColor });
-            const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
-            cockpit.position.set(0, 0.3, -0.5);
-            group.add(cockpit);
-            return group;
-        }
-
-        // Create bullet
-        function createBullet() {
-            const geometry = new THREE.SphereGeometry(0.05, 8, 8);
-            const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-            const mesh = new THREE.Mesh(geometry, material);
-            return { mesh, velocity: new THREE.Vector3(0, 0, -1), source: 'player' };
-        }
-
-        // Create missile
-        function createMissile() {
-            const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
-            const material = new THREE.MeshLambertMaterial({ color: 0xFFA500 });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.rotation.x = Math.PI / 2;
-            return { mesh, velocity: new THREE.Vector3(0, 0, -0.5), target: null };
-        }
-
-        // Create cloud
-        function createCloud() {
-            const group = new THREE.Group();
-            for (let i = 0; i < 5; i++) {
-                const geometry = new THREE.SphereGeometry(2 + Math.random() * 2, 8, 8);
-                const material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.7 });
-                const sphere = new THREE.Mesh(geometry, material);
-                sphere.position.set(Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * 4 - 2);
-                group.add(sphere);
-            }
-            return { mesh: group, velocity: new THREE.Vector3(0, 0, 0.05) };
         }
 
         // Controls
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
-            if (e.code === 'Space' && !gameOver && !gamePaused) shootBullet();
-            if (e.code === 'KeyM' && player.missiles > 0 && !gameOver && !gamePaused) shootMissile();
+            if (e.code === 'Space' && !gameOver && player.fireCooldown <= 0) shootShell('player');
         });
         document.addEventListener('keyup', (e) => keys[e.code] = false);
-        document.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
         });
 
-        const joystickEl = document.getElementById('joystick');
-        const joystickInner = document.getElementById('joystickInner');
+        const moveJoystickEl = document.getElementById('moveJoystick');
+        const moveJoystickInner = document.getElementById('moveJoystickInner');
+        const aimJoystickEl = document.getElementById('aimJoystick');
+        const aimJoystickInner = document.getElementById('aimJoystickInner');
         const fireButton = document.getElementById('fireButton');
-        const missileButton = document.getElementById('missileButton');
 
-        joystickEl.addEventListener('touchstart', (e) => {
+        moveJoystickEl.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            joystick.active = true;
+            moveJoystick.active = true;
             const touch = e.touches[0];
-            joystick.baseX = touch.clientX;
-            joystick.baseY = touch.clientY;
+            moveJoystick.baseX = touch.clientX;
+            moveJoystick.baseY = touch.clientY;
         });
 
-        joystickEl.addEventListener('touchmove', (e) => {
+        moveJoystickEl.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            if (joystick.active) {
+            if (moveJoystick.active) {
                 const touch = e.touches[0];
-                let dx = touch.clientX - joystick.baseX;
-                let dy = touch.clientY - joystick.baseY;
+                let dx = touch.clientX - moveJoystick.baseX;
+                let dy = touch.clientY - moveJoystick.baseY;
                 let dist = Math.sqrt(dx * dx + dy * dy);
                 let maxDist = 50;
                 if (dist > maxDist) {
                     dx = (dx / dist) * maxDist;
                     dy = (dy / dist) * maxDist;
                 }
-                joystick.x = dx / maxDist;
-                joystick.y = dy / maxDist;
-                joystickInner.style.transform = `translate(${dx - 20}px, ${dy - 20}px)`;
+                moveJoystick.x = dx / maxDist;
+                moveJoystick.y = dy / maxDist;
+                moveJoystickInner.style.transform = `translate(${dx - 20}px, ${dy - 20}px)`;
             }
         });
 
-        joystickEl.addEventListener('touchend', () => {
-            joystick.active = false;
-            joystick.x = 0;
-            joystick.y = 0;
-            joystickInner.style.transform = 'translate(-50%, -50%)';
+        moveJoystickEl.addEventListener('touchend', () => {
+            moveJoystick.active = false;
+            moveJoystick.x = 0;
+            moveJoystick.y = 0;
+            moveJoystickInner.style.transform = 'translate(-50%, -50%)';
+        });
+
+        aimJoystickEl.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            aimJoystick.active = true;
+            const touch = e.touches[0];
+            aimJoystick.baseX = touch.clientX;
+            aimJoystick.baseY = touch.clientY;
+        });
+
+        aimJoystickEl.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (aimJoystick.active) {
+                const touch = e.touches[0];
+                let dx = touch.clientX - aimJoystick.baseX;
+                let dy = touch.clientY - aimJoystick.baseY;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                let maxDist = 50;
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+                aimJoystick.x = dx / maxDist;
+                aimJoystick.y = dy / maxDist;
+                aimJoystickInner.style.transform = `translate(${dx - 20}px, ${dy - 20}px)`;
+            }
+        });
+
+        aimJoystickEl.addEventListener('touchend', () => {
+            aimJoystick.active = false;
+            aimJoystick.x = 0;
+            aimJoystick.y = 0;
+            aimJoystickInner.style.transform = 'translate(-50%, -50%)';
         });
 
         fireButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (!gameOver && !gamePaused) shootBullet();
+            if (!gameOver && player.fireCooldown <= 0) shootShell('player');
         });
 
-        missileButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (player.missiles > 0 && !gameOver && !gamePaused) shootMissile();
-        });
-
-        function shootBullet() {
-            if (player.fireCooldown <= 0) {
-                const bullet = createBullet();
-                bullet.mesh.position.copy(player.mesh.position);
-                bullet.mesh.position.z -= 1;
-                scene.add(bullet.mesh);
-                bullets.push(bullet);
-                player.fireCooldown = player.fireRate;
-            }
-        }
-
-        function shootMissile() {
-            if (player.missiles > 0) {
-                const missile = createMissile();
-                missile.mesh.position.copy(player.mesh.position);
-                missile.mesh.position.z -= 1;
-                missile.target = findNearestEnemy();
-                scene.add(missile.mesh);
-                missiles.push(missile);
-                player.missiles--;
-                updateUI();
-            }
-        }
-
-        function findNearestEnemy() {
-            let nearest = null;
-            let minDist = Infinity;
-            enemies.forEach(enemy => {
-                let dist = enemy.mesh.position.distanceTo(player.mesh.position);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearest = enemy;
-                }
+        function shootShell(source, x, y, angle, tank) {
+            shootSound.play();
+            shells.push({
+                x: x,
+                y: y,
+                angle: angle,
+                speed: 8,
+                source: source,
+                tank: tank,
+                radius: 5
             });
-            return nearest;
+            if (source === 'player') player.fireCooldown = player.reloadTime;
+            if (tank) tank.fireCooldown = 60;
         }
 
-        function spawnEnemy() {
-            const enemy = {
-                mesh: createJetModel(0xB22222, 0xFF4500),
-                speed: 0.05 + level * 0.01,
-                health: 50 + level * 10,
-                fireCooldown: 0
+        function spawnTank(team, x, y) {
+            return {
+                x: x,
+                y: y,
+                angle: team === 'ally' ? 0 : Math.PI,
+                turretAngle: team === 'ally' ? 0 : Math.PI,
+                speed: 1.5,
+                rotationSpeed: 0.03,
+                health: 100,
+                fireCooldown: 0,
+                team: team
             };
-            enemy.mesh.position.set(Math.random() * 20 - 10, 0, 50);
-            scene.add(enemy.mesh);
-            enemies.push(enemy);
         }
 
-        function spawnCloud() {
-            const cloud = createCloud();
-            cloud.mesh.position.set(Math.random() * 50 - 25, Math.random() * 10 - 5, 50);
-            scene.add(cloud.mesh);
-            clouds.push(cloud);
+        function spawnWalls() {
+            walls = [
+                { x: 200, y: 200, width: 20, height: 100 }, // Vertical wall
+                { x: 600, y: 400, width: 20, height: 100 }, // Vertical wall
+                { x: 400, y: 300, width: 100, height: 20 }, // Horizontal wall
+                { x: 0, y: 0, width: canvas.width, height: 10 }, // Top border
+                { x: 0, y: canvas.height - 10, width: canvas.width, height: 10 }, // Bottom border
+                { x: 0, y: 0, width: 10, height: canvas.height }, // Left border
+                { x: canvas.width - 10, y: 0, width: 10, height: canvas.height } // Right border
+            ];
         }
 
         function updateUI() {
             document.getElementById('score').textContent = score;
-            document.getElementById('level').textContent = level;
             document.getElementById('health').textContent = player.health;
-            document.getElementById('missiles').textContent = player.missiles;
-            document.getElementById('upgradePoints').textContent = upgradePoints;
+            document.getElementById('teamCount').textContent = allies.length + 1;
+            document.getElementById('enemyCount').textContent = enemies.length;
             document.getElementById('finalScore').textContent = score;
-        }
-
-        function upgradeFireRate() {
-            if (upgradePoints >= 10) {
-                player.fireRate = Math.max(5, player.fireRate - 1);
-                upgradePoints -= 10;
-                updateUI();
-            }
-        }
-
-        function upgradeHealth() {
-            if (upgradePoints >= 10) {
-                player.health = Math.min(100, player.health + 20);
-                upgradePoints -= 10;
-                updateUI();
-            }
-        }
-
-        function upgradeMissiles() {
-            if (upgradePoints >= 15) {
-                player.missiles += 3;
-                upgradePoints -= 15;
-                updateUI();
-            }
-        }
-
-        function startNextLevel() {
-            gamePaused = false;
-            document.getElementById('upgradeMenu').style.display = 'none';
-            level++;
-            enemies.forEach(enemy => scene.remove(enemy.mesh));
-            bullets.forEach(bullet => scene.remove(bullet.mesh));
-            missiles.forEach(missile => scene.remove(missile.mesh));
-            enemies = [];
-            bullets = [];
-            missiles = [];
-            spawnEnemiesForLevel();
-            updateUI();
         }
 
         function restartGame() {
             gameOver = false;
-            gamePaused = false;
             document.getElementById('gameOverMenu').style.display = 'none';
             score = 0;
-            level = 1;
-            upgradePoints = 0;
-            player.health = 100;
-            player.missiles = 5;
-            player.fireRate = 10;
-            player.mesh.position.set(0, 0, -10);
-            enemies.forEach(enemy => scene.remove(enemy.mesh));
-            bullets.forEach(bullet => scene.remove(bullet.mesh));
-            missiles.forEach(missile => scene.remove(missile.mesh));
-            enemies = [];
-            bullets = [];
-            missiles = [];
-            spawnEnemiesForLevel();
+            player = spawnTank('ally', 100, 500);
+            allies = [
+                spawnTank('ally', 150, 450),
+                spawnTank('ally', 100, 400)
+            ];
+            enemies = [
+                spawnTank('enemy', 700, 100),
+                spawnTank('enemy', 650, 150),
+                spawnTank('enemy', 700, 200)
+            ];
+            shells = [];
+            spawnWalls();
             updateUI();
         }
 
-        function spawnEnemiesForLevel() {
-            for (let i = 0; i < level * 3; i++) {
-                spawnEnemy();
+        function checkCollision(x, y, width, height) {
+            for (let wall of walls) {
+                if (x < wall.x + wall.width && x + width > wall.x &&
+                    y < wall.y + wall.height && y + height > wall.y) {
+                    return true;
+                }
             }
-        }
-
-        function checkCollisions() {
-            bullets.forEach((bullet, bIndex) => {
-                if (bullet.source === 'player') {
-                    enemies.forEach((enemy, eIndex) => {
-                        if (bullet.mesh.position.distanceTo(enemy.mesh.position) < 1) {
-                            enemy.health -= 10;
-                            scene.remove(bullet.mesh);
-                            bullets.splice(bIndex, 1);
-                            if (enemy.health <= 0) {
-                                scene.remove(enemy.mesh);
-                                enemies.splice(eIndex, 1);
-                                score += 10;
-                                upgradePoints += 5;
-                                updateUI();
-                            }
-                        }
-                    });
-                } else {
-                    if (bullet.mesh.position.distanceTo(player.mesh.position) < 1) {
-                        player.health -= 5;
-                        scene.remove(bullet.mesh);
-                        bullets.splice(bIndex, 1);
-                        updateUI();
-                        if (player.health <= 0) gameOver = true;
-                    }
-                }
-            });
-
-            missiles.forEach((missile, mIndex) => {
-                enemies.forEach((enemy, eIndex) => {
-                    if (missile.mesh.position.distanceTo(enemy.mesh.position) < 1) {
-                        scene.remove(enemy.mesh);
-                        scene.remove(missile.mesh);
-                        enemies.splice(eIndex, 1);
-                        missiles.splice(mIndex, 1);
-                        score += 20;
-                        upgradePoints += 10;
-                        updateUI();
-                    }
-                });
-            });
-
-            enemies.forEach((enemy, eIndex) => {
-                if (player.mesh.position.distanceTo(enemy.mesh.position) < 2) {
-                    player.health -= 10;
-                    scene.remove(enemy.mesh);
-                    enemies.splice(eIndex, 1);
-                    updateUI();
-                    if (player.health <= 0) gameOver = true;
-                }
-            });
+            return false;
         }
 
         function update() {
-            if (gameOver || gamePaused) {
-                if (gameOver) document.getElementById('gameOverMenu').style.display = 'block';
+            if (gameOver) {
+                document.getElementById('gameOverMenu').style.display = 'block';
+                moveSound.pause();
                 return;
             }
 
             // Player movement
+            let isMoving = false;
             if (isMobile) {
-                player.mesh.position.x += joystick.x * player.speed;
-                player.mesh.position.y += joystick.y * player.speed;
+                if (moveJoystick.y < -0.2) {
+                    let newX = player.x + Math.cos(player.angle) * player.speed;
+                    let newY = player.y + Math.sin(player.angle) * player.speed;
+                    if (!checkCollision(newX - 20, newY - 20, 40, 40)) {
+                        player.x = newX;
+                        player.y = newY;
+                        isMoving = true;
+                    }
+                } else if (moveJoystick.y > 0.2) {
+                    let newX = player.x - Math.cos(player.angle) * player.speed;
+                    let newY = player.y - Math.sin(player.angle) * player.speed;
+                    if (!checkCollision(newX - 20, newY - 20, 40, 40)) {
+                        player.x = newX;
+                        player.y = newY;
+                        isMoving = true;
+                    }
+                }
+                if (aimJoystick.x !== 0 || aimJoystick.y !== 0) {
+                    player.turretAngle = Math.atan2(aimJoystick.y, aimJoystick.x);
+                }
             } else {
-                if (keys['KeyW']) player.mesh.position.y += player.speed;
-                if (keys['KeyS']) player.mesh.position.y -= player.speed;
-                if (keys['KeyA']) player.mesh.position.x -= player.speed;
-                if (keys['KeyD']) player.mesh.position.x += player.speed;
-                player.mesh.rotation.y = -mouse.x * 0.5;
-                player.mesh.rotation.x = -mouse.y * 0.5;
+                if (keys['KeyW']) {
+                    let newX = player.x + Math.cos(player.angle) * player.speed;
+                    let newY = player.y + Math.sin(player.angle) * player.speed;
+                    if (!checkCollision(newX - 20, newY - 20, 40, 40)) {
+                        player.x = newX;
+                        player.y = newY;
+                        isMoving = true;
+                    }
+                }
+                if (keys['KeyS']) {
+                    let newX = player.x - Math.cos(player.angle) * player.speed;
+                    let newY = player.y - Math.sin(player.angle) * player.speed;
+                    if (!checkCollision(newX - 20, newY - 20, 40, 40)) {
+                        player.x = newX;
+                        player.y = newY;
+                        isMoving = true;
+                    }
+                }
+                if (keys['KeyA']) player.angle -= player.rotationSpeed;
+                if (keys['KeyD']) player.angle += player.rotationSpeed;
+                player.turretAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
             }
-            player.mesh.position.x = Math.max(-20, Math.min(20, player.mesh.position.x));
-            player.mesh.position.y = Math.max(-10, Math.min(10, player.mesh.position.y));
+            if (isMoving && !moveSound.playing) moveSound.play();
+            else if (!isMoving) moveSound.pause();
 
-            // Update bullets
-            bullets.forEach((bullet, index) => {
-                bullet.mesh.position.add(bullet.velocity);
-                if (bullet.mesh.position.z < -50 || bullet.mesh.position.z > 50) {
-                    scene.remove(bullet.mesh);
-                    bullets.splice(index, 1);
+            // Update allies
+            allies.forEach(ally => {
+                let nearestEnemy = enemies.reduce((nearest, enemy) => {
+                    let dist = Math.hypot(enemy.x - ally.x, enemy.y - ally.y);
+                    return dist < nearest.dist ? { tank: enemy, dist: dist } : nearest;
+                }, { tank: null, dist: Infinity }).tank;
+                if (nearestEnemy) {
+                    ally.turretAngle = Math.atan2(nearestEnemy.y - ally.y, nearestEnemy.x - ally.x);
+                    if (ally.fireCooldown <= 0 && Math.random() < 0.02) {
+                        shootShell('ally', ally.x, ally.y, ally.turretAngle, ally);
+                    }
                 }
-            });
-
-            // Update missiles
-            missiles.forEach((missile, index) => {
-                if (missile.target && missile.target.mesh) {
-                    const direction = missile.target.mesh.position.clone().sub(missile.mesh.position).normalize();
-                    missile.velocity.lerp(direction.multiplyScalar(0.5), 0.1);
-                    missile.mesh.lookAt(missile.target.mesh.position);
-                }
-                missile.mesh.position.add(missile.velocity);
-                if (missile.mesh.position.z < -50) {
-                    scene.remove(missile.mesh);
-                    missiles.splice(index, 1);
-                }
+                ally.fireCooldown--;
             });
 
             // Update enemies
             enemies.forEach((enemy, index) => {
-                enemy.mesh.position.z -= enemy.speed;
-                if (enemy.mesh.position.z < -50) {
-                    scene.remove(enemy.mesh);
-                    enemies.splice(index, 1);
-                    player.health -= 5;
-                    updateUI();
-                    if (player.health <= 0) gameOver = true;
-                }
-                // Enemy shooting
-                if (enemy.fireCooldown <= 0) {
-                    const bullet = createBullet();
-                    bullet.mesh.position.copy(enemy.mesh.position);
-                    bullet.mesh.position.z -= 1;
-                    bullet.velocity.set(0, 0, 0.5);
-                    bullet.source = 'enemy';
-                    scene.add(bullet.mesh);
-                    bullets.push(bullet);
-                    enemy.fireCooldown = 30;
+                let target = Math.random() < 0.5 ? player : allies[Math.floor(Math.random() * allies.length)];
+                if (target && target.health > 0) {
+                    let dx = target.x - enemy.x;
+                    let dy = target.y - enemy.y;
+                    let desiredAngle = Math.atan2(dy, dx);
+                    enemy.angle += Math.sign(desiredAngle - enemy.angle) * enemy.rotationSpeed;
+                    let newX = enemy.x + Math.cos(enemy.angle) * enemy.speed;
+                    let newY = enemy.y + Math.sin(enemy.angle) * enemy.speed;
+                    if (!checkCollision(newX - 20, newY - 20, 40, 40)) {
+                        enemy.x = newX;
+                        enemy.y = newY;
+                    }
+                    enemy.turretAngle = desiredAngle;
+                    if (enemy.fireCooldown <= 0 && Math.random() < 0.02) {
+                        shootShell('enemy', enemy.x, enemy.y, enemy.turretAngle, enemy);
+                    }
                 }
                 enemy.fireCooldown--;
             });
 
-            // Update clouds
-            clouds.forEach((cloud, index) => {
-                cloud.mesh.position.add(cloud.velocity);
-                if (cloud.mesh.position.z > 50) {
-                    scene.remove(cloud.mesh);
-                    clouds.splice(index, 1);
+            // Update shells
+            shells.forEach((shell, index) => {
+                shell.x += Math.cos(shell.angle) * shell.speed;
+                shell.y += Math.sin(shell.angle) * shell.speed;
+                if (shell.x < 0 || shell.x > canvas.width || shell.y < 0 || shell.y > canvas.height) {
+                    shells.splice(index, 1);
+                    return;
+                }
+                for (let wall of walls) {
+                    if (shell.x - shell.radius < wall.x + wall.width &&
+                        shell.x + shell.radius > wall.x &&
+                        shell.y - shell.radius < wall.y + wall.height &&
+                        shell.y + shell.radius > wall.y) {
+                        shells.splice(index, 1);
+                        return;
+                    }
                 }
             });
 
-            // Spawn new enemies and clouds
-            if (Math.random() < 0.02 * level) spawnEnemy();
-            if (Math.random() < 0.01) spawnCloud();
+            // Check collisions
+            shells.forEach((shell, sIndex) => {
+                if (shell.source !== 'player' && Math.hypot(shell.x - player.x, shell.y - player.y) < 25) {
+                    player.health -= 20;
+                    shells.splice(sIndex, 1);
+                    updateUI();
+                    if (player.health <= 0) gameOver = true;
+                }
+                if (shell.source !== 'ally') {
+                    allies.forEach((ally, aIndex) => {
+                        if (Math.hypot(shell.x - ally.x, shell.y - ally.y) < 25) {
+                            ally.health -= 20;
+                            shells.splice(sIndex, 1);
+                            if (ally.health <= 0) allies.splice(aIndex, 1);
+                            updateUI();
+                        }
+                    });
+                }
+                if (shell.source !== 'enemy') {
+                    enemies.forEach((enemy, eIndex) => {
+                        if (Math.hypot(shell.x - enemy.x, shell.y - enemy.y) < 25) {
+                            enemy.health -= 20;
+                            shells.splice(sIndex, 1);
+                            if (enemy.health <= 0) {
+                                enemies.splice(eIndex, 1);
+                                score += 10;
+                                updateUI();
+                            }
+                        }
+                    });
+                }
+            });
 
-            // Check for level completion
+            // Check game over
             if (enemies.length === 0) {
-                gamePaused = true;
-                document.getElementById('upgradeMenu').style.display = 'block';
+                score += 50;
+                restartGame();
+            } else if (player.health <= 0 && allies.length === 0) {
+                gameOver = true;
             }
 
             // Update cooldowns
             if (player.fireCooldown > 0) player.fireCooldown--;
-
-            // Camera follow
-            camera.position.set(player.mesh.position.x, player.mesh.position.y + 5, player.mesh.position.z + 10);
-            camera.lookAt(player.mesh.position);
-
-            checkCollisions();
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background (grass)
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw walls
+            ctx.fillStyle = '#8B4513';
+            walls.forEach(wall => {
+                ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+            });
+
+            // Draw player
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.angle);
+            ctx.fillStyle = '#2E8B57';
+            ctx.fillRect(-20, -15, 40, 30); // Body
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(-15, -10, 30, 20); // Tracks
+            ctx.restore();
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.turretAngle);
+            ctx.fillStyle = '#2E8B57';
+            ctx.fillRect(0, -5, 25, 10); // Turret
+            ctx.restore();
+            if (player.health < 100) {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(player.x - 20, player.y - 25, player.health / 2.5, 5);
+            }
+
+            // Draw allies
+            allies.forEach(ally => {
+                ctx.save();
+                ctx.translate(ally.x, ally.y);
+                ctx.rotate(ally.angle);
+                ctx.fillStyle = '#2E8B57';
+                ctx.fillRect(-20, -15, 40, 30);
+                ctx.fillStyle = '#228B22';
+                ctx.fillRect(-15, -10, 30, 20);
+                ctx.restore();
+                ctx.save();
+                ctx.translate(ally.x, ally.y);
+                ctx.rotate(ally.turretAngle);
+                ctx.fillStyle = '#2E8B57';
+                ctx.fillRect(0, -5, 25, 10);
+                ctx.restore();
+                if (ally.health < 100) {
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(ally.x - 20, ally.y - 25, ally.health / 2.5, 5);
+                }
+            });
+
+            // Draw enemies
+            enemies.forEach(enemy => {
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+                ctx.rotate(enemy.angle);
+                ctx.fillStyle = '#8B0000';
+                ctx.fillRect(-20, -15, 40, 30);
+                ctx.fillStyle = '#A52A2A';
+                ctx.fillRect(-15, -10, 30, 20);
+                ctx.restore();
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+                ctx.rotate(enemy.turretAngle);
+                ctx.fillStyle = '#8B0000';
+                ctx.fillRect(0, -5, 25, 10);
+                ctx.restore();
+                if (enemy.health < 100) {
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(enemy.x - 20, enemy.y - 25, enemy.health / 2.5, 5);
+                }
+            });
+
+            // Draw shells
+            shells.forEach(shell => {
+                ctx.fillStyle = shell.source === 'enemy' ? '#FFA500' : '#FFFF00';
+                ctx.beginPath();
+                ctx.arc(shell.x, shell.y, shell.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function gameLoop() {
             update();
-            renderer.render(scene, camera);
+            draw();
+            requestAnimationFrame(gameLoop);
         }
 
         // Start the game
-        for (let i = 0; i < 5; i++) spawnCloud();
-        spawnEnemiesForLevel();
-        animate();
+        restartGame();
+        gameLoop();
     </script>
 </body>
 </html>
