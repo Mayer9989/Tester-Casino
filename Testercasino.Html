@@ -299,7 +299,7 @@
             {
                 id: 'secret',
                 name: 'Nebula Titan',
-                cost: 2000,
+                cost: 0,
                 health: 9999,
                 speed: 10,
                 fireRate: 2,
