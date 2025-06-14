@@ -107,7 +107,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
-        #fireButton, #missileButton, #specialButton {
+        #fireButton, #missileButton, #specialButton, #nukeButton {
             position: fixed;
             bottom: 20px;
             width: 60px;
@@ -130,6 +130,10 @@
         #specialButton {
             right: 180px;
             background: #00ccff;
+        }
+        #nukeButton {
+            right: 260px;
+            background: #800080;
         }
         .shop-item {
             background: rgba(255, 255, 255, 0.1);
@@ -186,6 +190,7 @@
     <div id="fireButton">Fire</div>
     <div id="missileButton">Missile</div>
     <div id="specialButton">Special</div>
+    <div id="nukeButton">Nuke</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -197,6 +202,7 @@
         const laserSound = new Audio('pew.mp3');
         const missileSound = new Audio('launch.mp3');
         const thrustSound = new Audio('engine.mp3');
+        const nukeSound = new Audio('explosion.mp3');
         thrustSound.loop = true;
 
         // Game state
@@ -237,7 +243,9 @@
                 special: 'boost',
                 specialCooldown: 300,
                 color: '#4682B4',
-                cockpitColor: '#FFD700'
+                cockpitColor: '#FFD700',
+                hasNuke: false,
+                nukeCooldown: 900
             },
             {
                 id: 'raptor',
@@ -252,7 +260,9 @@
                 special: 'shield',
                 specialCooldown: 600,
                 color: '#228B22',
-                cockpitColor: '#00FF00'
+                cockpitColor: '#00FF00',
+                hasNuke: false,
+                nukeCooldown: 900
             },
             {
                 id: 'phoenix',
@@ -267,7 +277,9 @@
                 special: 'nova',
                 specialCooldown: 900,
                 color: '#B22222',
-                cockpitColor: '#FFA500'
+                cockpitColor: '#FFA500',
+                hasNuke: false,
+                nukeCooldown: 900
             }
         ];
 
@@ -281,6 +293,7 @@
             document.getElementById('fireButton').style.display = display;
             document.getElementById('missileButton').style.display = display;
             document.getElementById('specialButton').style.display = display;
+            document.getElementById('nukeButton').style.display = display;
             document.getElementById('gameUI').style.display = show ? 'block' : 'none';
         }
 
@@ -291,6 +304,7 @@
                 if (e.code === 'Space') shootLaser();
                 if (e.code === 'KeyM' && player.missiles > 0) shootMissile();
                 if (e.code === 'KeyE' && player.specialCooldown <= 0) useSpecial();
+                if (e.code === 'KeyN' && player.hasNuke && player.nukeCooldown <= 0) shootNuclearMissile();
             }
         });
         document.addEventListener('keyup', (e) => keys[e.code] = false);
@@ -305,6 +319,7 @@
         const fireButton = document.getElementById('fireButton');
         const missileButton = document.getElementById('missileButton');
         const specialButton = document.getElementById('specialButton');
+        const nukeButton = document.getElementById('nukeButton');
 
         joystickEl.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -354,6 +369,11 @@
             if (gameState === 'game' && !gameOver && !gamePaused && player.specialCooldown <= 0) useSpecial();
         });
 
+        nukeButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameState === 'game' && !gameOver && !gamePaused && player.hasNuke && player.nukeCooldown <= 0) shootNuclearMissile();
+        });
+
         // Game functions
         function initPlayer(shipId) {
             const ship = ships.find(s => s.id === shipId);
@@ -380,7 +400,10 @@
                 color: ship.color,
                 cockpitColor: ship.cockpitColor,
                 drag: 0.98,
-                thrust: 0.2
+                thrust: 0.2,
+                type: ship.id,
+                hasNuke: ship.hasNuke,
+                nukeCooldown: 0
             };
         }
 
@@ -393,12 +416,12 @@
                 vy: Math.sin(angle) * 15,
                 length: 50,
                 damage: source.laserDamage,
-                lifetime: 100, // Long range
+                lifetime: 100,
                 isEnemy: isEnemy,
                 trail: []
             });
             if (isEnemy) source.fireCooldown = source.fireRate;
-            laserSound.cloneNode(true).play(); // Play laser sound
+            laserSound.cloneNode(true).play();
         }
 
         function shootMissile(source = player, isEnemy = false) {
@@ -408,18 +431,42 @@
                     y: source.y + (isEnemy ? source.height : 0),
                     vx: 0,
                     vy: 0,
-                    speed: isEnemy ? 5 : 7, // Slower for enemy missiles
+                    speed: isEnemy ? 5 : 7,
                     width: 10,
-                    height: 30,
+                    height: 40,
                     target: isEnemy ? player : findNearestEnemy(),
                     damage: source.missileDamage,
                     isEnemy: isEnemy,
-                    trail: []
+                    trail: [],
+                    isNuclear: false
                 };
                 missiles.push(missile);
                 source.missiles--;
                 updateUI();
-                missileSound.cloneNode(true).play(); // Play missile sound
+                missileSound.cloneNode(true).play();
+            }
+        }
+
+        function shootNuclearMissile() {
+            if (player.hasNuke && player.nukeCooldown <= 0) {
+                const missile = {
+                    x: player.x + player.width / 2,
+                    y: player.y,
+                    vx: 0,
+                    vy: 0,
+                    speed: 6,
+                    width: 15,
+                    height: 50,
+                    target: findNearestEnemy(),
+                    damage: 1000,
+                    isEnemy: false,
+                    trail: [],
+                    isNuclear: true
+                };
+                missiles.push(missile);
+                player.nukeCooldown = player.nukeCooldown || 900;
+                updateUI();
+                missileSound.cloneNode(true).play();
             }
         }
 
@@ -456,7 +503,7 @@
                 y: y,
                 size: size,
                 lifetime: 30,
-                particles: Array.from({ length: 30 }, () => ({
+                particles: Array.from({ length: size * 2 }, () => ({
                     x: 0,
                     y: 0,
                     vx: (Math.random() - 0.5) * 6,
@@ -465,6 +512,7 @@
                     alpha: 1
                 }))
             });
+            if (size > 100) nukeSound.cloneNode(true).play();
         }
 
         function findNearestEnemy() {
@@ -555,6 +603,7 @@
                     <span>Fire Rate: ${ship.fireRate}</span>
                     <span>Missiles: ${ship.missileCount}</span>
                     <span>Special: ${ship.special.charAt(0).toUpperCase() + ship.special.slice(1)}</span>
+                    <span>Nuclear Missile: ${ship.hasNuke ? 'Yes' : 'No'}</span>
                     <span>Cost: $${ship.cost}</span>
                 `;
                 const button = document.createElement('button');
@@ -563,6 +612,14 @@
                     button.textContent = ship.id === selectedShipId ? 'Selected' : 'Select';
                     button.disabled = ship.id === selectedShipId;
                     button.onclick = () => selectShip(ship.id);
+                    if (!ship.hasNuke) {
+                        const nukeButton = document.createElement('button');
+                        nukeButton.className = 'item-button';
+                        nukeButton.textContent = 'Buy Nuclear Missile ($500)';
+                        nukeButton.disabled = credits < 500;
+                        nukeButton.onclick = () => buyNuclearMissile(ship.id);
+                        item.appendChild(nukeButton);
+                    }
                 } else {
                     button.textContent = `Buy ($${ship.cost})`;
                     button.disabled = credits < ship.cost;
@@ -589,6 +646,16 @@
             }
         }
 
+        function buyNuclearMissile(id) {
+            if (credits >= 500) {
+                credits -= 500;
+                const ship = ships.find(s => s.id === id);
+                ship.hasNuke = true;
+                updateShop();
+                updateUI();
+            }
+        }
+
         function selectShip(id) {
             selectedShipId = id;
             updateShop();
@@ -596,7 +663,7 @@
 
         function upgradeFireRate() {
             if (upgradePoints >= 10) {
-                player.fireRate = Math.max(3, player.fireRate - 1); // Better upgrade
+                player.fireRate = Math.max(3, player.fireRate - 1);
                 upgradePoints -= 10;
                 updateUI();
             }
@@ -613,7 +680,7 @@
 
         function upgradeMissiles() {
             if (upgradePoints >= 15) {
-                player.missileCount += 5; // More missiles
+                player.missileCount += 5;
                 player.missiles += 5;
                 upgradePoints -= 15;
                 updateUI();
@@ -683,7 +750,7 @@
         }
 
         function spawnEnemiesForLevel() {
-            const count = level * 4; // More enemies per level
+            const count = level * 4;
             for (let i = 0; i < count; i++) {
                 const type = Math.random() < 0.3 ? 'bomber' : Math.random() < 0.5 ? 'cruiser' : 'drone';
                 spawnEnemy(type);
@@ -740,12 +807,22 @@
                             missile.x + missile.width > enemy.x &&
                             missile.y < enemy.y + enemy.height &&
                             missile.y + missile.height > enemy.y) {
-                            enemies.splice(eIndex, 1);
-                            missiles.splice(mIndex, 1);
-                            score += enemy.scoreValue;
-                            credits += enemy.creditValue;
-                            spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
-                            updateUI();
+                            if (missile.isNuclear) {
+                                // Nuclear explosion
+                                spawnExplosion(missile.x, missile.y, 1000);
+                                enemies = []; // Clear all enemies
+                                missiles.splice(mIndex, 1);
+                                score += enemy.scoreValue * enemies.length;
+                                credits += enemy.creditValue * enemies.length;
+                                updateUI();
+                            } else {
+                                enemies.splice(eIndex, 1);
+                                missiles.splice(mIndex, 1);
+                                score += enemy.scoreValue;
+                                credits += enemy.creditValue;
+                                spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
+                                updateUI();
+                            }
                         }
                     });
                 }
@@ -807,7 +884,7 @@
                 isThrusting = false;
             }
 
-            // Special ability timer
+            // Cooldowns
             if (player.specialTimer > 0) {
                 player.specialTimer--;
                 if (player.specialTimer === 0 && player.special === 'boost') {
@@ -815,6 +892,7 @@
                 }
             }
             if (player.specialCooldown > 0) player.specialCooldown--;
+            if (player.nukeCooldown > 0) player.nukeCooldown--;
 
             // Update lasers
             lasers.forEach((laser, index) => {
@@ -861,27 +939,26 @@
             // Update enemies
             enemies.forEach((enemy, index) => {
                 let distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
-                enemy.angle = Math.PI / 2; // Default downward
+                enemy.angle = Math.PI / 2;
                 if (distToPlayer < 200) {
-                    // Defensive behavior
-                    enemy.vy *= 0.5; // Slow down
-                    enemy.vx = (Math.random() > 0.5 ? 1 : -1) * 2; // Move sideways
+                    enemy.vy *= 0.5;
+                    enemy.vx = (Math.random() > 0.5 ? 1 : -1) * 2;
                     enemy.x += enemy.vx;
                     enemy.x = Math.max(0, Math.min(enemy.x, canvas.width - enemy.width));
                 } else {
-                    enemy.vx = 0; // No sideways movement
+                    enemy.vx = 0;
                     enemy.y += enemy.vy;
                 }
                 if (Math.random() < 0.02) {
                     let dx = player.x - enemy.x;
                     let dy = player.y - enemy.y;
-                    enemy.angle = Math.atan2(dy, dx); // Aim when shooting
+                    enemy.angle = Math.atan2(dy, dx);
                     if (enemy.type === 'bomber' && enemy.missiles > 0) {
                         shootMissile(enemy, true);
                     } else {
                         shootLaser(enemy, true);
                     }
-                    enemy.angle = Math.PI / 2; // Reset after shooting
+                    enemy.angle = Math.PI / 2;
                 }
                 enemy.fireCooldown--;
                 if (enemy.y > canvas.height) {
@@ -929,55 +1006,136 @@
             checkCollisions();
         }
 
-        function drawShip(x, y, width, height, bodyColor, cockpitColor, angle, isPlayer) {
+        function drawShip(x, y, width, height, bodyColor, cockpitColor, angle, isPlayer, type) {
             ctx.save();
             ctx.translate(x + width / 2, y + height / 2);
             ctx.rotate(angle);
-            // Hull
             const gradient = ctx.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
             gradient.addColorStop(0, bodyColor);
             gradient.addColorStop(1, darkenColor(bodyColor, 0.7));
             ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.moveTo(0, -height / 2); // Nose
-            ctx.lineTo(-width / 3, -height / 4);
-            ctx.lineTo(-width / 2, height / 4); // Left wing
-            ctx.lineTo(-width / 4, height / 2); // Left rear
-            ctx.lineTo(width / 4, height / 2); // Right rear
-            ctx.lineTo(width / 2, height / 4); // Right wing
-            ctx.lineTo(width / 3, -height / 4);
-            ctx.closePath();
-            ctx.fill();
-            // Wings
-            ctx.fillStyle = darkenColor(bodyColor, 0.8);
-            ctx.beginPath();
-            ctx.moveTo(-width / 2, height / 4);
-            ctx.lineTo(-width / 3, 0);
-            ctx.lineTo(-width / 4, height / 2);
-            ctx.closePath();
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(width / 2, height / 4);
-            ctx.lineTo(width / 3, 0);
-            ctx.lineTo(width / 4, height / 2);
-            ctx.closePath();
-            ctx.fill();
-            // Cockpit
-            ctx.fillStyle = cockpitColor;
-            ctx.beginPath();
-            ctx.ellipse(0, -height / 3, width / 6, height / 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-            // Thrusters
-            if (isPlayer && (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1)) {
-                ctx.fillStyle = `rgba(255, 165, 0, ${Math.random() * 0.5 + 0.5})`;
-                ctx.beginPath();
-                ctx.moveTo(-width / 5, height / 2);
-                ctx.lineTo(-width / 6, height / 2 + 20);
-                ctx.lineTo(width / 6, height / 2 + 20);
-                ctx.lineTo(width / 5, height / 2);
-                ctx.closePath();
-                ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+
+            if (isPlayer) {
+                // Player ships
+                if (type === 'falcon') {
+                    // X-Wing inspired
+                    ctx.beginPath();
+                    ctx.moveTo(0, -height / 2); // Nose
+                    ctx.lineTo(-width / 4, -height / 4);
+                    ctx.quadraticCurveTo(-width / 2, 0, -width / 2.5, height / 2); // Left wing
+                    ctx.lineTo(width / 2.5, height / 2); // Right wing
+                    ctx.quadraticCurveTo(width / 2, 0, width / 4, -height / 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    // Cockpit
+                    ctx.fillStyle = cockpitColor;
+                    ctx.beginPath();
+                    ctx.arc(0, -height / 4, width / 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Laser cannons
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(-width / 2.5, -height / 8, width / 8, height / 4);
+                    ctx.fillRect(width / 2.5 - width / 8, -height / 8, width / 8, height / 4);
+                } else if (type === 'raptor') {
+                    // Millennium Falcon inspired
+                    ctx.beginPath();
+                    ctx.arc(0, 0, width / 2, 0, Math.PI * 2); // Circular body
+                    ctx.moveTo(width / 4, -height / 4);
+                    ctx.lineTo(width / 2, -height / 2);
+                    ctx.lineTo(width / 2, height / 2);
+                    ctx.lineTo(width / 4, height / 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    // Cockpit
+                    ctx.fillStyle = cockpitColor;
+                    ctx.beginPath();
+                    ctx.rect(width / 3, -height / 8, width / 6, height / 4);
+                    ctx.fill();
+                    // Side guns
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(-width / 2, -height / 8, width / 6, height / 4);
+                } else if (type === 'phoenix') {
+                    // A-Wing inspired
+                    ctx.beginPath();
+                    ctx.moveTo(0, -height / 2); // Pointed nose
+                    ctx.lineTo(-width / 3, height / 4);
+                    ctx.quadraticCurveTo(-width / 2, height / 2, -width / 4, height / 2);
+                    ctx.lineTo(width / 4, height / 2);
+                    ctx.quadraticCurveTo(width / 2, height / 2, width / 3, height / 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    // Cockpit
+                    ctx.fillStyle = cockpitColor;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, width / 6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else {
+                // Enemy ships
+                if (type === 'drone') {
+                    // TIE Fighter inspired
+                    ctx.beginPath();
+                    ctx.moveTo(-width / 2, 0);
+                    ctx.lineTo(-width / 4, -height / 2);
+                    ctx.lineTo(width / 4, -height / 2);
+                    ctx.lineTo(width / 2, 0);
+                    ctx.lineTo(width / 4, height / 2);
+                    ctx.lineTo(-width / 4, height / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    // Cockpit
+                    ctx.fillStyle = cockpitColor;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, width / 4, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (type === 'cruiser') {
+                    // Star Destroyer inspired
+                    ctx.beginPath();
+                    ctx.moveTo(0, -height / 2); // Pointed nose
+                    ctx.lineTo(-width / 2, height / 2);
+                    ctx.lineTo(width / 2, height / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    // Bridge
+                    ctx.fillStyle = cockpitColor;
+                    ctx.beginPath();
+                    ctx.rect(-width / 8, -height / 4, width / 4, height / 6);
+                    ctx.fill();
+                } else if (type === 'bomber') {
+                    // Y-Wing inspired
+                    ctx.beginPath();
+                    ctx.moveTo(0, -height / 2);
+                    ctx.lineTo(-width / 4, -height / 4);
+                    ctx.lineTo(-width / 2, height / 2);
+                    ctx.lineTo(width / 2, height / 2);
+                    ctx.lineTo(width / 4, -height / 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    // Cockpit
+                    ctx.fillStyle = cockpitColor;
+                    ctx.beginPath();
+                    ctx.arc(0, -height / 4, width / 6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
+
+            // Steady thrusters
+            ctx.fillStyle = 'rgba(255, 165, 0, 0.8)';
+            ctx.beginPath();
+            ctx.moveTo(-width / 6, height / 2);
+            ctx.lineTo(0, height / 2 + 10);
+            ctx.lineTo(width / 6, height / 2);
+            ctx.closePath();
+            ctx.fill();
+
             ctx.restore();
         }
 
@@ -1037,11 +1195,11 @@
                     ctx.arc(player.x + player.width / 2, player.y + player.height / 2, player.width, 0, Math.PI * 2);
                     ctx.stroke();
                 }
-                drawShip(player.x, player.y, player.width, player.height, player.color, player.cockpitColor, player.angle, true);
+                drawShip(player.x, player.y, player.width, player.height, player.color, player.cockpitColor, player.angle, true, player.type);
             }
 
             enemies.forEach(enemy => {
-                drawShip(enemy.x, enemy.y, enemy.width, enemy.height, enemy.color, enemy.cockpitColor, enemy.angle, false);
+                drawShip(enemy.x, enemy.y, enemy.width, enemy.height, enemy.color, enemy.cockpitColor, enemy.angle, false, enemy.type);
             });
 
             // Draw lasers
@@ -1073,32 +1231,45 @@
                 const angle = Math.atan2(missile.vy, missile.vx);
                 ctx.rotate(angle);
                 const gradient = ctx.createLinearGradient(-missile.width / 2, -missile.height / 2, missile.width / 2, missile.height / 2);
-                gradient.addColorStop(0, missile.isEnemy ? '#FF4500' : '#FFA500');
-                gradient.addColorStop(1, '#888888');
+                gradient.addColorStop(0, missile.isNuclear ? '#FF0000' : '#A9A9A9');
+                gradient.addColorStop(1, missile.isNuclear ? '#FFFFFF' : '#696969');
                 ctx.fillStyle = gradient;
                 // Missile body
                 ctx.beginPath();
-                ctx.moveTo(0, -missile.height / 2); // Nose
-                ctx.lineTo(-missile.width / 2, missile.height / 2 - 5);
-                ctx.lineTo(missile.width / 2, missile.height / 2 - 5);
+                ctx.moveTo(0, -missile.height / 2); // Conical nose
+                ctx.quadraticCurveTo(missile.width / 2, -missile.height / 4, missile.width / 2, missile.height / 2);
+                ctx.lineTo(-missile.width / 2, missile.height / 2);
+                ctx.quadraticCurveTo(-missile.width / 2, -missile.height / 4, 0, -missile.height / 2);
                 ctx.closePath();
                 ctx.fill();
                 // Fins
-                ctx.fillStyle = '#666666';
+                ctx.fillStyle = '#555';
                 ctx.beginPath();
-                ctx.moveTo(-missile.width / 2, missile.height / 2 - 5);
-                ctx.lineTo(-missile.width, missile.height / 2);
-                ctx.lineTo(-missile.width / 2, missile.height / 2);
+                ctx.moveTo(-missile.width / 2, missile.height / 2);
+                ctx.lineTo(-missile.width, missile.height / 2 - 5);
+                ctx.lineTo(-missile.width / 2, missile.height / 2 - 5);
                 ctx.closePath();
                 ctx.fill();
                 ctx.beginPath();
-                ctx.moveTo(missile.width / 2, missile.height / 2 - 5);
-                ctx.lineTo(missile.width, missile.height / 2);
-                ctx.lineTo(missile.width / 2, missile.height / 2);
+                ctx.moveTo(missile.width / 2, missile.height / 2);
+                ctx.lineTo(missile.width, missile.height / 2 - 5);
+                ctx.lineTo(missile.width / 2, missile.height / 2 - 5);
                 ctx.closePath();
                 ctx.fill();
-                // Exhaust
-                ctx.fillStyle = `rgba(255, 165, 0, ${Math.random() * 0.5 + 0.5})`;
+                ctx.beginPath();
+                ctx.moveTo(0, missile.height / 2);
+                ctx.lineTo(missile.width / 4, missile.height / 2 + 5);
+                ctx.lineTo(0, missile.height / 2 - 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(0, missile.height / 2);
+                ctx.lineTo(-missile.width / 4, missile.height / 2 + 5);
+                ctx.lineTo(0, missile.height / 2 - 5);
+                ctx.closePath();
+                ctx.fill();
+                // Steady exhaust
+                ctx.fillStyle = 'rgba(255, 165, 0, 0.8)';
                 ctx.beginPath();
                 ctx.moveTo(-missile.width / 2, missile.height / 2);
                 ctx.lineTo(0, missile.height / 2 + 10);
