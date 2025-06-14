@@ -19,10 +19,10 @@
         canvas {
             border: 2px solid #00ffcc;
             max-width: 100%;
-            max-height: 100vh;
+            max-height: 80vh;
             display: none;
         }
-        #mainMenu, #shopMenu, #gameUI, #upgradeMenu, #gameOverMenu {
+        #mainMenu, #shopMenu, #upgradeMenu, #gameOverMenu {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -39,11 +39,19 @@
             width: 400px;
         }
         #gameUI {
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 1200px;
+            background: rgba(0, 0, 0, 0.7);
             padding: 10px;
             font-size: 18px;
+            display: none;
+            text-align: center;
+            color: #00ffcc;
+            border-top: 2px solid #00ffcc;
+        }
+        #gameUI div {
+            display: inline-block;
+            margin: 0 20px;
         }
         h1 {
             font-size: 36px;
@@ -70,27 +78,26 @@
         button:hover {
             background: #00cc99;
         }
-        #shopMenu button {
+        #shopMenu button.shop-nav {
+            width: 40%;
+            display: inline-block;
+        }
+        #shopMenu button.item-button {
             width: 80%;
             display: block;
             margin: 5px auto;
         }
-        #joystick, #aimJoystick {
-            position: absolute;
+        #joystick {
+            position: fixed;
             bottom: 20px;
+            left: 20px;
             width: 100px;
             height: 100px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             display: none;
         }
-        #joystick {
-            left: 20px;
-        }
-        #aimJoystick {
-            right: 20px;
-        }
-        #joystickInner, #aimJoystickInner {
+        #joystickInner {
             width: 40px;
             height: 40px;
             background: #fff;
@@ -101,7 +108,7 @@
             transform: translate(-50%, -50%);
         }
         #fireButton, #missileButton, #specialButton {
-            position: absolute;
+            position: fixed;
             bottom: 20px;
             width: 60px;
             height: 60px;
@@ -146,9 +153,12 @@
     <div id="shopMenu">
         <h2>Starship Shop</h2>
         <p>Credits: $<span id="credits">1000</span></p>
+        <button class="shop-nav" onclick="scrollShop(-1)">Up</button>
+        <button class="shop-nav" onclick="scrollShop(1)">Down</button>
         <div id="shopItems"></div>
         <button onclick="backToMenu()">Back</button>
     </div>
+    <canvas id="gameCanvas"></canvas>
     <div id="gameUI">
         <div>Score: <span id="score">0</span></div>
         <div>Level: <span id="level">1</span></div>
@@ -173,13 +183,9 @@
     <div id="joystick">
         <div id="joystickInner"></div>
     </div>
-    <div id="aimJoystick">
-        <div id="aimJoystickInner"></div>
-    </div>
     <div id="fireButton">Fire</div>
     <div id="missileButton">Missile</div>
     <div id="specialButton">Special</div>
-    <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -191,7 +197,7 @@
         let gameState = 'menu';
         let player = null;
         let enemies = [];
-        let bullets = [];
+        let lasers = [];
         let missiles = [];
         let stars = [];
         let nebulae = [];
@@ -204,9 +210,10 @@
         let gamePaused = false;
         let keys = {};
         let joystick = { active: false, x: 0, y: 0, baseX: 0, baseY: 0 };
-        let aimJoystick = { active: false, x: 0, y: 0, baseX: 0, baseY: 0 };
         let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
         let isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        let shopScrollIndex = 0;
+        const itemsPerPage = 2;
 
         // Ship configurations
         const ships = [
@@ -219,8 +226,8 @@
                 fireRate: 10,
                 missileCount: 5,
                 missileDamage: 50,
-                bulletDamage: 5,
-                special: 'boost', // Temporary speed boost
+                laserDamage: 5,
+                special: 'boost',
                 specialCooldown: 300,
                 color: '#4682B4',
                 cockpitColor: '#FFD700'
@@ -234,8 +241,8 @@
                 fireRate: 8,
                 missileCount: 3,
                 missileDamage: 75,
-                bulletDamage: 7,
-                special: 'shield', // Temporary invulnerability
+                laserDamage: 7,
+                special: 'shield',
                 specialCooldown: 600,
                 color: '#228B22',
                 cockpitColor: '#00FF00'
@@ -249,8 +256,8 @@
                 fireRate: 12,
                 missileCount: 8,
                 missileDamage: 40,
-                bulletDamage: 4,
-                special: 'nova', // Area-of-effect explosion
+                laserDamage: 4,
+                special: 'nova',
                 specialCooldown: 900,
                 color: '#B22222',
                 cockpitColor: '#FFA500'
@@ -261,19 +268,20 @@
         let selectedShipId = 'falcon';
 
         // Initialize controls
-        if (isMobile) {
-            document.getElementById('joystick').style.display = 'block';
-            document.getElementById('aimJoystick').style.display = 'block';
-            document.getElementById('fireButton').style.display = 'block';
-            document.getElementById('missileButton').style.display = 'block';
-            document.getElementById('specialButton').style.display = 'block';
+        function toggleGameControls(show) {
+            const display = show && isMobile ? 'block' : 'none';
+            document.getElementById('joystick').style.display = display;
+            document.getElementById('fireButton').style.display = display;
+            document.getElementById('missileButton').style.display = display;
+            document.getElementById('specialButton').style.display = display;
+            document.getElementById('gameUI').style.display = show ? 'block' : 'none';
         }
 
         // Input handling
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
             if (gameState === 'game' && !gameOver && !gamePaused) {
-                if (e.code === 'Space') shootBullet();
+                if (e.code === 'Space') shootLaser();
                 if (e.code === 'KeyM' && player.missiles > 0) shootMissile();
                 if (e.code === 'KeyE' && player.specialCooldown <= 0) useSpecial();
             }
@@ -287,8 +295,6 @@
 
         const joystickEl = document.getElementById('joystick');
         const joystickInner = document.getElementById('joystickInner');
-        const aimJoystickEl = document.getElementById('aimJoystick');
-        const aimJoystickInner = document.getElementById('aimJoystickInner');
         const fireButton = document.getElementById('fireButton');
         const missileButton = document.getElementById('missileButton');
         const specialButton = document.getElementById('specialButton');
@@ -326,42 +332,9 @@
             joystickInner.style.transform = 'translate(-50%, -50%)';
         });
 
-        aimJoystickEl.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            aimJoystick.active = true;
-            const touch = e.touches[0];
-            aimJoystick.baseX = touch.clientX;
-            aimJoystick.baseY = touch.clientY;
-        });
-
-        aimJoystickEl.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (aimJoystick.active) {
-                const touch = e.touches[0];
-                let dx = touch.clientX - aimJoystick.baseX;
-                let dy = touch.clientY - aimJoystick.baseY;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-                let maxDist = 50;
-                if (dist > maxDist) {
-                    dx = (dx / dist) * maxDist;
-                    dy = (dy / dist) * maxDist;
-                }
-                aimJoystick.x = dx / maxDist;
-                aimJoystick.y = dy / maxDist;
-                aimJoystickInner.style.transform = `translate(${dx - 20}px, ${dy - 20}px)`;
-            }
-        });
-
-        aimJoystickEl.addEventListener('touchend', () => {
-            aimJoystick.active = false;
-            aimJoystick.x = 0;
-            aimJoystick.y = 0;
-            aimJoystickInner.style.transform = 'translate(-50%, -50%)';
-        });
-
         fireButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameState === 'game' && !gameOver && !gamePaused) shootBullet();
+            if (gameState === 'game' && !gameOver && !gamePaused) shootLaser();
         });
 
         missileButton.addEventListener('touchstart', (e) => {
@@ -393,7 +366,7 @@
                 missileCount: ship.missileCount,
                 missiles: ship.missileCount,
                 missileDamage: ship.missileDamage,
-                bulletDamage: ship.bulletDamage,
+                laserDamage: ship.laserDamage,
                 special: ship.special,
                 specialCooldown: 0,
                 specialTimer: 0,
@@ -404,17 +377,19 @@
             };
         }
 
-        function shootBullet(source = player, isEnemy = false) {
+        function shootLaser(source = player, isEnemy = false) {
             if (source.fireCooldown <= 0) {
-                bullets.push({
+                const targetX = isMobile && !isEnemy ? (findNearestEnemy()?.x + findNearestEnemy()?.width / 2 || canvas.width / 2) : mouse.x;
+                const targetY = isMobile && !isEnemy ? (findNearestEnemy()?.y + findNearestEnemy()?.height / 2 || 0) : mouse.y;
+                const angle = isEnemy ? source.angle : Math.atan2(targetY - (source.y + source.height / 2), targetX - (source.x + source.width / 2));
+                lasers.push({
                     x: source.x + source.width / 2,
-                    y: source.y,
-                    vx: Math.cos(source.angle) * 10,
-                    vy: Math.sin(source.angle) * 10,
-                    speed: 10,
-                    width: 5,
-                    height: 10,
-                    damage: source.bulletDamage,
+                    y: source.y + source.height / 2,
+                    vx: Math.cos(angle) * 15,
+                    vy: Math.sin(angle) * 15,
+                    length: 50,
+                    damage: source.laserDamage,
+                    lifetime: 10,
                     isEnemy: isEnemy
                 });
                 source.fireCooldown = source.fireRate;
@@ -423,7 +398,7 @@
 
         function shootMissile(source = player, isEnemy = false) {
             if (source.missiles > 0) {
-                missiles.push({
+                const missile = {
                     x: source.x + source.width / 2,
                     y: source.y,
                     vx: 0,
@@ -433,8 +408,10 @@
                     height: 20,
                     target: isEnemy ? player : findNearestEnemy(),
                     damage: source.missileDamage,
-                    isEnemy: isEnemy
-                });
+                    isEnemy: isEnemy,
+                    trail: []
+                };
+                missiles.push(missile);
                 source.missiles--;
                 updateUI();
             }
@@ -444,11 +421,11 @@
             if (player.specialCooldown <= 0) {
                 switch (player.special) {
                     case 'boost':
-                        player.specialTimer = 120; // 2 seconds
+                        player.specialTimer = 120;
                         player.speed *= 2;
                         break;
                     case 'shield':
-                        player.specialTimer = 300; // 5 seconds
+                        player.specialTimer = 300;
                         break;
                     case 'nova':
                         spawnExplosion(player.x + player.width / 2, player.y + player.height / 2, 100);
@@ -502,8 +479,8 @@
 
         function spawnEnemy(type = 'drone') {
             const enemyTypes = {
-                drone: { width: 40, height: 50, speed: 2, health: 50, bulletDamage: 3, fireRate: 30, scoreValue: 10, creditValue: 5 },
-                cruiser: { width: 60, height: 70, speed: 1, health: 100, bulletDamage: 5, fireRate: 20, scoreValue: 20, creditValue: 10 },
+                drone: { width: 40, height: 50, speed: 2, health: 50, laserDamage: 3, fireRate: 30, scoreValue: 10, creditValue: 5 },
+                cruiser: { width: 60, height: 70, speed: 1, health: 100, laserDamage: 5, fireRate: 20, scoreValue: 20, creditValue: 10 },
                 bomber: { width: 50, height: 60, speed: 1.5, health: 80, missileDamage: 20, missileCount: 3, fireRate: 60, scoreValue: 15, creditValue: 8 }
             };
             const config = enemyTypes[type];
@@ -518,7 +495,7 @@
                 health: config.health + level * 10,
                 fireRate: config.fireRate,
                 fireCooldown: 0,
-                bulletDamage: config.bulletDamage || 0,
+                laserDamage: config.laserDamage || 0,
                 missileDamage: config.missileDamage || 0,
                 missileCount: config.missileCount || 0,
                 missiles: config.missileCount || 0,
@@ -562,7 +539,10 @@
         function updateShop() {
             const shopItems = document.getElementById('shopItems');
             shopItems.innerHTML = '';
-            ships.forEach(ship => {
+            const startIndex = shopScrollIndex * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, ships.length);
+            for (let i = startIndex; i < endIndex; i++) {
+                const ship = ships[i];
                 const item = document.createElement('div');
                 item.className = 'shop-item';
                 item.innerHTML = `
@@ -575,6 +555,7 @@
                     <span>Cost: $${ship.cost}</span>
                 `;
                 const button = document.createElement('button');
+                button.className = 'item-button';
                 if (ownedShips.includes(ship.id)) {
                     button.textContent = ship.id === selectedShipId ? 'Selected' : 'Select';
                     button.disabled = ship.id === selectedShipId;
@@ -586,7 +567,12 @@
                 }
                 item.appendChild(button);
                 shopItems.appendChild(item);
-            });
+            }
+        }
+
+        function scrollShop(direction) {
+            shopScrollIndex = Math.max(0, Math.min(Math.floor((ships.length - 1) / itemsPerPage), shopScrollIndex + direction));
+            updateShop();
         }
 
         function buyShip(id) {
@@ -634,8 +620,8 @@
         function startGame() {
             gameState = 'game';
             document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('gameUI').style.display = 'block';
             canvas.style.display = 'block';
+            toggleGameControls(true);
             score = 0;
             level = 1;
             upgradePoints = 0;
@@ -643,7 +629,7 @@
             gamePaused = false;
             player = initPlayer(selectedShipId);
             enemies = [];
-            bullets = [];
+            lasers = [];
             missiles = [];
             explosions = [];
             stars = [];
@@ -658,7 +644,9 @@
             gameState = 'shop';
             document.getElementById('mainMenu').style.display = 'none';
             document.getElementById('shopMenu').style.display = 'block';
+            shopScrollIndex = 0;
             updateShop();
+            toggleGameControls(false);
         }
 
         function backToMenu() {
@@ -667,7 +655,7 @@
             document.getElementById('gameOverMenu').style.display = 'none';
             document.getElementById('mainMenu').style.display = 'block';
             canvas.style.display = 'none';
-            document.getElementById('gameUI').style.display = 'none';
+            toggleGameControls(false);
         }
 
         function startNextLevel() {
@@ -675,7 +663,7 @@
             document.getElementById('upgradeMenu').style.display = 'none';
             level++;
             enemies = [];
-            bullets = [];
+            lasers = [];
             missiles = [];
             explosions = [];
             player.missiles = player.missileCount;
@@ -698,16 +686,13 @@
         }
 
         function checkCollisions() {
-            bullets.forEach((bullet, bIndex) => {
-                if (bullet.isEnemy) {
-                    if (bullet.x < player.x + player.width &&
-                        bullet.x + bullet.width > player.x &&
-                        bullet.y < player.y + player.height &&
-                        bullet.y + bullet.height > player.y &&
+            lasers.forEach((laser, lIndex) => {
+                if (laser.isEnemy) {
+                    if (Math.hypot(laser.x - (player.x + player.width / 2), laser.y - (player.y + player.height / 2)) < player.width / 2 &&
                         player.special !== 'shield' && player.specialTimer <= 0) {
-                        player.health -= bullet.damage;
-                        bullets.splice(bIndex, 1);
-                        spawnExplosion(bullet.x, bullet.y, 20);
+                        player.health -= laser.damage;
+                        lasers.splice(lIndex, 1);
+                        spawnExplosion(laser.x, laser.y, 20);
                         if (player.health <= 0) {
                             spawnExplosion(player.x + player.width / 2, player.y + player.height / 2, 50);
                             gameOver = true;
@@ -716,13 +701,10 @@
                     }
                 } else {
                     enemies.forEach((enemy, eIndex) => {
-                        if (bullet.x < enemy.x + enemy.width &&
-                            bullet.x + bullet.width > enemy.x &&
-                            bullet.y < enemy.y + enemy.height &&
-                            bullet.y + bullet.height > enemy.y) {
-                            enemy.health -= bullet.damage;
-                            bullets.splice(bIndex, 1);
-                            spawnExplosion(bullet.x, bullet.y, 20);
+                        if (Math.hypot(laser.x - (enemy.x + enemy.width / 2), laser.y - (enemy.y + enemy.height / 2)) < enemy.width / 2) {
+                            enemy.health -= laser.damage;
+                            lasers.splice(lIndex, 1);
+                            spawnExplosion(laser.x, laser.y, 20);
                             if (enemy.health <= 0) {
                                 enemies.splice(eIndex, 1);
                                 score += enemy.scoreValue;
@@ -797,8 +779,12 @@
             if (isMobile) {
                 player.vx += joystick.x * player.thrust;
                 player.vy += joystick.y * player.thrust;
-                if (aimJoystick.x !== 0 || aimJoystick.y !== 0) {
-                    player.angle = Math.atan2(aimJoystick.y, aimJoystick.x);
+                const nearestEnemy = findNearestEnemy();
+                if (nearestEnemy) {
+                    player.angle = Math.atan2(
+                        (nearestEnemy.y + nearestEnemy.height / 2) - (player.y + player.height / 2),
+                        (nearestEnemy.x + nearestEnemy.width / 2) - (player.x + player.width / 2)
+                    );
                 }
             } else {
                 let ax = 0, ay = 0;
@@ -826,12 +812,13 @@
             }
             if (player.specialCooldown > 0) player.specialCooldown--;
 
-            // Update bullets
-            bullets.forEach((bullet, index) => {
-                bullet.x += bullet.vx;
-                bullet.y += bullet.vy;
-                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
-                    bullets.splice(index, 1);
+            // Update lasers
+            lasers.forEach((laser, index) => {
+                laser.x += laser.vx;
+                laser.y += laser.vy;
+                laser.lifetime--;
+                if (laser.lifetime <= 0 || laser.x < 0 || laser.x > canvas.width || laser.y < 0 || laser.y > canvas.height) {
+                    lasers.splice(index, 1);
                 }
             });
 
@@ -846,6 +833,15 @@
                 }
                 missile.x += missile.vx;
                 missile.y += missile.vy;
+                // Add fire trail particle
+                missile.trail.push({
+                    x: missile.x,
+                    y: missile.y,
+                    lifetime: 10,
+                    alpha: 1
+                });
+                missile.trail = missile.trail.filter(p => p.lifetime > 0);
+                missile.trail.forEach(p => p.lifetime--);
                 if (missile.x < 0 || missile.x > canvas.width || missile.y < 0 || missile.y > canvas.height) {
                     missiles.splice(index, 1);
                 }
@@ -861,7 +857,7 @@
                     if (enemy.type === 'bomber' && enemy.missiles > 0) {
                         shootMissile(enemy, true);
                     } else {
-                        shootBullet(enemy, true);
+                        shootLaser(enemy, true);
                     }
                 }
                 enemy.fireCooldown--;
@@ -914,20 +910,18 @@
             ctx.save();
             ctx.translate(x + width / 2, y + height / 2);
             ctx.rotate(angle);
-            // Body with gradient texture
             const gradient = ctx.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
             gradient.addColorStop(0, bodyColor);
             gradient.addColorStop(1, darkenColor(bodyColor, 0.7));
             ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.moveTo(0, -height / 2); // Nose
+            ctx.moveTo(0, -height / 2);
             ctx.lineTo(-width / 4, height / 4);
-            ctx.lineTo(-width / 6, height / 2); // Tail
+            ctx.lineTo(-width / 6, height / 2);
             ctx.lineTo(width / 6, height / 2);
             ctx.lineTo(width / 4, height / 4);
             ctx.closePath();
             ctx.fill();
-            // Wings
             ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.moveTo(-width / 2, 0);
@@ -941,7 +935,6 @@
             ctx.lineTo(width / 4, height / 4);
             ctx.closePath();
             ctx.fill();
-            // Thrusters (if moving)
             if (isPlayer && (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1)) {
                 ctx.fillStyle = `rgba(255, 165, 0, ${Math.random() * 0.5 + 0.5})`;
                 ctx.beginPath();
@@ -952,7 +945,6 @@
                 ctx.closePath();
                 ctx.fill();
             }
-            // Cockpit
             ctx.fillStyle = cockpitColor;
             ctx.beginPath();
             ctx.ellipse(0, -height / 4, width / 8, height / 8, 0, 0, Math.PI * 2);
@@ -978,7 +970,6 @@
         function drawBackground() {
             ctx.fillStyle = '#0a0a1a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Draw nebulae
             nebulae.forEach(nebula => {
                 const gradient = ctx.createRadialGradient(nebula.x, nebula.y, 0, nebula.x, nebula.y, nebula.radius);
                 gradient.addColorStop(0, nebula.color);
@@ -988,7 +979,6 @@
                 ctx.arc(nebula.x, nebula.y, nebula.radius, 0, Math.PI * 2);
                 ctx.fill();
             });
-            // Draw stars
             ctx.fillStyle = '#fff';
             stars.forEach(star => {
                 ctx.beginPath();
@@ -1010,7 +1000,6 @@
 
             drawBackground();
 
-            // Draw player
             if (player) {
                 if (player.special === 'shield' && player.specialTimer > 0) {
                     ctx.strokeStyle = `rgba(0, 255, 255, ${Math.random() * 0.5 + 0.5})`;
@@ -1022,25 +1011,30 @@
                 drawShip(player.x, player.y, player.width, player.height, player.color, player.cockpitColor, player.angle, true);
             }
 
-            // Draw enemies
             enemies.forEach(enemy => {
                 drawShip(enemy.x, enemy.y, enemy.width, enemy.height, enemy.color, enemy.cockpitColor, enemy.angle, false);
             });
 
-            // Draw bullets
-            ctx.fillStyle = '#FFFF00';
-            bullets.forEach(bullet => {
-                ctx.save();
-                ctx.translate(bullet.x, bullet.y);
-                ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
+            // Draw lasers
+            lasers.forEach(laser => {
+                ctx.strokeStyle = laser.isEnemy ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 0, 0.8)';
+                ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, bullet.width / 2, bullet.height / 2, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
+                ctx.moveTo(laser.x, laser.y);
+                ctx.lineTo(laser.x - laser.vx * laser.length / 15, laser.y - laser.vy * laser.length / 15);
+                ctx.stroke();
             });
 
             // Draw missiles
             missiles.forEach(missile => {
+                // Draw trail
+                missile.trail.forEach(p => {
+                    ctx.fillStyle = `rgba(255, 165, 0, ${p.alpha * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                // Draw missile
                 ctx.save();
                 ctx.translate(missile.x, missile.y);
                 const angle = Math.atan2(missile.vy, missile.vx);
@@ -1058,7 +1052,6 @@
                 ctx.restore();
             });
 
-            // Draw explosions
             explosions.forEach(explosion => drawExplosion(explosion));
 
             if (gameOver) {
@@ -1072,8 +1065,8 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Initialize game
         document.getElementById('mainMenu').style.display = 'block';
+        toggleGameControls(false);
         gameLoop();
     </script>
 </body>
