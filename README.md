@@ -120,8 +120,8 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 800;
-        canvas.height = 600;
+        canvas.width = 1200;
+        canvas.height = 800;
 
         // Audio
         const moveSound = new Audio('https://cdn.pixabay.com/download/audio/2023/03/17/audio_1e2c5a8b5b.mp3'); // Placeholder tank move sound
@@ -133,7 +133,7 @@
         // Game state
         let player = {
             x: 100,
-            y: 500,
+            y: 700,
             angle: 0,
             turretAngle: 0,
             speed: 2,
@@ -145,7 +145,7 @@
         let allies = [];
         let enemies = [];
         let shells = [];
-        let walls = [];
+        let obstacles = [];
         let score = 0;
         let gameOver = false;
         let keys = {};
@@ -164,7 +164,9 @@
         // Controls
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
-            if (e.code === 'Space' && !gameOver && player.fireCooldown <= 0) shootShell('player');
+            if (e.code === 'Space' && !gameOver && player.fireCooldown <= 0) {
+                shootShell('player', player.x, player.y, player.turretAngle, player);
+            }
         });
         document.addEventListener('keyup', (e) => keys[e.code] = false);
         canvas.addEventListener('mousemove', (e) => {
@@ -247,14 +249,16 @@
 
         fireButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (!gameOver && player.fireCooldown <= 0) shootShell('player');
+            if (!gameOver && player.fireCooldown <= 0) {
+                shootShell('player', player.x, player.y, player.turretAngle, player);
+            }
         });
 
         function shootShell(source, x, y, angle, tank) {
             shootSound.play();
             shells.push({
-                x: x,
-                y: y,
+                x: x + Math.cos(angle) * 25, // Offset from turret tip
+                y: y + Math.sin(angle) * 25,
                 angle: angle,
                 speed: 8,
                 source: source,
@@ -262,7 +266,7 @@
                 radius: 5
             });
             if (source === 'player') player.fireCooldown = player.reloadTime;
-            if (tank) tank.fireCooldown = 60;
+            if (tank && tank !== player) tank.fireCooldown = 60;
         }
 
         function spawnTank(team, x, y) {
@@ -279,15 +283,23 @@
             };
         }
 
-        function spawnWalls() {
-            walls = [
-                { x: 200, y: 200, width: 20, height: 100 }, // Vertical wall
-                { x: 600, y: 400, width: 20, height: 100 }, // Vertical wall
-                { x: 400, y: 300, width: 100, height: 20 }, // Horizontal wall
-                { x: 0, y: 0, width: canvas.width, height: 10 }, // Top border
-                { x: 0, y: canvas.height - 10, width: canvas.width, height: 10 }, // Bottom border
-                { x: 0, y: 0, width: 10, height: canvas.height }, // Left border
-                { x: canvas.width - 10, y: 0, width: 10, height: canvas.height } // Right border
+        function spawnObstacles() {
+            obstacles = [
+                // Border walls
+                { type: 'wall', x: 0, y: 0, width: canvas.width, height: 10 }, // Top
+                { type: 'wall', x: 0, y: canvas.height - 10, width: canvas.width, height: 10 }, // Bottom
+                { type: 'wall', x: 0, y: 0, width: 10, height: canvas.height }, // Left
+                { type: 'wall', x: canvas.width - 10, y: 0, width: 10, height: canvas.height }, // Right
+                // Inner walls
+                { type: 'wall', x: 300, y: 200, width: 20, height: 150 },
+                { type: 'wall', x: 900, y: 450, width: 20, height: 150 },
+                { type: 'wall', x: 600, y: 300, width: 150, height: 20 },
+                // Houses
+                { type: 'house', x: 200, y: 100, width: 80, height: 80 },
+                { type: 'house', x: 1000, y: 600, width: 80, height: 80 },
+                // Anti-tank hedgehogs
+                { type: 'hedgehog', x: 400, y: 400, width: 30, height: 30 },
+                { type: 'hedgehog', x: 800, y: 200, width: 30, height: 30 }
             ];
         }
 
@@ -303,29 +315,134 @@
             gameOver = false;
             document.getElementById('gameOverMenu').style.display = 'none';
             score = 0;
-            player = spawnTank('ally', 100, 500);
+            player = spawnTank('ally', 100, 700);
             allies = [
-                spawnTank('ally', 150, 450),
-                spawnTank('ally', 100, 400)
+                spawnTank('ally', 150, 650),
+                spawnTank('ally', 100, 600)
             ];
             enemies = [
-                spawnTank('enemy', 700, 100),
-                spawnTank('enemy', 650, 150),
-                spawnTank('enemy', 700, 200)
+                spawnTank('enemy', 1100, 100),
+                spawnTank('enemy', 1050, 150),
+                spawnTank('enemy', 1100, 200)
             ];
             shells = [];
-            spawnWalls();
+            spawnObstacles();
             updateUI();
         }
 
         function checkCollision(x, y, width, height) {
-            for (let wall of walls) {
-                if (x < wall.x + wall.width && x + width > wall.x &&
-                    y < wall.y + wall.height && y + height > wall.y) {
+            for (let obstacle of obstacles) {
+                if (x < obstacle.x + obstacle.width && x + width > obstacle.x &&
+                    y < obstacle.y + obstacle.height && y + height > obstacle.y) {
                     return true;
                 }
             }
             return false;
+        }
+
+        function drawTank(x, y, angle, turretAngle, team, health) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            // Tank body with camouflage pattern
+            const gradient = ctx.createLinearGradient(-20, -15, 20, 15);
+            gradient.addColorStop(0, team === 'ally' ? '#3C5F3A' : '#5C2E2E'); // Olive green or dark red
+            gradient.addColorStop(0.5, team === 'ally' ? '#4A7048' : '#7A3C3C');
+            gradient.addColorStop(1, team === 'ally' ? '#2E4A2C' : '#4A2E2E');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-20, -15, 40, 30);
+            // Tracks
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(-15, -10, 30, 5);
+            ctx.fillRect(-15, 5, 30, 5);
+            ctx.restore();
+            // Turret
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(turretAngle);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, -5, 25, 10);
+            ctx.fillStyle = '#444444';
+            ctx.fillRect(0, -2, 20, 4); // Barrel detail
+            ctx.restore();
+            // Health bar
+            if (health < 100) {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(x - 20, y - 25, health / 2.5, 5);
+            }
+        }
+
+        function drawShell(shell) {
+            ctx.save();
+            ctx.translate(shell.x, shell.y);
+            ctx.rotate(shell.angle);
+            // Shell with metallic texture
+            const gradient = ctx.createLinearGradient(-5, -5, 5, 5);
+            gradient.addColorStop(0, shell.source === 'enemy' ? '#FF8C00' : '#FFD700'); // Orange or gold
+            gradient.addColorStop(1, '#888888');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, shell.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawMap() {
+            // Ground with grass and dirt pattern
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#355E3B');
+            gradient.addColorStop(1, '#4A7048');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Add dirt patches
+            for (let i = 0; i < 20; i++) {
+                ctx.fillStyle = 'rgba(139, 69, 19, 0.5)';
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 20 + Math.random() * 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawObstacle(obstacle) {
+            ctx.save();
+            if (obstacle.type === 'wall') {
+                // Concrete wall texture
+                const gradient = ctx.createLinearGradient(obstacle.x, obstacle.y, obstacle.x + obstacle.width, obstacle.y + obstacle.height);
+                gradient.addColorStop(0, '#808080');
+                gradient.addColorStop(1, '#A9A9A9');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                // Add cracks
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(obstacle.x + 5, obstacle.y + 5);
+                ctx.lineTo(obstacle.x + obstacle.width - 5, obstacle.y + obstacle.height - 5);
+                ctx.stroke();
+            } else if (obstacle.type === 'house') {
+                // House with brick texture
+                const gradient = ctx.createLinearGradient(obstacle.x, obstacle.y, obstacle.x, obstacle.y + obstacle.height);
+                gradient.addColorStop(0, '#8B0000');
+                gradient.addColorStop(1, '#A52A2A');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                // Roof
+                ctx.fillStyle = '#4B2E2E';
+                ctx.beginPath();
+                ctx.moveTo(obstacle.x, obstacle.y);
+                ctx.lineTo(obstacle.x + obstacle.width / 2, obstacle.y - 20);
+                ctx.lineTo(obstacle.x + obstacle.width, obstacle.y);
+                ctx.closePath();
+                ctx.fill();
+            } else if (obstacle.type === 'hedgehog') {
+                // Anti-tank hedgehog (metal cross)
+                ctx.fillStyle = '#666666';
+                ctx.fillRect(obstacle.x + 5, obstacle.y, 20, 30);
+                ctx.fillRect(obstacle.x, obstacle.y + 5, 30, 20);
+                ctx.fillStyle = '#888888';
+                ctx.fillRect(obstacle.x + 7, obstacle.y + 2, 16, 26);
+                ctx.fillRect(obstacle.x + 2, obstacle.y + 7, 26, 16);
+            }
+            ctx.restore();
         }
 
         function update() {
@@ -356,7 +473,8 @@
                     }
                 }
                 if (aimJoystick.x !== 0 || aimJoystick.y !== 0) {
-                    player.turretAngle = Math.atan2(aimJoystick.y, aimJoystick.x);
+                    player.angle += aimJoystick.x * player.rotationSpeed; // Rotate tank body with right joystick
+                    player.turretAngle = player.angle; // Turret follows body for simplicity
                 }
             } else {
                 if (keys['KeyW']) {
@@ -381,8 +499,11 @@
                 if (keys['KeyD']) player.angle += player.rotationSpeed;
                 player.turretAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
             }
-            if (isMoving && !moveSound.playing) moveSound.play();
-            else if (!isMoving) moveSound.pause();
+            if (isMoving) {
+                if (!moveSound.playing) moveSound.play();
+            } else {
+                moveSound.pause();
+            }
 
             // Update allies
             allies.forEach(ally => {
@@ -391,7 +512,16 @@
                     return dist < nearest.dist ? { tank: enemy, dist: dist } : nearest;
                 }, { tank: null, dist: Infinity }).tank;
                 if (nearestEnemy) {
-                    ally.turretAngle = Math.atan2(nearestEnemy.y - ally.y, nearestEnemy.x - ally.x);
+                    let dx = nearestEnemy.x - ally.x;
+                    let dy = nearestEnemy.y - ally.y;
+                    ally.turretAngle = Math.atan2(dy, dx);
+                    ally.angle += Math.sign(ally.turretAngle - ally.angle) * ally.rotationSpeed;
+                    let newX = ally.x + Math.cos(ally.angle) * ally.speed;
+                    let newY = ally.y + Math.sin(ally.angle) * ally.speed;
+                    if (!checkCollision(newX - 20, newY - 20, 40, 40)) {
+                        ally.x = newX;
+                        ally.y = newY;
+                    }
                     if (ally.fireCooldown <= 0 && Math.random() < 0.02) {
                         shootShell('ally', ally.x, ally.y, ally.turretAngle, ally);
                     }
@@ -429,11 +559,11 @@
                     shells.splice(index, 1);
                     return;
                 }
-                for (let wall of walls) {
-                    if (shell.x - shell.radius < wall.x + wall.width &&
-                        shell.x + shell.radius > wall.x &&
-                        shell.y - shell.radius < wall.y + wall.height &&
-                        shell.y + shell.radius > wall.y) {
+                for (let obstacle of obstacles) {
+                    if (shell.x - shell.radius < obstacle.x + obstacle.width &&
+                        shell.x + shell.radius > obstacle.x &&
+                        shell.y - shell.radius < obstacle.y + obstacle.height &&
+                        shell.y + shell.radius > obstacle.y) {
                         shells.splice(index, 1);
                         return;
                     }
@@ -488,87 +618,27 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw background (grass)
-            ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Draw map
+            drawMap();
 
-            // Draw walls
-            ctx.fillStyle = '#8B4513';
-            walls.forEach(wall => {
-                ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
-            });
+            // Draw obstacles
+            obstacles.forEach(obstacle => drawObstacle(obstacle));
 
             // Draw player
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.rotate(player.angle);
-            ctx.fillStyle = '#2E8B57';
-            ctx.fillRect(-20, -15, 40, 30); // Body
-            ctx.fillStyle = '#228B22';
-            ctx.fillRect(-15, -10, 30, 20); // Tracks
-            ctx.restore();
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.rotate(player.turretAngle);
-            ctx.fillStyle = '#2E8B57';
-            ctx.fillRect(0, -5, 25, 10); // Turret
-            ctx.restore();
-            if (player.health < 100) {
-                ctx.fillStyle = 'red';
-                ctx.fillRect(player.x - 20, player.y - 25, player.health / 2.5, 5);
-            }
+            drawTank(player.x, player.y, player.angle, player.turretAngle, 'ally', player.health);
 
             // Draw allies
             allies.forEach(ally => {
-                ctx.save();
-                ctx.translate(ally.x, ally.y);
-                ctx.rotate(ally.angle);
-                ctx.fillStyle = '#2E8B57';
-                ctx.fillRect(-20, -15, 40, 30);
-                ctx.fillStyle = '#228B22';
-                ctx.fillRect(-15, -10, 30, 20);
-                ctx.restore();
-                ctx.save();
-                ctx.translate(ally.x, ally.y);
-                ctx.rotate(ally.turretAngle);
-                ctx.fillStyle = '#2E8B57';
-                ctx.fillRect(0, -5, 25, 10);
-                ctx.restore();
-                if (ally.health < 100) {
-                    ctx.fillStyle = 'red';
-                    ctx.fillRect(ally.x - 20, ally.y - 25, ally.health / 2.5, 5);
-                }
+                drawTank(ally.x, ally.y, ally.angle, ally.turretAngle, 'ally', ally.health);
             });
 
             // Draw enemies
             enemies.forEach(enemy => {
-                ctx.save();
-                ctx.translate(enemy.x, enemy.y);
-                ctx.rotate(enemy.angle);
-                ctx.fillStyle = '#8B0000';
-                ctx.fillRect(-20, -15, 40, 30);
-                ctx.fillStyle = '#A52A2A';
-                ctx.fillRect(-15, -10, 30, 20);
-                ctx.restore();
-                ctx.save();
-                ctx.translate(enemy.x, enemy.y);
-                ctx.rotate(enemy.turretAngle);
-                ctx.fillStyle = '#8B0000';
-                ctx.fillRect(0, -5, 25, 10);
-                ctx.restore();
-                if (enemy.health < 100) {
-                    ctx.fillStyle = 'red';
-                    ctx.fillRect(enemy.x - 20, enemy.y - 25, enemy.health / 2.5, 5);
-                }
+                drawTank(enemy.x, enemy.y, enemy.angle, enemy.turretAngle, 'enemy', enemy.health);
             });
 
             // Draw shells
-            shells.forEach(shell => {
-                ctx.fillStyle = shell.source === 'enemy' ? '#FFA500' : '#FFFF00';
-                ctx.beginPath();
-                ctx.arc(shell.x, shell.y, shell.radius, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            shells.forEach(shell => drawShell(shell));
         }
 
         function gameLoop() {
