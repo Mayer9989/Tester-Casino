@@ -163,7 +163,7 @@
         <div>Score: <span id="score">0</span></div>
         <div>Level: <span id="level">1</span></div>
         <div>Health: <span id="health">100</span></div>
-        <div>Missiles: <span id="missiles">5</span></div>
+        <div>Missiles: <span id="missiles">100</span></div>
         <div>Credits: $<span id="creditsUI">1000</span></div>
     </div>
     <div id="upgradeMenu">
@@ -224,7 +224,7 @@
                 health: 100,
                 speed: 5,
                 fireRate: 10,
-                missileCount: 5,
+                missileCount: 100,
                 missileDamage: 50,
                 laserDamage: 5,
                 special: 'boost',
@@ -239,7 +239,7 @@
                 health: 120,
                 speed: 4,
                 fireRate: 8,
-                missileCount: 3,
+                missileCount: 100,
                 missileDamage: 75,
                 laserDamage: 7,
                 special: 'shield',
@@ -254,7 +254,7 @@
                 health: 80,
                 speed: 6,
                 fireRate: 12,
-                missileCount: 8,
+                missileCount: 100,
                 missileDamage: 40,
                 laserDamage: 4,
                 special: 'nova',
@@ -378,29 +378,26 @@
         }
 
         function shootLaser(source = player, isEnemy = false) {
-            if (source.fireCooldown <= 0) {
-                const targetX = isMobile && !isEnemy ? (findNearestEnemy()?.x + findNearestEnemy()?.width / 2 || canvas.width / 2) : mouse.x;
-                const targetY = isMobile && !isEnemy ? (findNearestEnemy()?.y + findNearestEnemy()?.height / 2 || 0) : mouse.y;
-                const angle = isEnemy ? source.angle : Math.atan2(targetY - (source.y + source.height / 2), targetX - (source.x + source.width / 2));
-                lasers.push({
-                    x: source.x + source.width / 2,
-                    y: source.y + source.height / 2,
-                    vx: Math.cos(angle) * 15,
-                    vy: Math.sin(angle) * 15,
-                    length: 50,
-                    damage: source.laserDamage,
-                    lifetime: 10,
-                    isEnemy: isEnemy
-                });
-                source.fireCooldown = source.fireRate;
-            }
+            const angle = isEnemy ? Math.PI / 2 : -Math.PI / 2; // Up for player, down for enemies
+            lasers.push({
+                x: source.x + source.width / 2,
+                y: source.y + (isEnemy ? source.height : 0),
+                vx: Math.cos(angle) * 15,
+                vy: Math.sin(angle) * 15,
+                length: 50,
+                damage: source.laserDamage,
+                lifetime: 10,
+                isEnemy: isEnemy,
+                trail: []
+            });
+            if (isEnemy) source.fireCooldown = source.fireRate; // Only enemies have cooldown
         }
 
         function shootMissile(source = player, isEnemy = false) {
             if (source.missiles > 0) {
                 const missile = {
                     x: source.x + source.width / 2,
-                    y: source.y,
+                    y: source.y + (isEnemy ? source.height : 0),
                     vx: 0,
                     vy: 0,
                     speed: 7,
@@ -432,13 +429,10 @@
                         enemies.forEach(enemy => {
                             let dist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
                             if (dist < 150) {
-                                enemy.health -= 50;
-                                if (enemy.health <= 0) {
-                                    enemies.splice(enemies.indexOf(enemy), 1);
-                                    score += enemy.scoreValue;
-                                    credits += enemy.creditValue;
-                                    spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
-                                }
+                                enemies.splice(enemies.indexOf(enemy), 1);
+                                score += enemy.scoreValue;
+                                credits += enemy.creditValue;
+                                spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
                             }
                         });
                         break;
@@ -479,9 +473,9 @@
 
         function spawnEnemy(type = 'drone') {
             const enemyTypes = {
-                drone: { width: 40, height: 50, speed: 2, health: 50, laserDamage: 3, fireRate: 30, scoreValue: 10, creditValue: 5 },
-                cruiser: { width: 60, height: 70, speed: 1, health: 100, laserDamage: 5, fireRate: 20, scoreValue: 20, creditValue: 10 },
-                bomber: { width: 50, height: 60, speed: 1.5, health: 80, missileDamage: 20, missileCount: 3, fireRate: 60, scoreValue: 15, creditValue: 8 }
+                drone: { width: 40, height: 50, speed: 2, health: 1, laserDamage: 3, fireRate: 30, scoreValue: 10, creditValue: 5 },
+                cruiser: { width: 60, height: 70, speed: 1, health: 1, laserDamage: 5, fireRate: 20, scoreValue: 20, creditValue: 10 },
+                bomber: { width: 50, height: 60, speed: 1.5, health: 1, missileDamage: 20, missileCount: 3, fireRate: 60, scoreValue: 15, creditValue: 8 }
             };
             const config = enemyTypes[type];
             enemies.push({
@@ -492,7 +486,7 @@
                 vx: 0,
                 vy: config.speed + level * 0.2,
                 angle: Math.PI / 2,
-                health: config.health + level * 10,
+                health: config.health,
                 fireRate: config.fireRate,
                 fireCooldown: 0,
                 laserDamage: config.laserDamage || 0,
@@ -690,7 +684,7 @@
                 if (laser.isEnemy) {
                     if (Math.hypot(laser.x - (player.x + player.width / 2), laser.y - (player.y + player.height / 2)) < player.width / 2 &&
                         player.special !== 'shield' && player.specialTimer <= 0) {
-                        player.health -= laser.damage;
+                        player.health -= laser.damage / 10;
                         lasers.splice(lIndex, 1);
                         spawnExplosion(laser.x, laser.y, 20);
                         if (player.health <= 0) {
@@ -702,15 +696,11 @@
                 } else {
                     enemies.forEach((enemy, eIndex) => {
                         if (Math.hypot(laser.x - (enemy.x + enemy.width / 2), laser.y - (enemy.y + enemy.height / 2)) < enemy.width / 2) {
-                            enemy.health -= laser.damage;
+                            enemies.splice(eIndex, 1);
                             lasers.splice(lIndex, 1);
-                            spawnExplosion(laser.x, laser.y, 20);
-                            if (enemy.health <= 0) {
-                                enemies.splice(eIndex, 1);
-                                score += enemy.scoreValue;
-                                credits += enemy.creditValue;
-                                spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
-                            }
+                            score += enemy.scoreValue;
+                            credits += enemy.creditValue;
+                            spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
                             updateUI();
                         }
                     });
@@ -724,7 +714,7 @@
                         missile.y < player.y + player.height &&
                         missile.y + missile.height > player.y &&
                         player.special !== 'shield' && player.specialTimer <= 0) {
-                        player.health -= missile.damage;
+                        player.health -= missile.damage / 10;
                         missiles.splice(mIndex, 1);
                         spawnExplosion(missile.x, missile.y, 40);
                         if (player.health <= 0) {
@@ -739,15 +729,11 @@
                             missile.x + missile.width > enemy.x &&
                             missile.y < enemy.y + enemy.height &&
                             missile.y + missile.height > enemy.y) {
-                            enemy.health -= missile.damage;
+                            enemies.splice(eIndex, 1);
                             missiles.splice(mIndex, 1);
-                            spawnExplosion(missile.x, missile.y, 40);
-                            if (enemy.health <= 0) {
-                                enemies.splice(eIndex, 1);
-                                score += enemy.scoreValue;
-                                credits += enemy.creditValue;
-                                spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
-                            }
+                            score += enemy.scoreValue;
+                            credits += enemy.creditValue;
+                            spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
                             updateUI();
                         }
                     });
@@ -760,7 +746,7 @@
                     player.y < enemy.y + enemy.height &&
                     player.y + player.height > enemy.y &&
                     player.special !== 'shield' && player.specialTimer <= 0) {
-                    player.health -= 10;
+                    player.health -= 1; // 10 / 10
                     enemies.splice(eIndex, 1);
                     spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
                     updateUI();
@@ -776,16 +762,10 @@
             if (gameState !== 'game' || gameOver || gamePaused) return;
 
             // Player physics
+            player.angle = -Math.PI / 2; // Fixed upright
             if (isMobile) {
                 player.vx += joystick.x * player.thrust;
                 player.vy += joystick.y * player.thrust;
-                const nearestEnemy = findNearestEnemy();
-                if (nearestEnemy) {
-                    player.angle = Math.atan2(
-                        (nearestEnemy.y + nearestEnemy.height / 2) - (player.y + player.height / 2),
-                        (nearestEnemy.x + nearestEnemy.width / 2) - (player.x + player.width / 2)
-                    );
-                }
             } else {
                 let ax = 0, ay = 0;
                 if (keys['KeyW']) ay -= player.thrust;
@@ -794,7 +774,6 @@
                 if (keys['KeyD']) ax += player.thrust;
                 player.vx += ax;
                 player.vy += ay;
-                player.angle = Math.atan2(mouse.y - (player.y + player.height / 2), mouse.x - (player.x + player.width / 2));
             }
             player.vx *= player.drag;
             player.vy *= player.drag;
@@ -817,6 +796,15 @@
                 laser.x += laser.vx;
                 laser.y += laser.vy;
                 laser.lifetime--;
+                // Add trail particle
+                laser.trail.push({
+                    x: laser.x,
+                    y: laser.y,
+                    lifetime: 10,
+                    alpha: 1
+                });
+                laser.trail = laser.trail.filter(p => p.lifetime > 0);
+                laser.trail.forEach(p => p.lifetime--);
                 if (laser.lifetime <= 0 || laser.x < 0 || laser.x > canvas.width || laser.y < 0 || laser.y > canvas.height) {
                     lasers.splice(index, 1);
                 }
@@ -863,7 +851,7 @@
                 enemy.fireCooldown--;
                 if (enemy.y > canvas.height) {
                     enemies.splice(index, 1);
-                    player.health -= 2;
+                    player.health -= 0.2; // 2 / 10
                     updateUI();
                     if (player.health <= 0) {
                         spawnExplosion(player.x + player.width / 2, player.y + player.height / 2, 50);
@@ -932,7 +920,7 @@
             ctx.beginPath();
             ctx.moveTo(width / 2, 0);
             ctx.lineTo(width / 4, -height / 4);
-            ctx.lineTo(width / 4, height / 4);
+            ctx.lineTo(width / 4, health / 4);
             ctx.closePath();
             ctx.fill();
             if (isPlayer && (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1)) {
@@ -1017,6 +1005,14 @@
 
             // Draw lasers
             lasers.forEach(laser => {
+                // Draw trail
+                laser.trail.forEach(p => {
+                    ctx.fillStyle = laser.isEnemy ? `rgba(255, 0, 0, ${p.alpha * 0.5})` : `rgba(0, 255, 0, ${p.alpha * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                // Draw laser
                 ctx.strokeStyle = laser.isEnemy ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 0, 0.8)';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
