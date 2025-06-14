@@ -193,6 +193,12 @@
         canvas.width = 1200;
         canvas.height = 800;
 
+        // Audio setup
+        const laserSound = new Audio('pew.mp3');
+        const missileSound = new Audio('launch.mp3');
+        const thrustSound = new Audio('engine.mp3');
+        thrustSound.loop = true;
+
         // Game state
         let gameState = 'menu';
         let player = null;
@@ -214,6 +220,7 @@
         let isMobile = /Mobi|Android/i.test(navigator.userAgent);
         let shopScrollIndex = 0;
         const itemsPerPage = 2;
+        let isThrusting = false;
 
         // Ship configurations
         const ships = [
@@ -353,8 +360,8 @@
             return {
                 x: canvas.width / 2,
                 y: canvas.height - 100,
-                width: 40,
-                height: 50,
+                width: 60,
+                height: 75,
                 vx: 0,
                 vy: 0,
                 angle: -Math.PI / 2,
@@ -378,7 +385,7 @@
         }
 
         function shootLaser(source = player, isEnemy = false) {
-            const angle = isEnemy ? Math.PI / 2 : -Math.PI / 2; // Up for player, down for enemies
+            const angle = isEnemy ? Math.PI / 2 : -Math.PI / 2;
             lasers.push({
                 x: source.x + source.width / 2,
                 y: source.y + (isEnemy ? source.height : 0),
@@ -386,11 +393,12 @@
                 vy: Math.sin(angle) * 15,
                 length: 50,
                 damage: source.laserDamage,
-                lifetime: 10,
+                lifetime: 100, // Long range
                 isEnemy: isEnemy,
                 trail: []
             });
-            if (isEnemy) source.fireCooldown = source.fireRate; // Only enemies have cooldown
+            if (isEnemy) source.fireCooldown = source.fireRate;
+            laserSound.cloneNode(true).play(); // Play laser sound
         }
 
         function shootMissile(source = player, isEnemy = false) {
@@ -400,9 +408,9 @@
                     y: source.y + (isEnemy ? source.height : 0),
                     vx: 0,
                     vy: 0,
-                    speed: 7,
+                    speed: isEnemy ? 5 : 7, // Slower for enemy missiles
                     width: 10,
-                    height: 20,
+                    height: 30,
                     target: isEnemy ? player : findNearestEnemy(),
                     damage: source.missileDamage,
                     isEnemy: isEnemy,
@@ -411,6 +419,7 @@
                 missiles.push(missile);
                 source.missiles--;
                 updateUI();
+                missileSound.cloneNode(true).play(); // Play missile sound
             }
         }
 
@@ -473,9 +482,9 @@
 
         function spawnEnemy(type = 'drone') {
             const enemyTypes = {
-                drone: { width: 40, height: 50, speed: 2, health: 1, laserDamage: 3, fireRate: 30, scoreValue: 10, creditValue: 5 },
-                cruiser: { width: 60, height: 70, speed: 1, health: 1, laserDamage: 5, fireRate: 20, scoreValue: 20, creditValue: 10 },
-                bomber: { width: 50, height: 60, speed: 1.5, health: 1, missileDamage: 20, missileCount: 3, fireRate: 60, scoreValue: 15, creditValue: 8 }
+                drone: { width: 50, height: 65, speed: 2, health: 1, laserDamage: 3, fireRate: 30, scoreValue: 10, creditValue: 5 },
+                cruiser: { width: 70, height: 85, speed: 1, health: 1, laserDamage: 5, fireRate: 20, scoreValue: 20, creditValue: 10 },
+                bomber: { width: 60, height: 75, speed: 1.5, health: 1, missileDamage: 20, missileCount: 3, fireRate: 60, scoreValue: 15, creditValue: 8 }
             };
             const config = enemyTypes[type];
             enemies.push({
@@ -484,10 +493,10 @@
                 width: config.width,
                 height: config.height,
                 vx: 0,
-                vy: config.speed + level * 0.2,
+                vy: config.speed + level * 0.3,
                 angle: Math.PI / 2,
                 health: config.health,
-                fireRate: config.fireRate,
+                fireRate: config.fireRate / (1 + level * 0.05),
                 fireCooldown: 0,
                 laserDamage: config.laserDamage || 0,
                 missileDamage: config.missileDamage || 0,
@@ -587,7 +596,7 @@
 
         function upgradeFireRate() {
             if (upgradePoints >= 10) {
-                player.fireRate = Math.max(5, player.fireRate - 1);
+                player.fireRate = Math.max(3, player.fireRate - 1); // Better upgrade
                 upgradePoints -= 10;
                 updateUI();
             }
@@ -604,8 +613,8 @@
 
         function upgradeMissiles() {
             if (upgradePoints >= 15) {
-                player.missileCount += 3;
-                player.missiles += 3;
+                player.missileCount += 5; // More missiles
+                player.missiles += 5;
                 upgradePoints -= 15;
                 updateUI();
             }
@@ -650,6 +659,7 @@
             document.getElementById('mainMenu').style.display = 'block';
             canvas.style.display = 'none';
             toggleGameControls(false);
+            thrustSound.pause();
         }
 
         function startNextLevel() {
@@ -669,10 +679,11 @@
         function restartGame() {
             startGame();
             document.getElementById('gameOverMenu').style.display = 'none';
+            thrustSound.pause();
         }
 
         function spawnEnemiesForLevel() {
-            const count = level * 3;
+            const count = level * 4; // More enemies per level
             for (let i = 0; i < count; i++) {
                 const type = Math.random() < 0.3 ? 'bomber' : Math.random() < 0.5 ? 'cruiser' : 'drone';
                 spawnEnemy(type);
@@ -746,7 +757,7 @@
                     player.y < enemy.y + enemy.height &&
                     player.y + player.height > enemy.y &&
                     player.special !== 'shield' && player.specialTimer <= 0) {
-                    player.health -= 1; // 10 / 10
+                    player.health -= 1;
                     enemies.splice(eIndex, 1);
                     spawnExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 40);
                     updateUI();
@@ -759,10 +770,13 @@
         }
 
         function update() {
-            if (gameState !== 'game' || gameOver || gamePaused) return;
+            if (gameState !== 'game' || gameOver || gamePaused) {
+                thrustSound.pause();
+                return;
+            }
 
             // Player physics
-            player.angle = -Math.PI / 2; // Fixed upright
+            player.angle = -Math.PI / 2;
             if (isMobile) {
                 player.vx += joystick.x * player.thrust;
                 player.vy += joystick.y * player.thrust;
@@ -782,6 +796,17 @@
             player.x = Math.max(0, Math.min(player.x, canvas.width - player.width));
             player.y = Math.max(0, Math.min(player.y, canvas.height - player.height));
 
+            // Thrust sound
+            if (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1) {
+                if (!isThrusting) {
+                    thrustSound.play();
+                    isThrusting = true;
+                }
+            } else {
+                thrustSound.pause();
+                isThrusting = false;
+            }
+
             // Special ability timer
             if (player.specialTimer > 0) {
                 player.specialTimer--;
@@ -796,7 +821,6 @@
                 laser.x += laser.vx;
                 laser.y += laser.vy;
                 laser.lifetime--;
-                // Add trail particle
                 laser.trail.push({
                     x: laser.x,
                     y: laser.y,
@@ -821,7 +845,6 @@
                 }
                 missile.x += missile.vx;
                 missile.y += missile.vy;
-                // Add fire trail particle
                 missile.trail.push({
                     x: missile.x,
                     y: missile.y,
@@ -837,21 +860,33 @@
 
             // Update enemies
             enemies.forEach((enemy, index) => {
-                enemy.y += enemy.vy;
-                let dx = player.x - enemy.x;
-                let dy = player.y - enemy.y;
-                enemy.angle = Math.atan2(dy, dx);
+                let distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+                enemy.angle = Math.PI / 2; // Default downward
+                if (distToPlayer < 200) {
+                    // Defensive behavior
+                    enemy.vy *= 0.5; // Slow down
+                    enemy.vx = (Math.random() > 0.5 ? 1 : -1) * 2; // Move sideways
+                    enemy.x += enemy.vx;
+                    enemy.x = Math.max(0, Math.min(enemy.x, canvas.width - enemy.width));
+                } else {
+                    enemy.vx = 0; // No sideways movement
+                    enemy.y += enemy.vy;
+                }
                 if (Math.random() < 0.02) {
+                    let dx = player.x - enemy.x;
+                    let dy = player.y - enemy.y;
+                    enemy.angle = Math.atan2(dy, dx); // Aim when shooting
                     if (enemy.type === 'bomber' && enemy.missiles > 0) {
                         shootMissile(enemy, true);
                     } else {
                         shootLaser(enemy, true);
                     }
+                    enemy.angle = Math.PI / 2; // Reset after shooting
                 }
                 enemy.fireCooldown--;
                 if (enemy.y > canvas.height) {
                     enemies.splice(index, 1);
-                    player.health -= 0.2; // 2 / 10
+                    player.health -= 0.2;
                     updateUI();
                     if (player.health <= 0) {
                         spawnExplosion(player.x + player.width / 2, player.y + player.height / 2, 50);
@@ -898,45 +933,51 @@
             ctx.save();
             ctx.translate(x + width / 2, y + height / 2);
             ctx.rotate(angle);
+            // Hull
             const gradient = ctx.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
             gradient.addColorStop(0, bodyColor);
             gradient.addColorStop(1, darkenColor(bodyColor, 0.7));
             ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.moveTo(0, -height / 2);
-            ctx.lineTo(-width / 4, height / 4);
-            ctx.lineTo(-width / 6, height / 2);
-            ctx.lineTo(width / 6, height / 2);
-            ctx.lineTo(width / 4, height / 4);
+            ctx.moveTo(0, -height / 2); // Nose
+            ctx.lineTo(-width / 3, -height / 4);
+            ctx.lineTo(-width / 2, height / 4); // Left wing
+            ctx.lineTo(-width / 4, height / 2); // Left rear
+            ctx.lineTo(width / 4, height / 2); // Right rear
+            ctx.lineTo(width / 2, height / 4); // Right wing
+            ctx.lineTo(width / 3, -height / 4);
             ctx.closePath();
             ctx.fill();
-            ctx.fillStyle = gradient;
+            // Wings
+            ctx.fillStyle = darkenColor(bodyColor, 0.8);
             ctx.beginPath();
-            ctx.moveTo(-width / 2, 0);
-            ctx.lineTo(-width / 4, -height / 4);
-            ctx.lineTo(-width / 4, height / 4);
+            ctx.moveTo(-width / 2, height / 4);
+            ctx.lineTo(-width / 3, 0);
+            ctx.lineTo(-width / 4, height / 2);
             ctx.closePath();
             ctx.fill();
             ctx.beginPath();
-            ctx.moveTo(width / 2, 0);
-            ctx.lineTo(width / 4, -height / 4);
-            ctx.lineTo(width / 4, health / 4);
+            ctx.moveTo(width / 2, height / 4);
+            ctx.lineTo(width / 3, 0);
+            ctx.lineTo(width / 4, height / 2);
             ctx.closePath();
             ctx.fill();
+            // Cockpit
+            ctx.fillStyle = cockpitColor;
+            ctx.beginPath();
+            ctx.ellipse(0, -height / 3, width / 6, height / 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Thrusters
             if (isPlayer && (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1)) {
                 ctx.fillStyle = `rgba(255, 165, 0, ${Math.random() * 0.5 + 0.5})`;
                 ctx.beginPath();
-                ctx.moveTo(-width / 6, height / 2 + 5);
-                ctx.lineTo(-width / 8, height / 2 + 15);
-                ctx.lineTo(width / 8, height / 2 + 15);
-                ctx.lineTo(width / 6, height / 2 + 5);
+                ctx.moveTo(-width / 5, height / 2);
+                ctx.lineTo(-width / 6, height / 2 + 20);
+                ctx.lineTo(width / 6, height / 2 + 20);
+                ctx.lineTo(width / 5, height / 2);
                 ctx.closePath();
                 ctx.fill();
             }
-            ctx.fillStyle = cockpitColor;
-            ctx.beginPath();
-            ctx.ellipse(0, -height / 4, width / 8, height / 8, 0, 0, Math.PI * 2);
-            ctx.fill();
             ctx.restore();
         }
 
@@ -1005,14 +1046,12 @@
 
             // Draw lasers
             lasers.forEach(laser => {
-                // Draw trail
                 laser.trail.forEach(p => {
                     ctx.fillStyle = laser.isEnemy ? `rgba(255, 0, 0, ${p.alpha * 0.5})` : `rgba(0, 255, 0, ${p.alpha * 0.5})`;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
                     ctx.fill();
                 });
-                // Draw laser
                 ctx.strokeStyle = laser.isEnemy ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 0, 0.8)';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
@@ -1023,14 +1062,12 @@
 
             // Draw missiles
             missiles.forEach(missile => {
-                // Draw trail
                 missile.trail.forEach(p => {
                     ctx.fillStyle = `rgba(255, 165, 0, ${p.alpha * 0.5})`;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
                     ctx.fill();
                 });
-                // Draw missile
                 ctx.save();
                 ctx.translate(missile.x, missile.y);
                 const angle = Math.atan2(missile.vy, missile.vx);
@@ -1039,9 +1076,32 @@
                 gradient.addColorStop(0, missile.isEnemy ? '#FF4500' : '#FFA500');
                 gradient.addColorStop(1, '#888888');
                 ctx.fillStyle = gradient;
+                // Missile body
                 ctx.beginPath();
-                ctx.moveTo(0, -missile.height / 2);
+                ctx.moveTo(0, -missile.height / 2); // Nose
+                ctx.lineTo(-missile.width / 2, missile.height / 2 - 5);
+                ctx.lineTo(missile.width / 2, missile.height / 2 - 5);
+                ctx.closePath();
+                ctx.fill();
+                // Fins
+                ctx.fillStyle = '#666666';
+                ctx.beginPath();
+                ctx.moveTo(-missile.width / 2, missile.height / 2 - 5);
+                ctx.lineTo(-missile.width, missile.height / 2);
                 ctx.lineTo(-missile.width / 2, missile.height / 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(missile.width / 2, missile.height / 2 - 5);
+                ctx.lineTo(missile.width, missile.height / 2);
+                ctx.lineTo(missile.width / 2, missile.height / 2);
+                ctx.closePath();
+                ctx.fill();
+                // Exhaust
+                ctx.fillStyle = `rgba(255, 165, 0, ${Math.random() * 0.5 + 0.5})`;
+                ctx.beginPath();
+                ctx.moveTo(-missile.width / 2, missile.height / 2);
+                ctx.lineTo(0, missile.height / 2 + 10);
                 ctx.lineTo(missile.width / 2, missile.height / 2);
                 ctx.closePath();
                 ctx.fill();
@@ -1052,6 +1112,7 @@
 
             if (gameOver) {
                 document.getElementById('gameOverMenu').style.display = 'block';
+                thrustSound.pause();
             }
         }
 
