@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,74 +6,83 @@
     <title>Real Python Terminal</title>
     <style>
         body {
-            margin: 0;
-            padding: 10px;
             background-color: #000;
             color: #0f0;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
         }
         #terminal {
+            width: 100%;
             height: 80vh;
             overflow-y: auto;
+            border: 1px solid #333;
             padding: 10px;
-        }
-        #output {
             white-space: pre-wrap;
         }
         #input {
-            width: 90%;
             background: #000;
             color: #0f0;
-            border: none;
+            border: 1px solid #0f0;
+            font-family: 'Courier New', monospace;
+            width: 80%;
+            padding: 5px;
             outline: none;
-            font-family: 'Courier New', Courier, monospace;
+        }
+        #run-btn {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <div id="terminal">
-        <div id="output">
-            Welcome to Real Python Terminal!<br>
-            Use 'pip install <package>' to install packages.<br>
-            Type Python code and press Enter to run.<br>
-            $
-        </div>
-        <input type="text" id="input" autofocus>
-    </div>
+    <h1>🐍 Real Python Terminal (Pyodide)</h1>
+    <div id="terminal"></div>
+    <input type="text" id="input" placeholder="Введите Python код и нажмите Enter...">
+    <button id="run-btn">Run</button>
 
+    <!-- Загрузка Pyodide (настоящий Python в браузере) -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
     <script>
-        const output = document.getElementById('output');
-        const input = document.getElementById('input');
+        let term = document.getElementById("terminal");
+        let input = document.getElementById("input");
+        let runBtn = document.getElementById("run-btn");
 
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const command = input.value.trim();
-                output.innerHTML += `<br>$ ${command}`;
-                processCommand(command);
-                input.value = '';
-                output.scrollTop = output.scrollHeight;
-            }
-        });
+        async function setupPython() {
+            term.textContent = "Загрузка Python...\n";
+            let pyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
+            });
+            term.textContent += "Готово! Пишите код Python.\n>>> ";
 
-        function processCommand(command) {
-            if (command.startsWith('pip install ')) {
-                fetch('/install', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ package: command.split(' ')[2] })
-                })
-                .then(response => response.json())
-                .then(data => output.innerHTML += `<br>${data.output}`);
-            } else {
-                fetch('/run', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: command })
-                })
-                .then(response => response.json())
-                .then(data => output.innerHTML += `<br>${data.output}`);
+            function runCode() {
+                let code = input.value;
+                if (!code.trim()) return;
+
+                term.textContent += code + "\n";
+                try {
+                    let result = pyodide.runPython(code);
+                    if (result !== undefined) {
+                        term.textContent += result + "\n";
+                    }
+                } catch (err) {
+                    term.textContent += "Ошибка: " + err.message + "\n";
+                }
+                input.value = "";
+                term.textContent += ">>> ";
+                term.scrollTop = term.scrollHeight;
             }
+
+            input.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") runCode();
+            });
+            runBtn.addEventListener("click", runCode);
         }
+
+        setupPython();
     </script>
 </body>
 </html>
