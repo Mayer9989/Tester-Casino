@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Development Environment</title>
+    <title>Termux-Style Python Terminal</title>
     <style>
         body {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #000;
-            color: #0f0;
             margin: 0;
-            padding: 10px;
+            padding: 0;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            color: #0f0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
         #terminal {
-            width: 100%;
-            height: 80vh;
-            overflow-y: auto;
-            border: 1px solid #0f0;
+            flex: 1;
             padding: 10px;
+            overflow-y: auto;
+            border: none;
+        }
+        #output {
+            white-space: pre-wrap;
         }
         #input {
             width: 90%;
@@ -25,28 +30,80 @@
             color: #0f0;
             border: none;
             outline: none;
+            font-family: 'Courier New', Courier, monospace;
         }
-        #output {
-            white-space: pre-wrap;
+        .keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 10px;
+            background: #000;
+            border-top: 1px solid #0f0;
+        }
+        .key {
+            background: #fff;
+            color: #000;
+            padding: 5px 10px;
+            margin: 2px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .key.active {
+            background: #000;
+            color: #0f0;
+            border-color: #0f0;
+        }
+        .special-keys {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
         }
     </style>
 </head>
 <body>
     <div id="terminal">
         <div id="output">
-            Welcome to Python Dev Environment!<br>
-            Type 'install <package>' to simulate module installation.<br>
-            Type 'run <code>' to simulate running Python code.<br>
-            Type 'exit' to simulate process termination.<br>
-            $
+            Welcome to Termux-Style Python Terminal!<br>
+            Working with packages:<br>
+            - Search: pkg search <query><br>
+            - Install: pkg install <package><br>
+            - Upgrade: pkg upgrade<br>
+            $ 
         </div>
         <input type="text" id="input" autofocus>
+    </div>
+    <div class="keyboard">
+        <div class="special-keys">
+            <span class="key">ESC</span>
+            <span class="key">/</span>
+            <span class="key">-</span>
+            <span class="key">HOME</span>
+            <span class="key">END</span>
+            <span class="key">PGUP</span>
+        </div>
+        <div class="special-keys">
+            <span class="key">TAB</span>
+            <span class="key">CTRL</span>
+            <span class="key">ALT</span>
+            <span class="key">&larr;</span>
+            <span class="key">&darr;</span>
+            <span class="key">-</span>
+            <span class="key">PGDN</span>
+        </div>
+        <!-- Simulate QWERTY layout -->
+        <div class="key">q</div><div class="key">w</div><div class="key">e</div><div class="key">r</div><div class="key">t</div><div class="key">y</div><div class="key">u</div><div class="key">i</div><div class="key">o</div><div class="key">p</div>
+        <div class="key">a</div><div class="key">s</div><div class="key">d</div><div class="key">f</div><div class="key">g</div><div class="key">h</div><div class="key">j</div><div class="key">k</div><div class="key">l</div>
+        <div class="key">z</div><div class="key">x</div><div class="key">c</div><div class="key">v</div><div class="key">b</div><div class="key">n</div><div class="key">m</div>
+        <div class="key">7123</div>
+        <div class="key" style="background: #000; color: #0f0; border-color: #0f0;">[1]</div>
+        <div class="key">&larr;</div>
     </div>
 
     <script>
         const output = document.getElementById('output');
         const input = document.getElementById('input');
-        let runningProcesses = [];
 
         input.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -61,37 +118,21 @@
         function processCommand(command) {
             const [action, ...args] = command.split(' ');
             switch (action.toLowerCase()) {
-                case 'install':
-                    if (args.length > 0) {
-                        output.innerHTML += `<br>Simulating installation of ${args.join(' ')}... Done!`;
+                case 'pkg':
+                    if (args[0] === 'install') {
+                        output.innerHTML += `<br>Simulating installation of ${args.slice(1).join(' ')}... Done!`;
+                    } else if (args[0] === 'search') {
+                        output.innerHTML += `<br>Simulating search for ${args.slice(1).join(' ')}... Results found!`;
+                    } else if (args[0] === 'upgrade') {
+                        output.innerHTML += `<br>Simulating upgrade... Done!`;
                     } else {
-                        output.innerHTML += `<br>Usage: install <package>`;
+                        output.innerHTML += `<br>Usage: pkg install <package> or pkg search <query> or pkg upgrade`;
                     }
-                    break;
-                case 'run':
-                    if (args.length > 0) {
-                        const code = args.join(' ');
-                        output.innerHTML += `<br>Running: ${code}<br>Output: Simulated result`;
-                        runningProcesses.push(code); // Simulate persistent process
-                    } else {
-                        output.innerHTML += `<br>Usage: run <code>`;
-                    }
-                    break;
-                case 'exit':
-                    runningProcesses = [];
-                    output.innerHTML += `<br>All processes terminated.`;
                     break;
                 default:
-                    output.innerHTML += `<br>Command not recognized. Try 'install', 'run', or 'exit'.`;
+                    output.innerHTML += `<br>Command not recognized. Try 'pkg install <package>', 'pkg search <query>', or 'pkg upgrade'.`;
             }
         }
-
-        // Simulate persistence (in reality, you'd need a server to maintain processes)
-        window.onbeforeunload = function() {
-            if (runningProcesses.length > 0) {
-                output.innerHTML += `<br>Processes will continue running in the background (simulated).`;
-            }
-        };
     </script>
 </body>
 </html>
