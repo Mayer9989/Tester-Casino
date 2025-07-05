@@ -1,50 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal (Termux Style)</title>
+    <title>Real Python Terminal</title>
     <style>
         body {
+            background: black;
+            color: #00ff00;
+            font-family: monospace;
             margin: 0;
-            padding: 0;
-            background-color: #000;
-            color: #fff;
-            font-family: 'Roboto Mono', monospace;
-            font-size: 14px;
-            line-height: 1.4;
+            padding: 10px;
+            overflow: hidden;
         }
         #terminal {
-            padding: 10px;
-            height: 100vh;
+            height: 95vh;
             overflow-y: auto;
-            box-sizing: border-box;
-            white-space: pre-wrap;
-            word-break: break-all;
         }
-        #input-line {
-            display: flex;
-        }
-        #prompt {
-            color: #fff;
-            margin-right: 5px;
-        }
-        #cmd-input {
-            background: transparent;
+        #input {
+            background: black;
+            color: #00ff00;
             border: none;
-            color: #fff;
-            font-family: 'Roboto Mono', monospace;
-            font-size: 14px;
-            flex-grow: 1;
             outline: none;
-            caret-color: #fff;
-            width: calc(100% - 100px);
+            font-family: monospace;
+            width: 80%;
         }
-        .command {
-            margin-bottom: 5px;
+        .prompt {
+            color: #00ff00;
         }
         .output {
-            margin-bottom: 10px;
             white-space: pre-wrap;
         }
         .error {
@@ -54,98 +36,77 @@
 </head>
 <body>
     <div id="terminal">
-        <div>Welcome to Termux!</div>
-        <div>Wiki:            https://wiki.termux.com</div>
-        <div>Community forum: https://termux.com/community</div>
-        <div>Gitter chat:     https://gitter.im/termux/termux</div>
-        <div>IRC channel:     #termux on libera.chat</div>
-        <div><br></div>
-        <div>Working with packages:</div>
-        <div>* Search packages:   pkg search &lt;query&gt;</div>
-        <div>* Install a package: pkg install &lt;package&gt;</div>
-        <div>* Upgrade packages:  pkg upgrade</div>
-        <div><br></div>
-        <div id="history"></div>
-        <div id="input-line">
-            <span id="prompt">$</span>
-            <input type="text" id="cmd-input" autofocus>
-        </div>
+        <div class="output">Loading Python...</div>
+    </div>
+    <div>
+        <span class="prompt">>>> </span>
+        <input type="text" id="input" autofocus>
     </div>
 
+    <!-- Pyodide (настоящий Python в браузере) -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
     <script>
         const terminal = document.getElementById('terminal');
-        const history = document.getElementById('history');
-        const cmdInput = document.getElementById('cmd-input');
-        const prompt = document.getElementById('prompt');
+        const input = document.getElementById('input');
+        let pyodide;
 
-        // Имитация базовых команд Termux
-        function executeCommand(cmd) {
-            // Добавляем команду в историю
-            const commandElement = document.createElement('div');
-            commandElement.className = 'command';
-            commandElement.textContent = '$ ' + cmd;
-            history.appendChild(commandElement);
+        async function initPython() {
+            terminal.innerHTML += 'Initializing Python...<br>';
+            pyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
+            });
+            terminal.innerHTML += 'Python ready!<br>>> ';
+            
+            // Добавляем историю команд
+            const commandHistory = [];
+            let historyIndex = -1;
 
-            // Обработка команд
-            let output = '';
-            if (cmd === 'clear' || cmd === 'cls') {
-                history.innerHTML = '';
-                return;
-            } else if (cmd === 'help') {
-                output = [
-                    'Available commands:',
-                    'help      - Show this help',
-                    'clear     - Clear terminal',
-                    'ls        - List directory contents',
-                    'pkg       - Package manager',
-                    'python    - Run Python interpreter',
-                    'exit      - Close terminal',
-                    '',
-                    'Note: This is a simulation. Real commands won\'t work.'
-                ].join('\n');
-            } else if (cmd === 'ls') {
-                output = [
-                    'bin   lib   tmp',
-                    'etc   usr   var',
-                    'home  proc  storage'
-                ].join('\n');
-            } else if (cmd.startsWith('pkg')) {
-                output = 'pkg: command not found\nInstall Termux from Play Store for real package management';
-            } else if (cmd === 'python') {
-                output = 'Python 3.10.5 (default, Jun 25 2022, 17:14:04)\n[Clang 14.0.6 ] on linux\nType "help", "copyright", "credits" or "license" for more information.';
-            } else if (cmd === '') {
-                // Пустая команда - ничего не делаем
-            } else {
-                output = `-bash: ${cmd}: command not found`;
-            }
+            input.addEventListener('keydown', async (e) => {
+                if (e.key === 'Enter') {
+                    const code = input.value.trim();
+                    if (!code) return;
 
-            // Выводим результат
-            if (output) {
-                const outputElement = document.createElement('div');
-                outputElement.className = 'output';
-                outputElement.textContent = output;
-                history.appendChild(outputElement);
-            }
+                    // Добавляем в историю
+                    commandHistory.push(code);
+                    historyIndex = commandHistory.length;
 
-            // Прокрутка вниз
-            terminal.scrollTop = terminal.scrollHeight;
+                    // Выводим команду в терминал
+                    terminal.innerHTML += `<span class="prompt">>>> </span>${code}<br>`;
+
+                    try {
+                        // Выполняем код
+                        const result = await pyodide.runPythonAsync(code);
+                        if (result !== undefined) {
+                            terminal.innerHTML += `<div class="output">${result}</div>`;
+                        }
+                    } catch (err) {
+                        terminal.innerHTML += `<div class="error">${err}</div>`;
+                    }
+
+                    input.value = '';
+                    terminal.innerHTML += '<span class="prompt">>>> </span>';
+                    terminal.scrollTop = terminal.scrollHeight;
+                }
+
+                // Навигация по истории (стрелки вверх/вниз)
+                if (e.key === 'ArrowUp') {
+                    if (historyIndex > 0) {
+                        historyIndex--;
+                        input.value = commandHistory[historyIndex];
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    if (historyIndex < commandHistory.length - 1) {
+                        historyIndex++;
+                        input.value = commandHistory[historyIndex];
+                    } else {
+                        historyIndex = commandHistory.length;
+                        input.value = '';
+                    }
+                }
+            });
         }
 
-        // Обработка ввода
-        cmdInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                executeCommand(cmdInput.value.trim());
-                cmdInput.value = '';
-            }
-        });
-
-        // Автофокус на инпуте при клике в любом месте терминала
-        terminal.addEventListener('click', function() {
-            cmdInput.focus();
-        });
-
-        // Начальное приветствие
-        terminal.scrollTop = terminal.scrollHeight;
+        initPython();
     </script>
 </body>
 </html>
