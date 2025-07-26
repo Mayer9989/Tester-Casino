@@ -1,112 +1,156 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Real Python Terminal</title>
-    <style>
-        body {
-            background: black;
-            color: #00ff00;
-            font-family: monospace;
-            margin: 0;
-            padding: 10px;
-            overflow: hidden;
-        }
-        #terminal {
-            height: 95vh;
-            overflow-y: auto;
-        }
-        #input {
-            background: black;
-            color: #00ff00;
-            border: none;
-            outline: none;
-            font-family: monospace;
-            width: 80%;
-        }
-        .prompt {
-            color: #00ff00;
-        }
-        .output {
-            white-space: pre-wrap;
-        }
-        .error {
-            color: #ff5555;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>HANA OT MOMMY</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: black;
+      color: white;
+      font-family: 'Arial Black', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(ellipse at center, #000 0%, #111 100%);
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      background: transparent url('https://media.giphy.com/media/3o7aD2saalBwwftBIY/giphy.gif') repeat;
+      background-size: cover;
+      animation: moveStars 60s linear infinite;
+      z-index: 0;
+    }
+    @keyframes moveStars {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(-500px, -500px); }
+    }
+    h1 {
+      font-size: 3em;
+      text-align: center;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 10px #f0f, 0 0 20px #0ff, 0 0 30px #0ff;
+      z-index: 1;
+    }
+    .button {
+      margin-top: 50px;
+      padding: 20px 60px;
+      font-size: 2em;
+      color: #fff;
+      background: linear-gradient(to bottom, #ff00cc, #3333ff);
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 5px #222, 0 10px 20px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-shadow: 2px 2px 4px #000;
+      z-index: 1;
+    }
+    .button:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px #111;
+    }
+    #passwordSection, #fileSection {
+      margin-top: 20px;
+      z-index: 1;
+      text-align: center;
+    }
+    input[type="password"], input[type="file"] {
+      font-size: 1.2em;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div id="terminal">
-        <div class="output">Loading Python...</div>
-    </div>
-    <div>
-        <span class="prompt">>>> </span>
-        <input type="text" id="input" autofocus>
-    </div>
+  <h1>HANA OT MOMMY ЖМИ PLAY</h1>
+  <button class="button" id="playBtn">ИГРАТЬ</button>
 
-    <!-- Pyodide (настоящий Python в браузере) -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
-    <script>
-        const terminal = document.getElementById('terminal');
-        const input = document.getElementById('input');
-        let pyodide;
+  <div id="passwordSection" style="display:none;">
+    <p>Введите пароль:</p>
+    <input type="password" id="passwordInput" placeholder="Пароль..." />
+    <button class="button" onclick="checkPassword()">OK</button>
+  </div>
 
-        async function initPython() {
-            terminal.innerHTML += 'Initializing Python...<br>';
-            pyodide = await loadPyodide({
-                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
-            });
-            terminal.innerHTML += 'Python ready!<br>>> ';
-            
-            // Добавляем историю команд
-            const commandHistory = [];
-            let historyIndex = -1;
+  <div id="fileSection" style="display:none;">
+    <p>Выберите MP3-файл:</p>
+    <input type="file" id="fileInput" />
+  </div>
 
-            input.addEventListener('keydown', async (e) => {
-                if (e.key === 'Enter') {
-                    const code = input.value.trim();
-                    if (!code) return;
+  <script>
+    let clickCount = 0;
+    let audio = null;
+    const playBtn = document.getElementById('playBtn');
 
-                    // Добавляем в историю
-                    commandHistory.push(code);
-                    historyIndex = commandHistory.length;
+    // Загружаем сохранённый звук (если есть)
+    const savedAudio = localStorage.getItem('customAudio');
+    if (savedAudio) {
+      audio = new Audio(savedAudio);
+      audio.loop = true;
+    }
 
-                    // Выводим команду в терминал
-                    terminal.innerHTML += `<span class="prompt">>>> </span>${code}<br>`;
+    playBtn.addEventListener('click', () => {
+      clickCount++;
+      if (clickCount > 30) clickCount = 1;
 
-                    try {
-                        // Выполняем код
-                        const result = await pyodide.runPythonAsync(code);
-                        if (result !== undefined) {
-                            terminal.innerHTML += `<div class="output">${result}</div>`;
-                        }
-                    } catch (err) {
-                        terminal.innerHTML += `<div class="error">${err}</div>`;
-                    }
+      if (audio) {
+        audio.play();
+      }
 
-                    input.value = '';
-                    terminal.innerHTML += '<span class="prompt">>>> </span>';
-                    terminal.scrollTop = terminal.scrollHeight;
-                }
+      if (clickCount === 30) {
+        document.getElementById('passwordSection').style.display = 'block';
+      }
+    });
 
-                // Навигация по истории (стрелки вверх/вниз)
-                if (e.key === 'ArrowUp') {
-                    if (historyIndex > 0) {
-                        historyIndex--;
-                        input.value = commandHistory[historyIndex];
-                    }
-                } else if (e.key === 'ArrowDown') {
-                    if (historyIndex < commandHistory.length - 1) {
-                        historyIndex++;
-                        input.value = commandHistory[historyIndex];
-                    } else {
-                        historyIndex = commandHistory.length;
-                        input.value = '';
-                    }
-                }
-            });
-        }
+    function checkPassword() {
+      const input = document.getElementById('passwordInput').value;
+      if (input === "MAYER999") {
+        document.getElementById('fileSection').style.display = 'block';
+      } else {
+        alert("Неверный пароль!");
+      }
+    }
 
-        initPython();
-    </script>
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.type === "audio/mpeg" || file.name.endsWith(".mp3")) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const dataUrl = event.target.result;
+          localStorage.setItem('customAudio', dataUrl);
+          audio = new Audio(dataUrl);
+          audio.loop = true;
+          alert("Звук успешно применён! Теперь он будет использоваться.");
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert("Ошибка: выберите только mp3-файл.");
+      }
+    });
+
+    // Блокировка масштабирования
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+    document.addEventListener('touchmove', function(e) {
+      if (e.scale !== 1) e.preventDefault();
+    }, { passive: false });
+  </script>
 </body>
 </html>
